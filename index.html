@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Drawing & Document Control V18 Project Workspace + Old Logic Preserved</title>
+<title>MEGA Engineering | Drawing & Document Control V18 Project Workspace + Old Logic Preserved V20.4</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -134,6 +134,13 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 .v182-scope-toolbar{display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px}
 .v182-scope-search{position:relative;flex:1;min-width:250px}.v182-scope-search input{padding-left:34px}.v182-scope-search:before{content:"⌕";position:absolute;left:11px;top:8px;color:#98a2b3;font-size:15px;z-index:1}
 .v182-scope-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.v204-filter-toggle{display:inline-flex;align-items:center;gap:6px}.v204-filter-toggle .count{min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--brand-soft);color:var(--brand2);display:grid;place-items:center;font-size:8px;font-weight:950}
+.v204-filter-panel{margin:-2px 0 10px;border:1px solid #dde3ec;border-radius:12px;background:linear-gradient(135deg,#fbfcfe,#fff);padding:11px}
+.v204-filter-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}.v204-filter-title{font-size:10px;font-weight:950;color:#344054}.v204-filter-copy{font-size:9px;color:var(--muted);margin-top:2px}
+.v204-filter-grid{display:grid;grid-template-columns:repeat(4,minmax(145px,1fr));gap:8px}.v204-filter-grid .field label{font-size:9px}.v204-filter-grid select{min-height:36px;font-size:10px;padding:7px 9px}
+.v204-filter-note{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:9px;color:var(--muted)}
+@media(max-width:980px){.v204-filter-grid{grid-template-columns:repeat(2,minmax(140px,1fr))}}
+@media(max-width:620px){.v204-filter-grid{grid-template-columns:1fr}}
 .v182-selection-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 9px}
 .v182-selection-meta .selected-count{font-size:10px;font-weight:900;color:var(--brand2);background:var(--brand-soft);padding:5px 8px;border-radius:999px}
 .v182-select-list{border:1px solid var(--line);border-radius:12px;overflow:auto;max-height:340px;background:#fbfcfe;padding:7px;display:grid;gap:6px}
@@ -187,7 +194,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control</h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V20.4</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -754,7 +761,7 @@ function assertResp(r,label){
    - treats 9220/9280/no-record responses as a valid empty report
    - requests field_config=all so readable lookup/display values are retained
    ======================================================================= */
-async function fetchRecords(report,criteria="",max=20){
+window.__MEGA_FETCH_RECORDS__ = async function fetchRecordsImpl(report,criteria="",max=20){
   if(!report)throw new Error("Creator report link name is missing.");
   if(S.demo)return demoFetch(report,criteria);
 
@@ -795,6 +802,9 @@ async function fetchRecords(report,criteria="",max=20){
 
   return out;
 }
+const fetchRecords = window.__MEGA_FETCH_RECORDS__;
+window.fetchRecords = window.__MEGA_FETCH_RECORDS__;
+
 function normalizeScopeLevelForCreator(value){
   const desired=String(value||"").trim();
   if(!desired)return "";
@@ -2081,6 +2091,16 @@ function openPdsRecordModal(type,index){
    Initializes Creator SDK and loads Project, Drawing, Employee, Equipment and
    Design_Tracking data using the existing old report link names.
    ======================================================================= */
+// V20.4 deployment/runtime integrity check.
+function assertRuntimeIntegrity(){
+  const problems=[];
+  if(typeof fetchRecords!=="function")problems.push("fetchRecords helper missing");
+  if(!S.demo && (!window.ZOHO||!ZOHO.CREATOR))problems.push("Zoho Creator Widget SDK unavailable");
+  if(!S.demo && !ZOHO?.CREATOR?.DATA?.getRecords)problems.push("ZOHO.CREATOR.DATA.getRecords unavailable");
+  if(problems.length)throw new Error(`V20.4 runtime check failed: ${problems.join("; ")}`);
+  console.info("MEGA Project Design Control build V20.4 loaded", {fetchRecords:typeof fetchRecords, app:CONFIG.APP_NAME});
+}
+
 // bootstrap(): starts the complete widget.
 async function bootstrap(){
   busy("Loading projects, drawings and team…");
@@ -2097,6 +2117,8 @@ async function bootstrap(){
       S.user=init?.loginUser||"";
       S.app=init?.appLinkName||CONFIG.APP_NAME;
     }
+
+    assertRuntimeIntegrity();
 
     // IMPORTANT: the old working widget loaded master reports independently.
     // Do that first so an empty/blocked tracking report can never blank the
@@ -3387,17 +3409,50 @@ function v19DrawingScopeRaw(d){
   return [d.type||'',extra||''].filter(Boolean).join(' | ');
 }
 function v19ScopeForDrawing(d){
-  const k=nk(v19DrawingScopeRaw(d));
+  const raw=v19DrawingScopeRaw(d);
+  const k=nk(raw);
   if(!k)return'';
-  // Tag must win over Section because values such as
-  // "Project Code + Plant Section + Tag No" contain both words.
-  if(k.includes('tagno')||k.includes('tagnumber')||k.includes('equipmenttag')||k.endsWith('tag')||k.includes('tagwise'))return'Tag Wise';
-  if(k.includes('plantsectiontype')||k.includes('sectiontype')||k.includes('sectiontypewise'))return'Section Type Wise';
-  if(k.includes('plantsection')||k.includes('sectionwise'))return'Section Wise';
-  if(k.includes('projectcode')||k.includes('projectwise')||k==='project')return'Project Wise';
+
+  // IMPORTANT: the live Drawing Master uses values such as:
+  //   Project code
+  //   Project code + Section
+  //   Project code + Section + Section Type
+  //   Project code + Section + Tag No
+  // Older widget logic only recognized the literal words "Plant Section", so
+  // "Project code + Section" incorrectly fell through to Project Wise.
+  // Parse both the old and current naming styles, with the most-specific scope
+  // winning first (Tag > Section Type > Section > Project).
+  const tokens=String(raw||'')
+    .toLowerCase()
+    .split(/[+|,;/]+/)
+    .map(x=>nk(x))
+    .filter(Boolean);
+  const hasToken=(...names)=>tokens.some(t=>names.includes(t));
+
+  const hasTag =
+    k.includes('tagno')||k.includes('tagnumber')||k.includes('equipmenttag')||
+    k.includes('tagwise')||hasToken('tag','tagno','tagnumber','equipment','equipmenttag');
+
+  const hasSectionType =
+    k.includes('plantsectiontype')||k.includes('sectiontype')||
+    k.includes('sectiontypewise')||hasToken('sectiontype','plantsectiontype','plantsectiontypename');
+
+  const hasSection =
+    k.includes('plantsection')||k.includes('sectionwise')||
+    hasToken('section','plantsection','sectionname','plantsectionname','allsection');
+
+  const hasProject =
+    k.includes('projectcode')||k.includes('projectwise')||
+    hasToken('project','projectcode')||k==='project';
+
+  if(hasTag)return'Tag Wise';
+  if(hasSectionType)return'Section Type Wise';
+  if(hasSection)return'Section Wise';
+  if(hasProject)return'Project Wise';
   return'';
 }
 function v19ScopeClass(mode){return mode==='Project Wise'?'project':mode==='Section Wise'?'section':mode==='Section Type Wise'?'sectiontype':mode==='Tag Wise'?'tag':''}
+function v19ScopeDisplayName(mode){return mode==='Project Wise'?'Project Wise':mode==='Section Wise'?'Plant Section Wise':mode==='Section Type Wise'?'Plant Section Type Wise':mode==='Tag Wise'?'Tag / Equipment Wise':mode||'Scope Not Configured'}
 function v19ScopeLevel(mode){return mode==='Project Wise'?'Project Document':mode==='Section Wise'?'Plant Section Document':mode==='Section Type Wise'?'Plant Section Type Document':mode==='Tag Wise'?'Equipment Design':''}
 function v19Criteria(mode){return mode==='Project Wise'?'Project':mode==='Section Wise'?'Plant Section':mode==='Section Type Wise'?'Plant Section Type':mode==='Tag Wise'?'Tag Number':''}
 function v19ScopeLabel(mode){return mode==='Section Wise'?'Plant Sections':mode==='Section Type Wise'?'Plant Section Types':mode==='Tag Wise'?'Tags / Equipment':'Project'}
@@ -3416,6 +3471,15 @@ function v19EnsureDraft(){
   d.selectedSections=Array.isArray(d.selectedSections)?d.selectedSections:[];
   d.selectedSectionTypes=Array.isArray(d.selectedSectionTypes)?d.selectedSectionTypes:[];
   d.selectedTags=Array.isArray(d.selectedTags)?d.selectedTags:[];
+  // V20.4: optional UI-only narrowing filters. These do NOT change the
+  // responsibility or backend payload; they only help users find the exact
+  // Section / Section Type / Tags they want before selecting them.
+  d.scopeFilters=d.scopeFilters&&typeof d.scopeFilters==='object'?d.scopeFilters:{};
+  d.scopeFilters.section=d.scopeFilters.section||'';
+  d.scopeFilters.type=d.scopeFilters.type||'';
+  d.scopeFilters.category=d.scopeFilters.category||'';
+  d.scopeFilters.equipmentType=d.scopeFilters.equipmentType||'';
+  d.scopeFiltersOpen=Boolean(d.scopeFiltersOpen);
   const drawing=S.drawings.find(x=>String(x.id)===String(d.drawingId));
   d.mode=drawing?v19ScopeForDrawing(drawing):'';
   S.projectWorkspace.assignDraft=d;return d;
@@ -3444,20 +3508,82 @@ function v19Responsibility(mode,u){
   if(mode==='Tag Wise')return `${project} › ${u.section||'—'} › ${u.type||'—'} › ${u.tag||'No Tag'}${u.name?` — ${u.name}`:''}`;
   return project;
 }
+function v204Unique(values){return [...new Set((values||[]).map(x=>String(x||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));}
+function v204OptionHtml(values,current,placeholder){return `<option value="">${h(placeholder)}</option>${v204Unique(values).map(v=>`<option value="${h(v)}" ${String(current||'')===v?'selected':''}>${h(v)}</option>`).join('')}`;}
+function v204FilterCount(d){const f=d.scopeFilters||{};return ['section','type','category','equipmentType'].filter(k=>String(f[k]||'').trim()).length;}
+function v204FilterPanelHtml(d,units){
+  if(d.mode==='Project Wise')return'';
+  const f=d.scopeFilters||{},fields=[];
+  if(d.mode==='Section Wise'){
+    const allTypes=units.flatMap(u=>u.types||[]);
+    fields.push(`<div class="field"><label>Plant Section Type</label><select id="v204FilterType">${v204OptionHtml(allTypes,f.type,'All Section Types')}</select></div>`);
+  }else if(d.mode==='Section Type Wise'){
+    fields.push(`<div class="field"><label>Plant Section</label><select id="v204FilterSection">${v204OptionHtml(units.map(u=>u.section),f.section,'All Plant Sections')}</select></div>`);
+  }else if(d.mode==='Tag Wise'){
+    fields.push(`<div class="field"><label>Plant Section</label><select id="v204FilterSection">${v204OptionHtml(units.map(u=>u.section),f.section,'All Plant Sections')}</select></div>`);
+    fields.push(`<div class="field"><label>Plant Section Type</label><select id="v204FilterType">${v204OptionHtml(units.map(u=>u.type),f.type,'All Section Types')}</select></div>`);
+    fields.push(`<div class="field"><label>Equipment Category</label><select id="v204FilterCategory">${v204OptionHtml(units.map(u=>u.category),f.category,'All Categories')}</select></div>`);
+    fields.push(`<div class="field"><label>Equipment Type</label><select id="v204FilterEquipmentType">${v204OptionHtml(units.map(u=>u.equipmentType),f.equipmentType,'All Equipment Types')}</select></div>`);
+  }
+  if(!fields.length)return'';
+  return `<div id="v204FilterPanel" class="v204-filter-panel ${d.scopeFiltersOpen?'':'hidden'}"><div class="v204-filter-head"><div><div class="v204-filter-title">Optional Filters</div><div class="v204-filter-copy">Use these only when needed. Filters narrow the list; they do not change any already selected items.</div></div><button type="button" class="btn sm" data-v204-reset-filters>Reset Filters</button></div><div class="v204-filter-grid">${fields.join('')}</div><div class="v204-filter-note"><span class="pill">Tip</span><span>Filter first, then click <b>Select All Shown</b> to select only the matching results.</span></div></div>`;
+}
+function v204ScopeItemHtml(mode,u,selected){
+  const base=v182ScopeItemHtml(mode,u,selected).replaceAll('v182-check','v19-check');
+  const attrs=` data-v204-section="${h(u.section||'')}" data-v204-type="${h(u.type||'')}" data-v204-types="${h((u.types||[]).join('|||'))}" data-v204-category="${h(u.category||'')}" data-v204-equipment-type="${h(u.equipmentType||'')}"`;
+  return base.replace('<label class="v182-select-item',`<label${attrs} class="v182-select-item`);
+}
+function v204ActiveFilterValues(){
+  return {
+    section:($('v204FilterSection')?.value||''),
+    type:($('v204FilterType')?.value||''),
+    category:($('v204FilterCategory')?.value||''),
+    equipmentType:($('v204FilterEquipmentType')?.value||'')
+  };
+}
+function v204ApplyScopeFilters(){
+  const d=v19EnsureDraft(),q=String($('v19ScopeSearch')?.value||'').trim().toLowerCase(),f=v204ActiveFilterValues();
+  d.scopeFilters={...d.scopeFilters,...f};
+  let visible=0;
+  document.querySelectorAll('.v182-select-item').forEach(el=>{
+    const text=String(el.dataset.v182Search||'').toLowerCase();
+    const section=String(el.dataset.v204Section||'');
+    const type=String(el.dataset.v204Type||'');
+    const types=String(el.dataset.v204Types||'').split('|||').filter(Boolean);
+    const category=String(el.dataset.v204Category||'');
+    const equipmentType=String(el.dataset.v204EquipmentType||'');
+    let show=!q||text.includes(q);
+    if(show&&f.section)show=section===f.section;
+    if(show&&f.type)show=d.mode==='Section Wise'?types.includes(f.type):type===f.type;
+    if(show&&f.category)show=category===f.category;
+    if(show&&f.equipmentType)show=equipmentType===f.equipmentType;
+    el.style.display=show?'grid':'none';
+    if(show)visible++;
+  });
+  const c=$('v19VisibleCount');if(c)c.textContent=visible;
+  const badge=$('v204FilterCount');if(badge){const n=v204FilterCount(d);badge.textContent=String(n);badge.classList.toggle('hidden',n===0);}
+}
+function v204VisibleScopeKeys(){
+  return [...document.querySelectorAll('.v182-select-item')]
+    .filter(el=>el.style.display!=='none')
+    .map(el=>el.querySelector('.v19-check')?.value)
+    .filter(Boolean);
+}
+
 function v19ScopePickerHtml(d){
   const drawing=S.drawings.find(x=>String(x.id)===String(d.drawingId));
   if(!drawing)return `<div class="v182-empty"><b>Select a Drawing / Design first</b>The system will read its Drawing Type and automatically show the correct Project / Section / Section Type / Tag selection.</div>`;
   if(!d.mode)return `<div class="notice danger"><b>Drawing scope is not configured.</b><br>Drawing <b>${h(drawing.name)}</b> has Drawing Type <b>${h(v19DrawingScopeRaw(drawing)||'blank')}</b>. Configure the Drawing Master as Project Code, Plant Section, Plant Section Type, or Tag No before assigning.</div>`;
   if(d.mode==='Project Wise')return `<div class="v182-project-scope"><div class="scope-ico">PRJ</div><div><div class="scope-title">Entire Project ${h(S.projectWorkspace.code)}</div><div class="scope-copy">One work item will be created for this design for the complete project.</div></div><span class="pill green">Overall Project</span></div>`;
-  const units=v19Units(d.mode),selected=new Set(v19SelectedValues(d));
+  const units=v19Units(d.mode),selected=new Set(v19SelectedValues(d)),filterCount=v204FilterCount(d);
   if(!units.length)return `<div class="v182-empty"><b>No ${h(v19ScopeLabel(d.mode))} found for Project ${h(S.projectWorkspace.code)}</b>Check Master Equipment List data/permissions, then use Reload Scope Data.</div>`;
-  return `<div class="v182-scope-toolbar"><div class="v182-scope-search"><input id="v19ScopeSearch" class="input" placeholder="Search ${h(v19ScopeLabel(d.mode))}…"></div><div class="v182-scope-actions"><button type="button" class="btn sm" data-v19-action="select-all">Select All</button><button type="button" class="btn sm" data-v19-action="clear">Deselect All</button></div></div><div class="v182-selection-meta"><span id="v19SelectedCount" class="selected-count">${selected.size} selected</span><span class="tiny muted"><span id="v19VisibleCount">${units.length}</span> of ${units.length} available</span><span class="tiny muted">Maximum ${CONFIG.MAX_BATCH} per batch</span></div><div class="v182-select-list">${units.map(u=>v182ScopeItemHtml(d.mode,u,selected.has(u.key)).replaceAll('v182-check','v19-check')).join('')}</div>`;
+  return `<div class="v182-scope-toolbar"><div class="v182-scope-search"><input id="v19ScopeSearch" class="input" placeholder="Search ${h(v19ScopeLabel(d.mode))}…"></div><div class="v182-scope-actions"><button type="button" class="btn sm v204-filter-toggle" data-v204-toggle-filters>Filters <span id="v204FilterCount" class="count ${filterCount?'':'hidden'}">${filterCount}</span></button><button type="button" class="btn sm" data-v19-action="select-all">Select All Shown</button><button type="button" class="btn sm" data-v19-action="clear">Deselect All</button></div></div>${v204FilterPanelHtml(d,units)}<div class="v182-selection-meta"><span id="v19SelectedCount" class="selected-count">${selected.size} selected</span><span class="tiny muted"><span id="v19VisibleCount">${units.length}</span> of ${units.length} available</span><span class="tiny muted">Maximum ${CONFIG.MAX_BATCH} per batch</span></div><div class="v182-select-list">${units.map(u=>v204ScopeItemHtml(d.mode,u,selected.has(u.key))).join('')}</div>`;
 }
 function v19ScopeCard(d){
   const drawing=S.drawings.find(x=>String(x.id)===String(d.drawingId));
   if(!drawing)return'';
   const mode=d.mode,raw=v19DrawingScopeRaw(drawing)||'Not configured';
-  return `<div class="v19-auto-scope"><div class="left"><div class="v19-scope-icon">${h(v19ScopeIcon(mode))}</div><div><div class="title">Responsibility scope is automatic</div><div class="copy">${h(v19ScopeCopy(mode))}</div><div class="raw">Drawing Type: ${h(raw)}</div></div></div><span class="v19-scope-badge ${h(v19ScopeClass(mode))}">${h(mode||'Scope Not Configured')}</span></div>`;
+  return `<div class="v19-auto-scope"><div class="left"><div class="v19-scope-icon">${h(v19ScopeIcon(mode))}</div><div><div class="title">Responsibility scope is automatic</div><div class="copy">${h(v19ScopeCopy(mode))}</div><div class="raw">Drawing Type: ${h(raw)}${mode?` → ${h(v19ScopeDisplayName(mode))}`:''}</div></div></div><span class="v19-scope-badge ${h(v19ScopeClass(mode))}">${h(v19ScopeDisplayName(mode))}</span></div>`;
 }
 function v19HealthHtml(){const eq=v18ProjectEquipment(),sections=v182SectionUnits(),types=v182TypeUnits(),tags=v182TagUnits();return `<div class="v182-health"><span class="pill brand">${eq.length} Equipment</span><span class="pill">${sections.length} Sections</span><span class="pill">${types.length} Section Types</span><span class="pill">${tags.length} Tags</span></div>`}
 function v19Preview(d){
@@ -3624,20 +3750,46 @@ function renderAssignmentSearchCard(a){const d=drawingForAssignment(a),r=current
 function renderPdsSearchCard(r){const type=pdsRelatedTypeKey(r),tag=pdsScopeValue(r,'tag'),name=pdsScopeValue(r,'equipmentName'),project=pdsScopeValue(r,'project');return `<div class="search-result-card"><div class="search-result-title"><div><h3>${h(tag||name||'PDS Record')}${tag&&name?` — ${h(name)}`:''}</h3><div class="search-result-sub">Project ${h(project||'—')} • ${h(type?pdsTypeLabel(type):'PD Sheet')}</div></div>${type?pdsStatusPill(pdsStatusValue(r,type)):''}</div><div class="search-detail-grid">${searchDetail('Plant Section',pdsScopeValue(r,'plantSection'))}${searchDetail('Section Type',pdsScopeValue(r,'plantSectionType'))}${searchDetail('Group',pdsScopeValue(r,'groupCode'))}${searchDetail('Department',pdsScopeValue(r,'department'))}${searchDetail('Category',pdsScopeValue(r,'category'))}${searchDetail('Equipment Type',pdsScopeValue(r,'equipmentType'))}${searchDetail('Section Reference',pdsScopeValue(r,'sectionRef'))}</div></div>`}
 
 function v19SyncSelection(){const d=v19EnsureDraft(),n=v19SelectedValues(d).length;const count=$("v19SelectedCount"),sum=$("v19SummaryCount"),txt=$("v19ScopeSummaryText"),label=$("v19CreateButtonText"),btn=document.querySelector('[data-v18-create-assignment]');if(count)count.textContent=`${n} selected`;if(sum)sum.textContent=d.mode==='Project Wise'?1:n;if(txt)txt.textContent=v19Preview(d);if(label)label.textContent=v19CreateLabel(d);if(btn)btn.disabled=!v19CanCreate(d);document.querySelectorAll('.v182-select-item').forEach(el=>{const cb=el.querySelector('.v19-check');if(cb)el.classList.toggle('selected',cb.checked)})}
-function v19FilterScope(q){q=String(q||'').trim().toLowerCase();let visible=0;document.querySelectorAll('.v182-select-item').forEach(el=>{const show=!q||String(el.dataset.v182Search||'').includes(q);el.style.display=show?'grid':'none';if(show)visible++});const c=$("v19VisibleCount");if(c)c.textContent=visible}
+function v19FilterScope(){v204ApplyScopeFilters()}
 function wireV19(){
   document.addEventListener('change',e=>{
     if(e.target.id==='v18Drawing'){
-      v18CollectAssignDraft();const d=v19EnsureDraft();d.selectedSections=[];d.selectedSectionTypes=[];d.selectedTags=[];return renderV18AssignModal();
+      v18CollectAssignDraft();const d=v19EnsureDraft();d.selectedSections=[];d.selectedSectionTypes=[];d.selectedTags=[];d.scopeFilters={section:'',type:'',category:'',equipmentType:''};d.scopeFiltersOpen=false;return renderV18AssignModal();
     }
     if(e.target.matches('.v19-check')){const d=v19EnsureDraft(),field=v19SelectionField(d.mode);if(!field)return;const set=new Set(d[field]||[]);e.target.checked?set.add(e.target.value):set.delete(e.target.value);d[field]=[...set];return v19SyncSelection()}
+    if(['v204FilterSection','v204FilterType','v204FilterCategory','v204FilterEquipmentType'].includes(e.target.id)){
+      const d=v19EnsureDraft(),f=d.scopeFilters||{};
+      if(e.target.id==='v204FilterSection')f.section=e.target.value;
+      if(e.target.id==='v204FilterType')f.type=e.target.value;
+      if(e.target.id==='v204FilterCategory')f.category=e.target.value;
+      if(e.target.id==='v204FilterEquipmentType')f.equipmentType=e.target.value;
+      d.scopeFilters=f;v204ApplyScopeFilters();return;
+    }
     if(['v18User','v18Priority','v18Target','v18End','v18Remark'].includes(e.target.id)){v18CollectAssignDraft();return v19SyncSelection()}
     if(e.target.id==='v18Start'){const d=v18CollectAssignDraft(),target=$("v18Target"),end=$("v18End");if(target)target.min=d.start||todayIso();if(end)end.min=d.start||todayIso();return v19SyncSelection()}
   });
-  document.addEventListener('click',e=>{const act=e.target.closest('[data-v19-action]');if(!act)return;v18CollectAssignDraft();const d=v19EnsureDraft(),field=v19SelectionField(d.mode);if(!field)return;d[field]=act.dataset.v19Action==='select-all'?v19Units(d.mode).map(u=>u.key):[];document.querySelectorAll('.v19-check').forEach(cb=>cb.checked=act.dataset.v19Action==='select-all');v19SyncSelection()});
-  document.addEventListener('input',e=>{if(e.target.id==='v19ScopeSearch')v19FilterScope(e.target.value)})
+  document.addEventListener('click',e=>{
+    const toggle=e.target.closest('[data-v204-toggle-filters]');
+    if(toggle){const d=v19EnsureDraft(),panel=$('v204FilterPanel');d.scopeFiltersOpen=!d.scopeFiltersOpen;if(panel)panel.classList.toggle('hidden',!d.scopeFiltersOpen);return;}
+    const reset=e.target.closest('[data-v204-reset-filters]');
+    if(reset){const d=v19EnsureDraft();d.scopeFilters={section:'',type:'',category:'',equipmentType:''};for(const id of ['v204FilterSection','v204FilterType','v204FilterCategory','v204FilterEquipmentType']){const el=$(id);if(el)el.value='';}v204ApplyScopeFilters();return;}
+    const act=e.target.closest('[data-v19-action]');if(!act)return;
+    v18CollectAssignDraft();const d=v19EnsureDraft(),field=v19SelectionField(d.mode);if(!field)return;
+    if(act.dataset.v19Action==='select-all'){
+      // V20.4: select only rows currently visible after search/filters. Existing
+      // selections outside the current filter remain selected so users can build
+      // a batch in multiple passes without losing earlier choices.
+      const set=new Set(d[field]||[]);v204VisibleScopeKeys().forEach(k=>set.add(k));d[field]=[...set];
+      document.querySelectorAll('.v19-check').forEach(cb=>{const row=cb.closest('.v182-select-item');if(row&&row.style.display!=='none')cb.checked=true;});
+    }else{d[field]=[];document.querySelectorAll('.v19-check').forEach(cb=>cb.checked=false);}
+    v19SyncSelection();
+  });
+  document.addEventListener('input',e=>{if(e.target.id==='v19ScopeSearch')v204ApplyScopeFilters()})
 }
 
+
+
+/* V20.4 CHANGE: optional scope filters + Select All Shown only. Backend save/workflow logic unchanged. */
 
 /* ======================================================================
    V20 FINAL: PERSISTENT MANY-TO-MANY ENGINEERING DEPENDENCIES
