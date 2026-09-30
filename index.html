@@ -110,6 +110,48 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 .stage-grid{display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));gap:9px}.stage-card{background:#fff;border:1px solid var(--line);border-radius:11px;padding:12px}.stage-card .n{font-size:22px;font-weight:900}.stage-card .t{font-size:11px;color:var(--muted);font-weight:800}
 .v18-assign-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.v18-scope-summary{margin-top:12px;padding:12px 13px;border-radius:11px;background:#fafafa;border:1px solid var(--line2);font-size:12px}.v18-note{font-size:11px;color:var(--muted);margin-top:6px}.v181-form-section{border:1px solid var(--line);border-radius:13px;background:#fff;margin-top:12px;overflow:hidden}.v181-form-section-head{padding:10px 13px;background:#f8fafc;border-bottom:1px solid var(--line2);display:flex;align-items:center;justify-content:space-between;gap:10px}.v181-form-section-head b{font-size:12px}.v181-form-section-head span{font-size:10px;color:var(--muted)}.v181-form-section-body{padding:13px}.v181-scope-health{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.v181-scope-health .pill{font-size:9px}.v181-empty-scope{margin-top:10px;padding:11px 12px;border:1px solid #f0c4cc;background:var(--red-soft);color:#9d273a;border-radius:10px;font-size:11px;display:flex;align-items:center;justify-content:space-between;gap:10px}.v181-field-span-2{grid-column:1/-1}.field select:disabled,.field input:disabled,.field textarea:disabled{background:#f2f4f7;color:#98a2b3;cursor:not-allowed}.field .field-help{font-size:9px;color:var(--muted);margin-top:-2px}.v181-required{color:var(--red);font-weight:900}
 @media(max-width:1000px){.project-kpis{grid-template-columns:repeat(2,1fr)}.kanban{grid-template-columns:repeat(2,minmax(260px,1fr))}.doc-grid{grid-template-columns:1fr}.stage-grid{grid-template-columns:repeat(3,1fr)}}
+
+/* ================= V18.2 BULK RESPONSIBILITY SCOPE =================
+   Formal, multi-select assignment UI for Project / Plant Section /
+   Plant Section Type / Tag scopes. Existing Creator sources and old
+   Design_Tracking hierarchy are retained.
+   ================================================================== */
+.modal{width:min(1160px,100%)}
+.v182-assign-shell{font-family:Inter,"Segoe UI",Arial,sans-serif}
+.v182-form-title{font-size:12px;font-weight:900;color:#27364a;letter-spacing:.01em}
+.v182-form-sub{font-size:10px;color:var(--muted);margin-top:2px}
+.v182-mode-grid{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:9px;margin-top:10px}
+.v182-mode-card{position:relative;border:1px solid #d9dfe8;background:#fff;border-radius:12px;padding:12px;text-align:left;min-height:88px;transition:.14s ease;box-shadow:0 1px 2px rgba(16,24,40,.02)}
+.v182-mode-card:hover{border-color:#d9a4bd;background:#fffafd;transform:translateY(-1px)}
+.v182-mode-card.active{border-color:var(--brand);background:var(--brand-soft);box-shadow:0 0 0 2px rgba(196,39,112,.08)}
+.v182-mode-card .mode-icon{width:28px;height:28px;border-radius:8px;background:#f2f4f7;color:#344054;display:grid;place-items:center;font-weight:950;font-size:11px;margin-bottom:7px}
+.v182-mode-card.active .mode-icon{background:var(--brand);color:#fff}
+.v182-mode-card .mode-name{display:block;font-size:11px;font-weight:950;color:#202b3c}
+.v182-mode-card .mode-copy{display:block;font-size:9px;line-height:1.35;color:var(--muted);margin-top:4px}
+.v182-project-scope{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:14px;border:1px solid #c7e7d8;background:linear-gradient(135deg,#f3fcf7,#fff);border-radius:12px}
+.v182-project-scope .scope-ico{width:40px;height:40px;border-radius:11px;background:var(--green-soft);color:var(--green);display:grid;place-items:center;font-weight:950}
+.v182-project-scope .scope-title{font-size:13px;font-weight:950}.v182-project-scope .scope-copy{font-size:10px;color:var(--muted);margin-top:2px}
+.v182-scope-toolbar{display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px}
+.v182-scope-search{position:relative;flex:1;min-width:250px}.v182-scope-search input{padding-left:34px}.v182-scope-search:before{content:"⌕";position:absolute;left:11px;top:8px;color:#98a2b3;font-size:15px;z-index:1}
+.v182-scope-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.v182-selection-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 9px}
+.v182-selection-meta .selected-count{font-size:10px;font-weight:900;color:var(--brand2);background:var(--brand-soft);padding:5px 8px;border-radius:999px}
+.v182-select-list{border:1px solid var(--line);border-radius:12px;overflow:auto;max-height:340px;background:#fbfcfe;padding:7px;display:grid;gap:6px}
+.v182-select-item{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 11px;border:1px solid #e6eaf0;border-radius:10px;background:#fff;cursor:pointer;transition:.12s ease}
+.v182-select-item:hover{border-color:#dfb2c7;background:#fffafd}.v182-select-item.selected{border-color:#d58eae;background:#fff7fb;box-shadow:0 0 0 1px rgba(196,39,112,.05)}
+.v182-check{width:17px;height:17px;accent-color:var(--brand);cursor:pointer}
+.v182-item-main{min-width:0}.v182-item-title{font-size:11px;font-weight:950;color:#263246;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v182-item-sub{font-size:9px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v182-item-side{text-align:right;display:flex;gap:5px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.v182-item-side .pill{font-size:8px;padding:3px 6px}
+.v182-empty{padding:24px;text-align:center;border:1px dashed #d7dde6;border-radius:11px;color:var(--muted);background:#fff}.v182-empty b{display:block;color:#344054;margin-bottom:3px}
+.v182-summary{margin-top:12px;border:1px solid #d9e0ea;border-radius:12px;background:linear-gradient(135deg,#fbfcfe,#fff);padding:12px 13px;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+.v182-summary .summary-title{font-size:10px;color:var(--muted);font-weight:850;text-transform:uppercase;letter-spacing:.04em}.v182-summary .summary-value{font-size:12px;font-weight:900;color:#263246;margin-top:3px}.v182-summary .summary-count{font-size:22px;font-weight:950;color:var(--brand2);text-align:right}.v182-summary .summary-label{font-size:8px;color:var(--muted);font-weight:850;text-align:right}
+.v182-batch-note{margin-top:8px;font-size:9px;color:var(--muted)}.v182-batch-note.warn{color:var(--red);font-weight:850}
+.v182-health{display:flex;gap:6px;flex-wrap:wrap}.v182-health .pill{font-size:9px}
+.v182-field-label{display:flex;align-items:center;justify-content:space-between;gap:8px}.v182-field-label .source{font-size:8px;color:#98a2b3;font-weight:700}
+.v182-create-count{font-weight:950}
+@media(max-width:900px){.v182-mode-grid{grid-template-columns:repeat(2,1fr)}.v182-project-scope{grid-template-columns:auto 1fr}.v182-project-scope>.pill{grid-column:1/-1;justify-self:start}}
+@media(max-width:620px){.v182-mode-grid{grid-template-columns:1fr}.v182-select-item{grid-template-columns:26px minmax(0,1fr)}.v182-item-side{grid-column:2;justify-content:flex-start}.v182-summary{grid-template-columns:1fr}.v182-summary .summary-count,.v182-summary .summary-label{text-align:left}}
+
 @media(max-width:700px){.v18-assign-grid{grid-template-columns:1fr}.v181-field-span-2{grid-column:auto}.project-top-main{align-items:flex-start;flex-direction:column}.project-kpis{grid-template-columns:1fr 1fr}.calendar-item{grid-template-columns:1fr}.dep-row{grid-template-columns:1fr}.dep-arrow{transform:rotate(90deg)}}
 
 </style>
@@ -570,7 +612,7 @@ function adaptProject(r){return{raw:r,id:pick(r,PROJECT_ALIASES.id),code:pick(r,
 function adaptDrawing(r){return{raw:r,id:pick(r,DRAWING_ALIASES.id),name:pick(r,DRAWING_ALIASES.name),short:pick(r,DRAWING_ALIASES.short),type:pick(r,DRAWING_ALIASES.type),active:pick(r,DRAWING_ALIASES.active)}}
 function adaptEmployee(r){return{raw:r,id:pick(r,EMP_ALIASES.id),name:pick(r,EMP_ALIASES.name),email:pick(r,EMP_ALIASES.email),department:pick(r,EMP_ALIASES.dept)}}
 
-// V18.1: legacy Creator lookup/group fields can be nested objects. These helpers
+// V18.2: legacy Creator lookup/group fields can be nested objects. These helpers
 // inspect every scalar child instead of trusting only the first lookup value.
 function deepScalarEntries(value,topKey="",out=[],depth=0){
   if(depth>6||value==null)return out;
@@ -1940,7 +1982,7 @@ async function bootstrap(){
       .sort((a,b)=>a.name.localeCompare(b.name));
     S.employees=er.map(adaptEmployee).filter(x=>x.email||x.name)
       .sort((a,b)=>a.name.localeCompare(b.name));
-    // V18.1: restore the old working Plant Section Type -> Plant Section map.
+    // V18.2: restore the old working Plant Section Type -> Plant Section map.
     // In the legacy Equipment report Plant Section can be a grouped field and
     // may be missing from each row, while Plant Section Type is still present.
     S.plantSections=psr.map(adaptPlantSectionMaster).filter(x=>x.section||x.type);
@@ -2887,7 +2929,7 @@ let demoSeq=500;function demoAdd(data){const id=(isAssignmentRecord(data)?"A":"R
 
 
 /* ======================================================================
-   V18.1 PROJECTS-STYLE WORKSPACE — FIXED PROJECT/SECTION/TYPE/TAG CASCADES
+   V18.2 PROJECTS-STYLE WORKSPACE — FIXED PROJECT/SECTION/TYPE/TAG CASCADES
    ----------------------------------------------------------------------
    This layer changes the navigation/UI only. It reuses the same Creator
    masters, Design_Tracking fields, assignment hierarchy, revision workflow,
@@ -3006,6 +3048,134 @@ async function v18EnsurePrimary(p,drawing,recipient,draft){let root=primaryAssig
 function v18ChildData(root,drawing,recipient,draft){const data={[AF.projectCode]:scalar(root[AF.projectCode]),[AF.projectRecordId]:scalar(root[AF.projectRecordId]),[AF.drawingDocument]:drawing.name,[AF.drawingMasterId]:drawing.id,[AF.shortName]:drawing.short||'',[AF.primaryAssignment]:scalar(root[AF.primaryAssignment])||idOf(root),[AF.assignedFrom]:idOf(root),[AF.assignmentLevel]:num(root[AF.assignmentLevel])+1,[AF.assignedBy]:S.user||assignmentUser(root),[AF.assignedTo]:recipient.email,[AF.assignedEmployeeName]:recipient.name,[AF.startDate]:toCreatorDate(draft.start),[AF.targetDate]:toCreatorDate(draft.target),[AF.endDate]:toCreatorDate(draft.end),[AF.priority]:draft.priority||'Medium',[AF.status]:'Not Started',[AF.progress]:0,[AF.remark]:draft.remark||'',[AF.activityLog]:initialActivity('Assignment Created',`${recipient.name} received ${v18ScopeDescription(draft)}.`,{kind:'assignment',assignedTo:recipient.email})};let labels=[];if(draft.mode==='Section Wise'){data[AF.plantSection]=draft.section;labels=['Plant Section'];}else if(draft.mode==='Section Type Wise'){data[AF.plantSection]=draft.section;data[AF.plantSectionType]=draft.sectionType;labels=['Plant Section','Plant Section Type'];}else if(draft.mode==='Tag Wise'){const eq=v18ProjectEquipment().find(x=>x.tag===draft.tag);data[AF.plantSection]=draft.section||eq?.plantSection||'';data[AF.plantSectionType]=draft.sectionType||eq?.plantSectionType||'';data[AF.tagNo]=draft.tag;data[AF.equipmentName]=eq?.name||'';data[AF.equipmentRecordId]=eq?.id||'';data[AF.groupCode]=eq?.groupCode||'';data[AF.department]=eq?.department||'';data[AF.equipmentCategory]=eq?.equipmentCategory||'';data[AF.equipmentType]=eq?.equipmentType||'';labels=['Plant Section','Plant Section Type','Tag / Equipment'];}data[AF.criteria]=assignmentCriteriaPayload(labels);data[AF.responsibility]=responsibilityFromData(data);data[AF.logicalTaskKey]=normalLogicalKeyFromAssignment(data);return data;}
 async function createV18Assignment(){const draft=v18CollectAssignDraft(),p=v18ProjectForCode(S.projectWorkspace.code),drawing=S.drawings.find(x=>x.id===draft.drawingId);if(!drawing)throw new Error('Select Drawing / Design.');if(!draft.user||!draft.start||!draft.target)throw new Error('Assigned To, Start Date and Target Date are required.');if(draft.target<draft.start)throw new Error('Target / Forecast Date cannot be before Start Date.');if(draft.end&&draft.end<draft.start)throw new Error('Planned End Date cannot be before Start Date.');if(['Section Wise','Section Type Wise','Tag Wise'].includes(draft.mode)&&!draft.section)throw new Error('Select Plant Section.');if(['Section Type Wise','Tag Wise'].includes(draft.mode)&&!draft.sectionType)throw new Error('Select Plant Section Type.');if(draft.mode==='Tag Wise'&&!draft.tag)throw new Error('Select Tag / Equipment.');const recipient=requireAssignmentRecipient(draft.user);busy('Creating design assignment…');try{if(draft.mode==='Project Wise'){let root=primaryAssignmentFor(p,drawing);if(root){closeModal();toast('Project-wise primary assignment already exists. Opening it.','warn');return openAssignment(idOf(root));}root=await v18EnsurePrimary(p,drawing,recipient,draft);await notifyCreatedAssignments([root]);closeModal();toast(`Project-wise assignment created for ${recipient.name}.`,'good');S.projectWorkspace.tab='designs';renderView();return;}const root=await v18EnsurePrimary(p,drawing,recipient,draft);const data=v18ChildData(root,drawing,recipient,draft),id=await addRecord(data),rec={ID:id,...data};S.records.push(rec);S.assignments.push(rec);await notifyCreatedAssignments([rec]);closeModal();toast(`${draft.mode} assignment created for ${recipient.name}.`,'good');S.projectWorkspace.tab='designs';renderView();}finally{idle();}}
 
+
+/* ======================================================================
+   V18.2 BULK SCOPE ASSIGNMENT OVERRIDES
+   ----------------------------------------------------------------------
+   - Project Wise: one overall project assignment.
+   - Section Wise: choose one, many, or all Plant Sections.
+   - Section Type Wise: choose one, many, or all Section Types across project.
+   - Tag Wise: choose one, many, or all Tags / Equipment and assign them to
+     the same person in one batch.
+   Existing Creator reports, Design_Tracking fields, revisions, workflow and
+   legacy project-lookup-safe equipment loader remain unchanged.
+   ====================================================================== */
+function v182EnsureDraft(){
+  const d=S.projectWorkspace.assignDraft||{};
+  d.mode=d.mode||'Tag Wise';
+  d.drawingId=d.drawingId||'';d.user=d.user||'';d.priority=d.priority||'Medium';d.start=d.start||todayIso();d.target=d.target||'';d.end=d.end||'';d.remark=d.remark||'';
+  d.selectedSections=Array.isArray(d.selectedSections)?d.selectedSections:[];
+  d.selectedSectionTypes=Array.isArray(d.selectedSectionTypes)?d.selectedSectionTypes:[];
+  d.selectedTags=Array.isArray(d.selectedTags)?d.selectedTags:[];
+  S.projectWorkspace.assignDraft=d;return d;
+}
+function v182SectionUnits(){
+  const map=new Map();
+  for(const x of v18ProjectEquipment()){
+    const section=String(x.plantSection||'').trim();if(!section)continue;const k=nk(section);
+    if(!map.has(k))map.set(k,{key:section,section,types:new Set(),tags:new Set()});
+    const u=map.get(k);if(x.plantSectionType)u.types.add(String(x.plantSectionType).trim());if(x.tag)u.tags.add(String(x.tag).trim());
+  }
+  return [...map.values()].map(u=>({...u,types:[...u.types].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})),tagCount:u.tags.size})).sort((a,b)=>a.section.localeCompare(b.section,undefined,{numeric:true}));
+}
+function v182TypeUnits(){
+  const map=new Map();
+  for(const x of v18ProjectEquipment()){
+    const section=String(x.plantSection||'').trim(),type=String(x.plantSectionType||'').trim();if(!section||!type)continue;const key=`${section}|||${type}`;
+    if(!map.has(key))map.set(key,{key,section,type,tags:new Set()});if(x.tag)map.get(key).tags.add(String(x.tag).trim());
+  }
+  return [...map.values()].map(u=>({...u,tagCount:u.tags.size})).sort((a,b)=>(a.section+' '+a.type).localeCompare(b.section+' '+b.type,undefined,{numeric:true}));
+}
+function v182TagUnits(){
+  const map=new Map();
+  for(const x of v18ProjectEquipment()){
+    const tag=String(x.tag||'').trim();if(!tag&&!x.id)continue;const key=String(x.id||`${x.plantSection||''}|||${x.plantSectionType||''}|||${tag}|||${x.name||''}`);
+    if(!map.has(key))map.set(key,{key,section:String(x.plantSection||'').trim(),type:String(x.plantSectionType||'').trim(),tag,name:String(x.name||'').trim(),equipmentType:String(x.equipmentType||'').trim(),category:String(x.equipmentCategory||'').trim(),eq:x});
+  }
+  return [...map.values()].sort((a,b)=>(a.section+' '+a.type+' '+a.tag+' '+a.name).localeCompare(b.section+' '+b.type+' '+b.tag+' '+b.name,undefined,{numeric:true}));
+}
+function v182UnitsForMode(mode){if(mode==='Section Wise')return v182SectionUnits();if(mode==='Section Type Wise')return v182TypeUnits();if(mode==='Tag Wise')return v182TagUnits();return[];}
+function v182SelectionKey(mode){return mode==='Section Wise'?'selectedSections':mode==='Section Type Wise'?'selectedSectionTypes':mode==='Tag Wise'?'selectedTags':'';}
+function v182SelectedValues(d){const k=v182SelectionKey(d.mode);return k?(Array.isArray(d[k])?d[k]:[]):[];}
+function v182SelectedUnits(d){if(d.mode==='Project Wise')return[];const chosen=new Set(v182SelectedValues(d));return v182UnitsForMode(d.mode).filter(u=>chosen.has(u.key));}
+function v182ScopeLabel(mode){return mode==='Section Wise'?'Plant Sections':mode==='Section Type Wise'?'Plant Section Types':mode==='Tag Wise'?'Tags / Equipment':'Project';}
+function v182ScopeDescriptionForUnit(mode,u){
+  if(mode==='Section Wise')return `Project ${S.projectWorkspace.code} › ${u.section}`;
+  if(mode==='Section Type Wise')return `Project ${S.projectWorkspace.code} › ${u.section} › ${u.type}`;
+  if(mode==='Tag Wise')return `Project ${S.projectWorkspace.code} › ${u.section||'Section'} › ${u.type||'Section Type'} › Tag: ${u.tag||'—'}${u.name?` — ${u.name}`:''}`;
+  return `Entire Project ${S.projectWorkspace.code}`;
+}
+function v18ScopeDescription(d){
+  if(d.mode==='Project Wise')return `Entire Project ${S.projectWorkspace.code}`;
+  const units=v182SelectedUnits(d),label=v182ScopeLabel(d.mode);
+  if(!units.length)return `No ${label.toLowerCase()} selected`;
+  if(units.length===1)return v182ScopeDescriptionForUnit(d.mode,units[0]);
+  return `${units.length} ${label} selected in Project ${S.projectWorkspace.code}`;
+}
+function v182ModeCards(d){
+  const cards=[
+    ['Project Wise','PRJ','Project Wise','Assign the selected drawing for the complete project.'],
+    ['Section Wise','SEC','Plant Section Wise','Select one, many, or all Plant Sections in this project.'],
+    ['Section Type Wise','TYPE','Plant Section Type Wise','Select section types across any Plant Section in this project.'],
+    ['Tag Wise','TAG','Tag / Equipment Wise','Select multiple equipment tags and assign all selected tags to one person.']
+  ];
+  return `<div class="v182-mode-grid">${cards.map(([value,icon,name,copy])=>`<button type="button" class="v182-mode-card ${d.mode===value?'active':''}" data-v182-mode="${h(value)}"><span class="mode-icon">${h(icon)}</span><span class="mode-name">${h(name)}</span><span class="mode-copy">${h(copy)}</span></button>`).join('')}</div>`;
+}
+function v182ScopeItemHtml(mode,u,selected){
+  if(mode==='Section Wise'){const typeCopy=u.types.length?u.types.slice(0,4).join(', ')+(u.types.length>4?` +${u.types.length-4} more`:''):'No Section Type';return `<label class="v182-select-item ${selected?'selected':''}" data-v182-search="${h((u.section+' '+typeCopy).toLowerCase())}"><input class="v182-check" type="checkbox" data-v182-scope="section" value="${h(u.key)}" ${selected?'checked':''}><span class="v182-item-main"><span class="v182-item-title">${h(u.section)}</span><span class="v182-item-sub">Section Types: ${h(typeCopy)}</span></span><span class="v182-item-side"><span class="pill">${u.types.length} types</span><span class="pill brand">${u.tagCount} tags</span></span></label>`;}
+  if(mode==='Section Type Wise')return `<label class="v182-select-item ${selected?'selected':''}" data-v182-search="${h((u.section+' '+u.type).toLowerCase())}"><input class="v182-check" type="checkbox" data-v182-scope="type" value="${h(u.key)}" ${selected?'checked':''}><span class="v182-item-main"><span class="v182-item-title">${h(u.type)}</span><span class="v182-item-sub">Plant Section: ${h(u.section)}</span></span><span class="v182-item-side"><span class="pill brand">${u.tagCount} tags</span></span></label>`;
+  return `<label class="v182-select-item ${selected?'selected':''}" data-v182-search="${h((u.tag+' '+u.name+' '+u.section+' '+u.type+' '+u.equipmentType+' '+u.category).toLowerCase())}"><input class="v182-check" type="checkbox" data-v182-scope="tag" value="${h(u.key)}" ${selected?'checked':''}><span class="v182-item-main"><span class="v182-item-title">${h(u.tag||'No Tag')}${u.name?` — ${h(u.name)}`:''}</span><span class="v182-item-sub">${h([u.section,u.type,u.equipmentType,u.category].filter(Boolean).join(' • ')||'Equipment master record')}</span></span><span class="v182-item-side"><span class="pill brand">Tag</span></span></label>`;
+}
+function v182ScopePickerHtml(d){
+  if(d.mode==='Project Wise')return `<div class="v182-project-scope"><div class="scope-ico">PRJ</div><div><div class="scope-title">Entire Project ${h(S.projectWorkspace.code)}</div><div class="scope-copy">No Plant Section, Section Type, or Tag selection is required. The drawing responsibility applies to the overall project.</div></div><span class="pill green">Full Project Scope</span></div>`;
+  const units=v182UnitsForMode(d.mode),selected=new Set(v182SelectedValues(d));
+  if(!units.length)return `<div class="v182-empty"><b>No ${h(v182ScopeLabel(d.mode))} found for Project ${h(S.projectWorkspace.code)}</b>Check Master Equipment List data/permissions, then use Reload Scope Data.</div>`;
+  return `<div class="v182-scope-toolbar"><div class="v182-scope-search"><input id="v182ScopeSearch" class="input" placeholder="Search ${h(v182ScopeLabel(d.mode))} by name, section, tag or equipment…"></div><div class="v182-scope-actions"><button type="button" class="btn sm" data-v182-action="select-all">Select All</button><button type="button" class="btn sm" data-v182-action="clear">Deselect All</button></div></div><div class="v182-selection-meta"><span id="v182SelectedCount" class="selected-count">${selected.size} selected</span><span class="tiny muted"><span id="v182VisibleCount">${units.length}</span> of ${units.length} available</span><span class="tiny muted">Maximum ${CONFIG.MAX_BATCH} assignments per batch</span></div><div id="v182ScopeList" class="v182-select-list">${units.map(u=>v182ScopeItemHtml(d.mode,u,selected.has(u.key))).join('')}</div>`;
+}
+function v182HealthHtml(){const eq=v18ProjectEquipment(),sections=v182SectionUnits(),types=v182TypeUnits(),tags=v182TagUnits();return `<div class="v182-health"><span class="pill brand">${eq.length} Equipment Rows</span><span class="pill">${sections.length} Plant Sections</span><span class="pill">${types.length} Section Types</span><span class="pill">${tags.length} Tags</span></div>`;}
+function v182CreateLabel(d){if(d.mode==='Project Wise')return 'Create Project Assignment';const n=v182SelectedValues(d).length;return `Create ${n} Assignment${n===1?'':'s'}`;}
+function v182CanCreate(d){if(d.mode==='Project Wise')return true;const n=v182SelectedValues(d).length;return n>0&&n<=CONFIG.MAX_BATCH;}
+function v182PreviewText(d){const units=v182SelectedUnits(d);if(d.mode==='Project Wise')return `Entire Project ${S.projectWorkspace.code}`;if(!units.length)return `Select ${v182ScopeLabel(d.mode)} to continue.`;const names=units.slice(0,3).map(u=>d.mode==='Section Wise'?u.section:d.mode==='Section Type Wise'?`${u.section} › ${u.type}`:`${u.tag}${u.name?` — ${u.name}`:''}`);return names.join(' | ')+(units.length>3?` | +${units.length-3} more`:'');}
+async function openV18AssignModal(){
+  if(!S.projectWorkspace.code){S.view='projects';renderView();return toast('Open a Project first.','warn');}
+  busy(`Loading Project ${S.projectWorkspace.code} scope…`);
+  try{await ensureEquipmentForProject(S.projectWorkspace.code);S.projectWorkspace.assignDraft={mode:'Tag Wise',drawingId:'',selectedSections:[],selectedSectionTypes:[],selectedTags:[],user:'',priority:'Medium',start:todayIso(),target:'',end:'',remark:''};renderV18AssignModal();}finally{idle();}
+}
+function renderV18AssignModal(){
+  const d=v182EnsureDraft(),eq=v18ProjectEquipment(),scopeNeeded=d.mode!=='Project Wise',scopeMissing=scopeNeeded&&!v182UnitsForMode(d.mode).length,selectedCount=v182SelectedValues(d).length,overLimit=selectedCount>CONFIG.MAX_BATCH;
+  const createDisabled=(!v182CanCreate(d)||scopeMissing)?'disabled':'';
+  openModal('Assign Design',`Project ${S.projectWorkspace.code} • select the drawing, responsibility scope and assignee`,
+  `<div class="v182-assign-shell"><div class="notice good"><b>Existing Creator backend retained.</b> Project, Plant Section, Section Type, Tag and Employee data are fetched from the existing masters. New work is saved only to <b>Design_Tracking</b>.</div>
+   <div class="v181-form-section"><div class="v181-form-section-head"><div><div class="v182-form-title">1. Drawing & Assignment Scope</div><div class="v182-form-sub">Choose the engineering drawing/document, then choose how broadly it must be assigned.</div></div>${v182HealthHtml()}</div><div class="v181-form-section-body"><div class="field"><div class="v182-field-label"><label>Drawing / Design <span class="v181-required">*</span></label><span class="source">Source: All_Drawing_Types</span></div><select id="v18Drawing"><option value="">Select drawing / design…</option>${v18DrawingOptions(d.drawingId)}</select></div>${v182ModeCards(d)}</div></div>
+   <div class="v181-form-section"><div class="v181-form-section-head"><div><div class="v182-form-title">2. Responsibility Selection</div><div class="v182-form-sub">${d.mode==='Project Wise'?'Overall project scope.':`Select one, many, or all ${v182ScopeLabel(d.mode)} from Project ${S.projectWorkspace.code}.`}</div></div>${scopeMissing?`<button type="button" class="btn danger sm" data-v18-reload-scope>Reload Scope Data</button>`:''}</div><div class="v181-form-section-body">${v182ScopePickerHtml(d)}${overLimit?`<div class="v182-batch-note warn">${selectedCount} selected. Maximum ${CONFIG.MAX_BATCH} can be created in one batch. Deselect some items and create the remaining batch separately.</div>`:`<div class="v182-batch-note">Every selected ${h(v182ScopeLabel(d.mode).replace(/s$/,''))} becomes its own primary Design_Tracking responsibility. It can be assigned further later using the existing hierarchy.</div>`}</div></div>
+   <div class="v181-form-section"><div class="v181-form-section-head"><div><div class="v182-form-title">3. Assignment & Planning</div><div class="v182-form-sub">The same assignee and planning dates will be applied to all selected responsibilities in this batch.</div></div></div><div class="v181-form-section-body"><div class="v18-assign-grid"><div class="field"><div class="v182-field-label"><label>Assigned To <span class="v181-required">*</span></label><span class="source">Source: Employee Master</span></div><select id="v18User">${employeeOptions(d.user||'', 'Select employee…')}</select></div><div class="field"><label>Priority</label><select id="v18Priority">${PRIORITIES.map(x=>`<option ${x===(d.priority||'Medium')?'selected':''}>${h(x)}</option>`).join('')}</select></div><div class="field"><label>Start Date <span class="v181-required">*</span></label><input id="v18Start" type="date" value="${h(d.start||todayIso())}"></div><div class="field"><label>Target / Forecast Date <span class="v181-required">*</span></label><input id="v18Target" type="date" min="${h(d.start||todayIso())}" value="${h(d.target||'')}"></div><div class="field"><label>Planned End Date</label><input id="v18End" type="date" min="${h(d.start||todayIso())}" value="${h(d.end||'')}"></div><div class="field"><label>Remark / Instruction</label><textarea id="v18Remark" rows="2" placeholder="Optional common instruction for this assignment batch">${h(d.remark||'')}</textarea></div></div></div></div>
+   <div class="v182-summary"><div><div class="summary-title">Assignment Preview</div><div id="v182ScopeSummaryText" class="summary-value">${h(v182PreviewText(d))}</div></div><div><div id="v182SummaryCount" class="summary-count">${d.mode==='Project Wise'?1:selectedCount}</div><div class="summary-label">RESPONSIBILIT${(d.mode==='Project Wise'?1:selectedCount)===1?'Y':'IES'} TO CREATE</div></div></div></div>`,
+  `<button class="btn" data-modal="close">Cancel</button><button class="btn primary" data-v18-create-assignment ${createDisabled}><span id="v182CreateButtonText" class="v182-create-count">${h(v182CreateLabel(d))}</span></button>`);
+}
+function v18CollectAssignDraft(){const d=v182EnsureDraft();for(const [id,key] of [['v18Drawing','drawingId'],['v18User','user'],['v18Priority','priority'],['v18Start','start'],['v18Target','target'],['v18End','end'],['v18Remark','remark']]){const el=$(id);if(el)d[key]=el.value;}S.projectWorkspace.assignDraft=d;return d;}
+function primaryAssignmentFor(project,drawing){return S.assignments.find(a=>scalar(a[AF.projectCode])===project.code&&(scalar(a[AF.drawingMasterId])===drawing.id||scalar(a[AF.drawingDocument])===drawing.name)&&num(a[AF.assignmentLevel],-1)===0&&!scalar(a[AF.assignedFrom])&&!scalar(a[AF.plantSection])&&!scalar(a[AF.plantSectionType])&&!scalar(a[AF.tagNo])&&nk(scalar(a[AF.criteria])||'project')==='project')||null;}
+function v182ExistingScopedRoot(p,drawing,mode,u){return S.assignments.find(a=>{if(scalar(a[AF.projectCode])!==String(p.code||''))return false;if(!(scalar(a[AF.drawingMasterId])===drawing.id||scalar(a[AF.drawingDocument])===drawing.name))return false;if(num(a[AF.assignmentLevel],-1)!==0||scalar(a[AF.assignedFrom]))return false;if(mode==='Section Wise')return v18ScopeEq(scalar(a[AF.plantSection]),u.section)&&!scalar(a[AF.plantSectionType])&&!scalar(a[AF.tagNo]);if(mode==='Section Type Wise')return v18ScopeEq(scalar(a[AF.plantSection]),u.section)&&v18ScopeEq(scalar(a[AF.plantSectionType]),u.type)&&!scalar(a[AF.tagNo]);if(mode==='Tag Wise'){if(u.eq?.id)return scalar(a[AF.equipmentRecordId])===String(u.eq.id);return !!u.tag&&v18ScopeEq(scalar(a[AF.tagNo]),u.tag)&&v18ScopeEq(scalar(a[AF.plantSection]),u.section)&&v18ScopeEq(scalar(a[AF.plantSectionType]),u.type);}return false;});}
+function v182ScopedRootData(p,drawing,recipient,draft,u){const data=v18RootData(p,drawing,recipient,draft);data[AF.assignmentLevel]=0;data[AF.assignedFrom]='';let labels=[];if(draft.mode==='Section Wise'){data[AF.plantSection]=u.section;labels=['Plant Section'];}else if(draft.mode==='Section Type Wise'){data[AF.plantSection]=u.section;data[AF.plantSectionType]=u.type;labels=['Plant Section','Plant Section Type'];}else if(draft.mode==='Tag Wise'){const eq=u.eq||{};data[AF.plantSection]=u.section||eq.plantSection||'';data[AF.plantSectionType]=u.type||eq.plantSectionType||'';data[AF.tagNo]=u.tag||eq.tag||'';data[AF.equipmentName]=u.name||eq.name||'';data[AF.equipmentRecordId]=eq.id||'';data[AF.groupCode]=eq.groupCode||'';data[AF.department]=eq.department||'';data[AF.equipmentCategory]=eq.equipmentCategory||'';data[AF.equipmentType]=eq.equipmentType||'';labels=['Plant Section','Plant Section Type','Tag / Equipment'];}data[AF.criteria]=assignmentCriteriaPayload(labels);data[AF.responsibility]=responsibilityFromData(data);data[AF.logicalTaskKey]=normalLogicalKeyFromAssignment(data);data[AF.activityLog]=initialActivity('Primary Assignment Created',`${recipient.name} received ${v182ScopeDescriptionForUnit(draft.mode,u)}.`,{kind:'assignment',assignedTo:recipient.email});return data;}
+function v182ExistingChild(root,mode,u){return assignmentChildren(idOf(root)).find(ch=>{if(mode==='Section Wise')return v18ScopeEq(scalar(ch[AF.plantSection]),u.section)&&!scalar(ch[AF.plantSectionType])&&!scalar(ch[AF.tagNo]);if(mode==='Section Type Wise')return v18ScopeEq(scalar(ch[AF.plantSection]),u.section)&&v18ScopeEq(scalar(ch[AF.plantSectionType]),u.type)&&!scalar(ch[AF.tagNo]);if(mode==='Tag Wise'){if(u.eq?.id)return scalar(ch[AF.equipmentRecordId])===String(u.eq.id);return !!u.tag&&v18ScopeEq(scalar(ch[AF.tagNo]),u.tag)&&v18ScopeEq(scalar(ch[AF.plantSection]),u.section)&&v18ScopeEq(scalar(ch[AF.plantSectionType]),u.type);}return false;});}
+function v18ChildData(root,drawing,recipient,draft,u){const data={[AF.projectCode]:scalar(root[AF.projectCode]),[AF.projectRecordId]:scalar(root[AF.projectRecordId]),[AF.drawingDocument]:drawing.name,[AF.drawingMasterId]:drawing.id,[AF.shortName]:drawing.short||'',[AF.primaryAssignment]:scalar(root[AF.primaryAssignment])||idOf(root),[AF.assignedFrom]:idOf(root),[AF.assignmentLevel]:num(root[AF.assignmentLevel])+1,[AF.assignedBy]:S.user||assignmentUser(root),[AF.assignedTo]:recipient.email,[AF.assignedEmployeeName]:recipient.name,[AF.startDate]:toCreatorDate(draft.start),[AF.targetDate]:toCreatorDate(draft.target),[AF.endDate]:toCreatorDate(draft.end),[AF.priority]:draft.priority||'Medium',[AF.status]:'Not Started',[AF.progress]:0,[AF.remark]:draft.remark||'',[AF.activityLog]:initialActivity('Assignment Created',`${recipient.name} received ${v182ScopeDescriptionForUnit(draft.mode,u)}.`,{kind:'assignment',assignedTo:recipient.email})};let labels=[];if(draft.mode==='Section Wise'){data[AF.plantSection]=u.section;labels=['Plant Section'];}else if(draft.mode==='Section Type Wise'){data[AF.plantSection]=u.section;data[AF.plantSectionType]=u.type;labels=['Plant Section','Plant Section Type'];}else if(draft.mode==='Tag Wise'){const eq=u.eq||{};data[AF.plantSection]=u.section||eq.plantSection||'';data[AF.plantSectionType]=u.type||eq.plantSectionType||'';data[AF.tagNo]=u.tag||eq.tag||'';data[AF.equipmentName]=u.name||eq.name||'';data[AF.equipmentRecordId]=eq.id||'';data[AF.groupCode]=eq.groupCode||'';data[AF.department]=eq.department||'';data[AF.equipmentCategory]=eq.equipmentCategory||'';data[AF.equipmentType]=eq.equipmentType||'';labels=['Plant Section','Plant Section Type','Tag / Equipment'];}data[AF.criteria]=assignmentCriteriaPayload(labels);data[AF.responsibility]=responsibilityFromData(data);data[AF.logicalTaskKey]=normalLogicalKeyFromAssignment(data);return data;}
+async function createV18Assignment(){
+  const draft=v18CollectAssignDraft(),p=v18ProjectForCode(S.projectWorkspace.code),drawing=S.drawings.find(x=>x.id===draft.drawingId);
+  if(!drawing)throw new Error('Select Drawing / Design.');if(!draft.user)throw new Error('Select Assigned To.');if(!draft.start||!draft.target)throw new Error('Start Date and Target / Forecast Date are required.');if(draft.target<draft.start)throw new Error('Target / Forecast Date cannot be before Start Date.');if(draft.end&&draft.end<draft.start)throw new Error('Planned End Date cannot be before Start Date.');
+  const recipient=requireAssignmentRecipient(draft.user);
+  if(draft.mode==='Project Wise'){busy('Creating project-wide assignment…');try{let root=primaryAssignmentFor(p,drawing);if(root){closeModal();toast('A project-wide primary assignment already exists for this drawing. Opening the existing assignment.','warn');return openAssignment(idOf(root));}root=await v18EnsurePrimary(p,drawing,recipient,draft);await notifyCreatedAssignments([root]);closeModal();toast(`Project-wide assignment created for ${recipient.name}.`,'good');S.projectWorkspace.tab='designs';renderView();return;}finally{idle();}}
+  const units=v182SelectedUnits(draft);if(!units.length)throw new Error(`Select at least one ${v182ScopeLabel(draft.mode)}.`);if(units.length>CONFIG.MAX_BATCH)throw new Error(`Maximum ${CONFIG.MAX_BATCH} assignments can be created in one batch.`);
+  busy(`Creating ${units.length} ${draft.mode} assignment${units.length===1?'':'s'}…`);
+  try{const created=[],failures=[];let skipped=0;for(const u of units){if(v182ExistingScopedRoot(p,drawing,draft.mode,u)){skipped++;continue;}try{const data=v182ScopedRootData(p,drawing,recipient,draft,u),id=await addRecord(data);await updateRecord(id,{[AF.primaryAssignment]:id});const rec={ID:id,...data,[AF.primaryAssignment]:id};S.records.push(rec);S.assignments.push(rec);created.push(rec);}catch(err){failures.push({unit:u,error:err});console.error('V18.2 bulk assignment failed for scope',u,err);}}if(created.length)await notifyCreatedAssignments(created);if(!created.length&&failures.length)throw new Error(`No assignments were created. ${failures[0].error?.message||'Creator save failed.'}`);closeModal();const parts=[`${created.length} assignment${created.length===1?'':'s'} created for ${recipient.name}`];if(skipped)parts.push(`${skipped} already existed`);if(failures.length)parts.push(`${failures.length} failed`);toast(parts.join(' • '),failures.length?'warn':'good');S.projectWorkspace.tab='designs';renderView();}finally{idle();}
+}
+function v182SetSelection(mode,key,checked){const d=v182EnsureDraft(),field=v182SelectionKey(mode);if(!field)return;const set=new Set(d[field]||[]);checked?set.add(key):set.delete(key);d[field]=[...set];}
+function v182SyncSelectionUi(){const d=v182EnsureDraft(),n=v182SelectedValues(d).length,total=v182UnitsForMode(d.mode).length,btn=document.querySelector('[data-v18-create-assignment]');const count=$('v182SelectedCount'),summary=$('v182SummaryCount'),text=$('v182ScopeSummaryText'),label=$('v182CreateButtonText');if(count)count.textContent=`${n} selected`;if(summary)summary.textContent=d.mode==='Project Wise'?1:n;if(text)text.textContent=v182PreviewText(d);if(label)label.textContent=v182CreateLabel(d);if(btn)btn.disabled=!v182CanCreate(d);document.querySelectorAll('.v182-select-item').forEach(el=>{const cb=el.querySelector('.v182-check');if(cb)el.classList.toggle('selected',cb.checked)});const note=document.querySelector('.v182-batch-note');if(note&&n>CONFIG.MAX_BATCH){note.textContent=`${n} selected. Maximum ${CONFIG.MAX_BATCH} can be created in one batch.`;note.classList.add('warn')}else if(note){note.textContent=`Every selected ${v182ScopeLabel(d.mode).replace(/s$/,'')} becomes its own primary Design_Tracking responsibility and can be assigned further later.`;note.classList.remove('warn')}}
+function v182FilterScopeList(q){q=String(q||'').trim().toLowerCase();let visible=0;document.querySelectorAll('.v182-select-item').forEach(el=>{const show=!q||String(el.dataset.v182Search||'').includes(q);el.style.display=show?'grid':'none';if(show)visible++;});const c=$('v182VisibleCount');if(c)c.textContent=visible;}
+function wireV182(){
+  document.addEventListener('click',e=>{const mode=e.target.closest('[data-v182-mode]');if(mode){v18CollectAssignDraft();const d=v182EnsureDraft();d.mode=mode.dataset.v182Mode;return renderV18AssignModal();}const act=e.target.closest('[data-v182-action]');if(act){v18CollectAssignDraft();const d=v182EnsureDraft(),field=v182SelectionKey(d.mode);if(!field)return;d[field]=act.dataset.v182Action==='select-all'?v182UnitsForMode(d.mode).map(u=>u.key):[];document.querySelectorAll('.v182-check').forEach(cb=>cb.checked=act.dataset.v182Action==='select-all');return v182SyncSelectionUi();}});
+  document.addEventListener('change',e=>{if(e.target.matches('.v182-check')){const d=v182EnsureDraft();v182SetSelection(d.mode,e.target.value,e.target.checked);return v182SyncSelectionUi();}if(e.target.id==='v18Start'){const start=e.target.value||todayIso(),target=$('v18Target'),end=$('v18End');if(target)target.min=start;if(end)end.min=start;}});
+  document.addEventListener('input',e=>{if(e.target.id==='v182ScopeSearch')v182FilterScopeList(e.target.value);});
+}
+
 function renderDetailTab(){if(S.detailTab==='activity')return renderActivityAlertsTab();if(S.detailTab==='dependency')return renderAssignmentDependencyTabV18();if(S.detailTab==='pds')return renderPdsWorkspaceTab();if(S.detailTab==='files')return renderFilesTab();if(S.detailTab==='revisions')return renderRevisionTab();if(S.detailTab==='delegate')return renderDelegateTab();return renderOverviewTab();}
 function renderAssignmentDependencyTabV18(){const a=S.current,parent=assignmentById(scalar(a[AF.assignedFrom])),children=assignmentChildren(idOf(a));return `<div class="tab-card"><div class="section-row" style="margin-top:0"><div><h2>Dependency</h2><p>Zoho-Projects-style predecessor and successor view, backed by the existing assignment hierarchy.</p></div></div><div class="table-wrap"><table><thead><tr><th>Direction</th><th>Drawing</th><th>Responsibility</th><th>Owner</th><th>Status</th></tr></thead><tbody>${parent?`<tr data-open-assignment="${h(idOf(parent))}"><td><span class="pill amber">Predecessor</span></td><td>${h(drawingForAssignment(parent).name)}</td><td>${h(scopeSummary(parent))}</td><td>${h(assignmentDisplayUser(parent))}</td><td>${statusPill(scalar(parent[AF.status]))}</td></tr>`:`<tr><td colspan="5" class="muted">No predecessor assignment.</td></tr>`}${children.map(c=>`<tr data-open-assignment="${h(idOf(c))}"><td><span class="pill blue">Successor</span></td><td>${h(drawingForAssignment(c).name)}</td><td>${h(scopeSummary(c))}</td><td>${h(assignmentDisplayUser(c))}</td><td>${statusPill(scalar(c[AF.status]))}</td></tr>`).join('')}</tbody></table></div><div class="notice warn" style="margin-top:12px">Cross-drawing Reference / Input Required / Must Follow / Vendor Input relationships need a persistent many-to-many backend relationship. V18 deliberately does not fake those links.</div></div>`;}
 
@@ -3041,7 +3211,7 @@ function wire(){
 }
 
 
-wire();bootstrap();
+wire();wireV182();bootstrap();
 </script>
 </body>
 </html>
