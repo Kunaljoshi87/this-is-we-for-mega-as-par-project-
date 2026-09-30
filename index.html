@@ -738,6 +738,63 @@ function assertResp(r,label){
   }
   return r;
 }
+
+/* =================== CREATOR REPORT READER HOTFIX ===================
+   V20.1 restores the legacy fetchRecords() helper used throughout the old
+   working widget. V20 referenced this helper but the function body was
+   accidentally omitted while merging the new Project-style UI. Because
+   every master/report read uses fetchRecords(), that single omission caused
+   Projects, Drawings, Employees, Plant Sections and Design_Tracking to all
+   show "fetchRecords is not defined".
+
+   Behavior kept from the old production widget:
+   - reads Creator reports with DATA.getRecords
+   - supports optional criteria
+   - follows Creator record_cursor pagination
+   - treats 9220/9280/no-record responses as a valid empty report
+   - requests field_config=all so readable lookup/display values are retained
+   ======================================================================= */
+async function fetchRecords(report,criteria="",max=20){
+  if(!report)throw new Error("Creator report link name is missing.");
+  if(S.demo)return demoFetch(report,criteria);
+
+  const out=[];
+  let cursor="";
+
+  for(let page=0;page<max;page++){
+    const request=withApp({
+      report_name:report,
+      field_config:"all",
+      max_records:1000
+    });
+    if(criteria)request.criteria=criteria;
+    if(cursor)request.record_cursor=cursor;
+
+    let raw;
+    try{
+      raw=await ZOHO.CREATOR.DATA.getRecords(request);
+    }catch(e){
+      if(isNoDataError(e))return out;
+      throw e;
+    }
+
+    let response;
+    try{
+      response=assertResp(raw,`Read ${report}`);
+    }catch(e){
+      if(isNoDataError(e)||isNoDataError(raw))return out;
+      throw e;
+    }
+
+    const rows=Array.isArray(response.data)?response.data:[];
+    out.push(...rows);
+
+    cursor=response.record_cursor||response.cursor||"";
+    if(!cursor||!rows.length)break;
+  }
+
+  return out;
+}
 function normalizeScopeLevelForCreator(value){
   const desired=String(value||"").trim();
   if(!desired)return "";
