@@ -185,6 +185,18 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 .dep-v20-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.dep-v20-card{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}.dep-v20-head{padding:13px 14px;border-bottom:1px solid var(--line2);display:flex;justify-content:space-between;gap:10px;align-items:center;background:#fafbfc}.dep-v20-head h3{margin:0;font-size:14px}.dep-v20-list{display:grid}.dep-v20-row{display:grid;grid-template-columns:minmax(0,1.5fr) 100px 72px 90px auto;gap:9px;align-items:center;padding:11px 13px;border-bottom:1px solid var(--line2)}.dep-v20-row:last-child{border-bottom:0}.dep-v20-work{min-width:0}.dep-v20-work b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dep-v20-work span{display:block;font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dep-v20-arrow{font-weight:900;color:var(--brand2)}.dep-v20-empty{padding:24px 14px;text-align:center;color:var(--muted);font-size:11px}.dep-v20-project{display:grid;gap:9px}.dep-v20-project-row{display:grid;grid-template-columns:minmax(180px,1fr) 48px minmax(180px,1fr) 100px 70px 90px;gap:9px;align-items:center;border:1px solid var(--line);border-radius:11px;background:#fff;padding:10px}.dep-v20-node{min-width:0}.dep-v20-node b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dep-v20-node span{font-size:9px;color:var(--muted);display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dep-setup{padding:15px;border:1px solid #f0d59b;background:#fff8e7;border-radius:12px;color:#7a5707}.dep-setup code{background:#fff;border:1px solid #ead6ad;padding:2px 5px;border-radius:5px}.dep-modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.dep-modal-grid .wide{grid-column:1/-1}.dep-direction{display:flex;gap:8px;padding:5px;background:#f4f6f8;border-radius:11px}.dep-direction button{flex:1;border:0;border-radius:8px;padding:9px;background:transparent;font-weight:850;color:var(--muted)}.dep-direction button.active{background:#fff;color:var(--brand2);box-shadow:var(--shadow-sm)}
 @media(max-width:950px){.dep-v20-grid{grid-template-columns:1fr}.dep-v20-project-row{grid-template-columns:1fr}.dep-v20-arrow{text-align:center}.dep-modal-grid{grid-template-columns:1fr}.dep-modal-grid .wide{grid-column:auto}.dep-v20-row{grid-template-columns:1fr 90px 65px auto}.dep-v20-row .dep-rel{display:none}}
 
+
+
+/* ================= V20.5 PDS ASSIGNMENT INTEGRATION =================
+   PDS-only UI added to the existing V20.4 Assign Design modal.
+   All non-PDS screens, filters, workflow, revision, dependency and save logic
+   remain unchanged. One Tag is shown once; PDS_Related_To creates the actual
+   Equipment / Nozzle / Structure / Piping / Bought Out / Consumable / E&I
+   work units beneath that Tag.
+   ======================================================================= */
+.v205-pds-info{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 13px;border:1px solid #d9e6f7;background:#f8fbff;border-radius:12px;margin-bottom:10px}.v205-pds-info .title{font-size:12px;font-weight:900;color:#253348}.v205-pds-info .copy{font-size:10px;color:var(--muted);margin-top:2px}.v205-pds-toolbar{display:grid;grid-template-columns:minmax(220px,1.25fr) minmax(150px,.75fr) minmax(150px,.75fr) auto;gap:8px;align-items:end;margin-bottom:9px}.v205-pds-toolbar .field label{font-size:10px}.v205-pds-tools{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.v205-pds-filter-panel{border:1px solid var(--line2);background:#fbfcfe;border-radius:11px;padding:11px;margin:8px 0 10px}.v205-pds-filter-grid{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:8px}.v205-pds-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 10px}.v205-pds-list{display:grid;gap:9px;max-height:430px;overflow:auto;padding-right:3px}.v205-pds-tag{border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}.v205-pds-tag-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#fafbfc;border-bottom:1px solid var(--line2)}.v205-pds-tag-name{font-size:12px;font-weight:950}.v205-pds-tag-context{font-size:9px;color:var(--muted);margin-top:2px}.v205-pds-units{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:7px;padding:9px}.v205-pds-unit{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;border:1px solid var(--line2);border-radius:9px;padding:9px;background:#fff}.v205-pds-unit:hover{border-color:#dfb2c6;background:#fffafd}.v205-pds-unit.selected{border-color:var(--brand);background:var(--brand-soft)}.v205-pds-unit.assigned{background:#f8fafc;opacity:.82}.v205-pds-unit input{width:16px;height:16px;accent-color:var(--brand)}.v205-pds-unit .name{font-size:11px;font-weight:900}.v205-pds-unit .sub{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}.v205-pds-unit .owner{font-size:9px;text-align:right;color:var(--muted);max-width:145px}.v205-pds-empty{padding:28px 16px;text-align:center;border:1px dashed #d8dee7;border-radius:11px;background:#fcfcfd;color:var(--muted)}.v205-pds-empty b{display:block;color:var(--ink);margin-bottom:3px}.v205-pds-loading{padding:24px 16px;text-align:center;border:1px dashed #d7dce5;border-radius:11px;background:#fcfcfd;color:var(--muted)}
+@media(max-width:1000px){.v205-pds-toolbar{grid-template-columns:1fr 1fr}.v205-pds-filter-grid{grid-template-columns:1fr 1fr}.v205-pds-units{grid-template-columns:1fr}}
+@media(max-width:620px){.v205-pds-toolbar,.v205-pds-filter-grid{grid-template-columns:1fr}.v205-pds-tools{justify-content:flex-start}}
 </style>
 </head>
 <body>
@@ -2097,8 +2109,8 @@ function assertRuntimeIntegrity(){
   if(typeof fetchRecords!=="function")problems.push("fetchRecords helper missing");
   if(!S.demo && (!window.ZOHO||!ZOHO.CREATOR))problems.push("Zoho Creator Widget SDK unavailable");
   if(!S.demo && !ZOHO?.CREATOR?.DATA?.getRecords)problems.push("ZOHO.CREATOR.DATA.getRecords unavailable");
-  if(problems.length)throw new Error(`V20.4 runtime check failed: ${problems.join("; ")}`);
-  console.info("MEGA Project Design Control build V20.4 loaded", {fetchRecords:typeof fetchRecords, app:CONFIG.APP_NAME});
+  if(problems.length)throw new Error(`V20.5 runtime check failed: ${problems.join("; ")}`);
+  console.info("MEGA Project Design Control build V20.5 loaded", {fetchRecords:typeof fetchRecords, app:CONFIG.APP_NAME});
 }
 
 // bootstrap(): starts the complete widget.
@@ -3480,6 +3492,8 @@ function v19EnsureDraft(){
   d.scopeFilters.category=d.scopeFilters.category||'';
   d.scopeFilters.equipmentType=d.scopeFilters.equipmentType||'';
   d.scopeFiltersOpen=Boolean(d.scopeFiltersOpen);
+  d.pdsSelectedUnits=Array.isArray(d.pdsSelectedUnits)?d.pdsSelectedUnits:[];
+  d.pdsTypeFilter=d.pdsTypeFilter||'all';d.pdsStatusFilter=d.pdsStatusFilter||'All';d.pdsSearch=d.pdsSearch||'';d.pdsNameFilter=d.pdsNameFilter||'';d.pdsDepartmentFilter=d.pdsDepartmentFilter||'';d.pdsGroupFilter=d.pdsGroupFilter||'';d.pdsFiltersOpen=Boolean(d.pdsFiltersOpen);
   const drawing=S.drawings.find(x=>String(x.id)===String(d.drawingId));
   d.mode=drawing?v19ScopeForDrawing(drawing):'';
   S.projectWorkspace.assignDraft=d;return d;
@@ -3574,6 +3588,7 @@ function v19ScopePickerHtml(d){
   const drawing=S.drawings.find(x=>String(x.id)===String(d.drawingId));
   if(!drawing)return `<div class="v182-empty"><b>Select a Drawing / Design first</b>The system will read its Drawing Type and automatically show the correct Project / Section / Section Type / Tag selection.</div>`;
   if(!d.mode)return `<div class="notice danger"><b>Drawing scope is not configured.</b><br>Drawing <b>${h(drawing.name)}</b> has Drawing Type <b>${h(v19DrawingScopeRaw(drawing)||'blank')}</b>. Configure the Drawing Master as Project Code, Plant Section, Plant Section Type, or Tag No before assigning.</div>`;
+  if(v205IsPdsDrawingMaster(drawing))return v205PdsScopePickerHtml(v205PdsDraft(d),drawing);
   if(d.mode==='Project Wise')return `<div class="v182-project-scope"><div class="scope-ico">PRJ</div><div><div class="scope-title">Entire Project ${h(S.projectWorkspace.code)}</div><div class="scope-copy">One work item will be created for this design for the complete project.</div></div><span class="pill green">Overall Project</span></div>`;
   const units=v19Units(d.mode),selected=new Set(v19SelectedValues(d)),filterCount=v204FilterCount(d);
   if(!units.length)return `<div class="v182-empty"><b>No ${h(v19ScopeLabel(d.mode))} found for Project ${h(S.projectWorkspace.code)}</b>Check Master Equipment List data/permissions, then use Reload Scope Data.</div>`;
@@ -3583,18 +3598,20 @@ function v19ScopeCard(d){
   const drawing=S.drawings.find(x=>String(x.id)===String(d.drawingId));
   if(!drawing)return'';
   const mode=d.mode,raw=v19DrawingScopeRaw(drawing)||'Not configured';
+  if(v205IsPdsDrawingMaster(drawing))return `<div class="v19-auto-scope"><div class="left"><div class="v19-scope-icon">PDS</div><div><div class="title">PDS responsibility is automatic</div><div class="copy">Select the real Tag + PDS Type work items from existing PD Sheet data.</div><div class="raw">Drawing Type: ${h(raw)} → Tag + PDS Type</div></div></div><span class="v19-scope-badge tag">PDS Wise</span></div>`;
   return `<div class="v19-auto-scope"><div class="left"><div class="v19-scope-icon">${h(v19ScopeIcon(mode))}</div><div><div class="title">Responsibility scope is automatic</div><div class="copy">${h(v19ScopeCopy(mode))}</div><div class="raw">Drawing Type: ${h(raw)}${mode?` → ${h(v19ScopeDisplayName(mode))}`:''}</div></div></div><span class="v19-scope-badge ${h(v19ScopeClass(mode))}">${h(v19ScopeDisplayName(mode))}</span></div>`;
 }
 function v19HealthHtml(){const eq=v18ProjectEquipment(),sections=v182SectionUnits(),types=v182TypeUnits(),tags=v182TagUnits();return `<div class="v182-health"><span class="pill brand">${eq.length} Equipment</span><span class="pill">${sections.length} Sections</span><span class="pill">${types.length} Section Types</span><span class="pill">${tags.length} Tags</span></div>`}
 function v19Preview(d){
   if(!d.drawingId)return'Select a drawing / design to continue.';
   if(!d.mode)return'The selected Drawing Type is not mapped to a valid scope.';
+  const drawing=S.drawings.find(x=>String(x.id)===String(d.drawingId));if(v205IsPdsDrawingMaster(drawing))return v205PdsPreview(v205PdsDraft(d));
   if(d.mode==='Project Wise')return `Entire Project ${S.projectWorkspace.code}`;
   const units=v19SelectedUnits(d);if(!units.length)return `Select ${v19ScopeLabel(d.mode)} to continue.`;
   const names=units.slice(0,3).map(u=>v19ScopeUnitText(d.mode,u));return names.join(' | ')+(units.length>3?` | +${units.length-3} more`:'');
 }
-function v19CanCreate(d){if(!d.drawingId||!d.mode||!d.user||!d.start||!d.target)return false;if(d.mode==='Project Wise')return true;const n=v19SelectedValues(d).length;return n>0&&n<=CONFIG.MAX_BATCH}
-function v19CreateLabel(d){if(d.mode==='Project Wise')return'Create Design Work Item';const n=v19SelectedValues(d).length;return `Create ${n} Work Item${n===1?'':'s'}`}
+function v19CanCreate(d){if(!d.drawingId||!d.mode||!d.user||!d.start||!d.target)return false;const drawing=S.drawings.find(x=>String(x.id)===String(d.drawingId));if(v205IsPdsDrawingMaster(drawing)){const n=v205PdsSelectionCount(v205PdsDraft(d));return n>0&&n<=CONFIG.MAX_BATCH}if(d.mode==='Project Wise')return true;const n=v19SelectedValues(d).length;return n>0&&n<=CONFIG.MAX_BATCH}
+function v19CreateLabel(d){const drawing=S.drawings.find(x=>String(x.id)===String(d.drawingId));if(v205IsPdsDrawingMaster(drawing)){const n=v205PdsSelectionCount(v205PdsDraft(d));return `Create ${n} PDS Work Item${n===1?'':'s'}`}if(d.mode==='Project Wise')return'Create Design Work Item';const n=v19SelectedValues(d).length;return `Create ${n} Work Item${n===1?'':'s'}`}
 
 async function openV18AssignModal(){
   if(!S.projectWorkspace.code){S.view='projects';renderView();return toast('Open a Project first.','warn')}
@@ -3606,7 +3623,7 @@ async function openV18AssignModal(){
   }finally{idle()}
 }
 function renderV18AssignModal(){
-  const d=v19EnsureDraft(),drawing=S.drawings.find(x=>String(x.id)===String(d.drawingId)),units=d.mode?v19Units(d.mode):[],selected=v19SelectedValues(d).length,over=selected>CONFIG.MAX_BATCH,scopeMissing=d.mode&&d.mode!=='Project Wise'&&!units.length;
+  const d=v19EnsureDraft(),drawing=S.drawings.find(x=>String(x.id)===String(d.drawingId)),isPds=v205IsPdsDrawingMaster(drawing),units=d.mode?v19Units(d.mode):[],selected=isPds?v205PdsSelectionCount(v205PdsDraft(d)):v19SelectedValues(d).length,over=selected>CONFIG.MAX_BATCH,scopeMissing=d.mode&&d.mode!=='Project Wise'&&!isPds&&!units.length;
   const createDisabled=v19CanCreate(d)?'':'disabled';
   openModal('Assign Design',`Project ${S.projectWorkspace.code} • Drawing Type decides the responsibility automatically`,
   `<div class="v182-assign-shell">
@@ -3616,7 +3633,7 @@ function renderV18AssignModal(){
     <div class="v181-form-section"><div class="v181-form-section-head"><div class="v19-step-head"><span class="v19-step-no">3</span><div><div class="main">Owner & Planning</div><div class="sub">Readable employee names are shown; Creator IDs are never displayed to users.</div></div></div></div><div class="v181-form-section-body"><div class="v18-assign-grid"><div class="field"><div class="v182-field-label"><label>Assigned To <span class="v181-required">*</span></label><span class="source">Employee Master</span></div><select id="v18User">${employeeOptions(d.user||'','Select employee…')}</select></div><div class="field"><label>Priority</label><select id="v18Priority">${PRIORITIES.map(x=>`<option ${x===(d.priority||'Medium')?'selected':''}>${h(x)}</option>`).join('')}</select></div><div class="field"><label>Start Date <span class="v181-required">*</span></label><input id="v18Start" type="date" value="${h(d.start||todayIso())}"></div><div class="field"><label>Target / Forecast Date <span class="v181-required">*</span></label><input id="v18Target" type="date" min="${h(d.start||todayIso())}" value="${h(d.target||'')}"></div><div class="field"><label>Planned End Date</label><input id="v18End" type="date" min="${h(d.start||todayIso())}" value="${h(d.end||'')}"></div><div class="field"><label>Remark / Instruction</label><textarea id="v18Remark" rows="2" placeholder="Optional instruction">${h(d.remark||'')}</textarea></div></div>
       <div class="v19-report-note"><span>ⓘ</span><div><b>Readable report data:</b> Design Type, Design Title, Scope Level, Responsibility, Assigned Employee Name, Plant Section, Section Type, Tag and Equipment Name are stored as readable values. Technical record IDs remain only in backend link fields.</div></div>
     </div></div>
-    <div class="v182-summary"><div><div class="summary-title">WORK THAT WILL BE CREATED</div><div id="v19ScopeSummaryText" class="summary-value">${h(v19Preview(d))}</div></div><div><div id="v19SummaryCount" class="summary-count">${d.mode==='Project Wise'?1:selected}</div><div class="summary-label">WORK ITEM${(d.mode==='Project Wise'?1:selected)===1?'':'S'}</div></div></div>
+    <div class="v182-summary"><div><div class="summary-title">WORK THAT WILL BE CREATED</div><div id="v19ScopeSummaryText" class="summary-value">${h(v19Preview(d))}</div></div><div><div id="v19SummaryCount" class="summary-count">${isPds?selected:(d.mode==='Project Wise'?1:selected)}</div><div class="summary-label">WORK ITEM${(isPds?selected:(d.mode==='Project Wise'?1:selected))===1?'':'S'}</div></div></div>
   </div>`,
   `<button class="btn" data-modal="close">Cancel</button><button class="btn primary" data-v18-create-assignment ${createDisabled}><span id="v19CreateButtonText">${h(v19CreateLabel(d))}</span></button>`)
 }
@@ -3672,6 +3689,7 @@ function v19ReadablePayload(p,drawing,recipient,draft,u=null){
 async function createV18Assignment(){
   const draft=v18CollectAssignDraft(),p=v18ProjectForCode(S.projectWorkspace.code),drawing=S.drawings.find(x=>String(x.id)===String(draft.drawingId));
   if(!drawing)throw new Error('Select Drawing / Design.');
+  if(v205IsPdsDrawingMaster(drawing))return v205CreatePdsDesignWork(v205PdsDraft(draft),p,drawing);
   if(!draft.mode)throw new Error(`Drawing Type for ${drawing.name} is not configured as Project / Plant Section / Plant Section Type / Tag.`);
   if(!draft.user)throw new Error('Select Assigned To.');
   if(!draft.start||!draft.target)throw new Error('Start Date and Target / Forecast Date are required.');
@@ -3749,12 +3767,12 @@ function universalSearchResults(q){
 function renderAssignmentSearchCard(a){const d=drawingForAssignment(a),r=currentRevision(a);return `<div class="search-result-card"><div class="search-result-title"><div><h3>${h(scalar(a[AF.tagNo])||d.name||'Design Work')}${scalar(a[AF.equipmentName])?` — ${h(scalar(a[AF.equipmentName]))}`:''}</h3><div class="search-result-sub">Project ${h(scalar(a[AF.projectCode]))} • ${h(d.name)} • ${h(scalar(a[AF.scopeLevel])||assignmentCriteria(a)||'Design Work')}</div></div>${statusPill(scalar(a[AF.status]))}</div><div class="search-detail-grid">${searchDetail('Assigned To',assignmentDisplayUser(a))}${searchDetail('Assigned By',assignmentByDisplay(a))}${searchDetail('Responsibility',scopeSummary(a))}${searchDetail('Design Type',scalar(a[AF.designType])||d.name)}${searchDetail('Target',displayDate(a[AF.targetDate]))}${searchDetail('Priority',scalar(a[AF.priority]))}${searchDetail('Current Revision',r?`${scalar(r[AF.revision])||'R0'} • ${scalar(r[AF.status])||'Not Started'}`:'Not started')}${searchDetail('Drawing No',scalar(r?.[AF.drawingNumber])||scalar(a[AF.drawingNumber]))}</div><div class="search-related"><button class="btn primary sm" data-open-assignment="${h(idOf(a))}">Open Work</button><button class="btn sm" data-drawer-assignment="${h(idOf(a))}">Quick View</button></div></div>`}
 function renderPdsSearchCard(r){const type=pdsRelatedTypeKey(r),tag=pdsScopeValue(r,'tag'),name=pdsScopeValue(r,'equipmentName'),project=pdsScopeValue(r,'project');return `<div class="search-result-card"><div class="search-result-title"><div><h3>${h(tag||name||'PDS Record')}${tag&&name?` — ${h(name)}`:''}</h3><div class="search-result-sub">Project ${h(project||'—')} • ${h(type?pdsTypeLabel(type):'PD Sheet')}</div></div>${type?pdsStatusPill(pdsStatusValue(r,type)):''}</div><div class="search-detail-grid">${searchDetail('Plant Section',pdsScopeValue(r,'plantSection'))}${searchDetail('Section Type',pdsScopeValue(r,'plantSectionType'))}${searchDetail('Group',pdsScopeValue(r,'groupCode'))}${searchDetail('Department',pdsScopeValue(r,'department'))}${searchDetail('Category',pdsScopeValue(r,'category'))}${searchDetail('Equipment Type',pdsScopeValue(r,'equipmentType'))}${searchDetail('Section Reference',pdsScopeValue(r,'sectionRef'))}</div></div>`}
 
-function v19SyncSelection(){const d=v19EnsureDraft(),n=v19SelectedValues(d).length;const count=$("v19SelectedCount"),sum=$("v19SummaryCount"),txt=$("v19ScopeSummaryText"),label=$("v19CreateButtonText"),btn=document.querySelector('[data-v18-create-assignment]');if(count)count.textContent=`${n} selected`;if(sum)sum.textContent=d.mode==='Project Wise'?1:n;if(txt)txt.textContent=v19Preview(d);if(label)label.textContent=v19CreateLabel(d);if(btn)btn.disabled=!v19CanCreate(d);document.querySelectorAll('.v182-select-item').forEach(el=>{const cb=el.querySelector('.v19-check');if(cb)el.classList.toggle('selected',cb.checked)})}
+function v19SyncSelection(){const d=v19EnsureDraft(),drawing=S.drawings.find(x=>String(x.id)===String(d.drawingId));if(v205IsPdsDrawingMaster(drawing))return v205PdsSyncSelection();const n=v19SelectedValues(d).length;const count=$("v19SelectedCount"),sum=$("v19SummaryCount"),txt=$("v19ScopeSummaryText"),label=$("v19CreateButtonText"),btn=document.querySelector('[data-v18-create-assignment]');if(count)count.textContent=`${n} selected`;if(sum)sum.textContent=d.mode==='Project Wise'?1:n;if(txt)txt.textContent=v19Preview(d);if(label)label.textContent=v19CreateLabel(d);if(btn)btn.disabled=!v19CanCreate(d);document.querySelectorAll('.v182-select-item').forEach(el=>{const cb=el.querySelector('.v19-check');if(cb)el.classList.toggle('selected',cb.checked)})}
 function v19FilterScope(){v204ApplyScopeFilters()}
 function wireV19(){
   document.addEventListener('change',e=>{
     if(e.target.id==='v18Drawing'){
-      v18CollectAssignDraft();const d=v19EnsureDraft();d.selectedSections=[];d.selectedSectionTypes=[];d.selectedTags=[];d.scopeFilters={section:'',type:'',category:'',equipmentType:''};d.scopeFiltersOpen=false;return renderV18AssignModal();
+      v18CollectAssignDraft();const d=v19EnsureDraft();d.selectedSections=[];d.selectedSectionTypes=[];d.selectedTags=[];d.scopeFilters={section:'',type:'',category:'',equipmentType:''};d.scopeFiltersOpen=false;d.pdsSelectedUnits=[];d.pdsTypeFilter='all';d.pdsStatusFilter='All';d.pdsSearch='';d.pdsNameFilter='';d.pdsDepartmentFilter='';d.pdsGroupFilter='';d.pdsFiltersOpen=false;return renderV18AssignModal();
     }
     if(e.target.matches('.v19-check')){const d=v19EnsureDraft(),field=v19SelectionField(d.mode);if(!field)return;const set=new Set(d[field]||[]);e.target.checked?set.add(e.target.value):set.delete(e.target.value);d[field]=[...set];return v19SyncSelection()}
     if(['v204FilterSection','v204FilterType','v204FilterCategory','v204FilterEquipmentType'].includes(e.target.id)){
@@ -3789,7 +3807,7 @@ function wireV19(){
 
 
 
-/* V20.4 CHANGE: optional scope filters + Select All Shown only. Backend save/workflow logic unchanged. */
+/* V20.5 CHANGE: V20.4 optional filters retained + old PDS business logic integrated into current Assign Design. */
 
 /* ======================================================================
    V20 FINAL: PERSISTENT MANY-TO-MANY ENGINEERING DEPENDENCIES
@@ -3909,7 +3927,206 @@ function wireV20(){
 }
 
 
-wire();wireV19();wireV20();bootstrap();
+
+
+/* ======================================================================
+   V20.5 PDS ASSIGNMENT INTEGRATION - ADD ONLY
+   ----------------------------------------------------------------------
+   This block adds the old PDS business rules to the CURRENT project-style
+   Assign Design modal without changing normal Project / Section / Section
+   Type / Tag assignment behavior.
+
+   PDS rules preserved from the old widget:
+   1) Detect Process Data Sheet by name/abbreviation (PDS).
+   2) All_PD_Sheet is the primary assignment source.
+   3) PDS_Related_To is the primary PDS type discriminator.
+   4) If PDS_Related_To is absent on legacy data, populated PDS status fields
+      are used only as a fallback.
+   5) One Tag / Work Item is shown once in the UI.
+   6) Tag + PDS Type = one independent Design_Tracking work item.
+   7) PDS source rows remain read-only.
+   8) New work is created as CURRENT direct Level-0 project work. No old
+      assignment/delegation hierarchy is reintroduced.
+   ====================================================================== */
+function v205IsPdsDrawingMaster(drawing){
+  if(!drawing)return false;
+  const text=`${drawing.short||''} ${drawing.name||''}`.toLowerCase();
+  return /(^|\s)pds($|\s)|process\s*data\s*sheet|pd\s*sheet/.test(text);
+}
+function v205PdsDraft(d=v19EnsureDraft()){
+  d.pdsSelectedUnits=Array.isArray(d.pdsSelectedUnits)?d.pdsSelectedUnits:[];
+  d.pdsTypeFilter=d.pdsTypeFilter||'all';
+  d.pdsStatusFilter=d.pdsStatusFilter||'All';
+  d.pdsSearch=d.pdsSearch||'';
+  d.pdsFiltersOpen=Boolean(d.pdsFiltersOpen);
+  d.pdsNameFilter=d.pdsNameFilter||'';d.pdsDepartmentFilter=d.pdsDepartmentFilter||'';d.pdsGroupFilter=d.pdsGroupFilter||'';
+  return d;
+}
+function v205PdsStatusTextList(statuses=[]){return [...new Set((statuses||[]).map(x=>scalar(x).trim()).filter(Boolean))]}
+function v205PdsProjectEquipment(code){return equipmentForProject(code||S.projectWorkspace.code)}
+function v205PdsRowBelongsToProject(row,code){
+  const project=pdsScopeValue(row,'project');
+  if(project)return pdsSameValue(project,code);
+  // Legacy PDS detail rows do not always repeat Project Code. If Project Code
+  // is absent, accept the row only when Tag / Equipment can be resolved inside
+  // the already project-scoped Master Equipment List.
+  const tag=pdsScopeValue(row,'tag'),name=pdsScopeValue(row,'equipmentName'),ref=pdsScopeValue(row,'sectionRef');
+  const eq=v205PdsProjectEquipment(code);
+  if(tag)return eq.some(e=>pdsSameValue(e.tag,tag));
+  if(name)return eq.some(e=>pdsSameValue(e.name,name));
+  if(ref)return eq.some(e=>pdsSameValue(e.sectionRef||'',ref));
+  return false;
+}
+function v205PdsEquipmentForGroup(g,code){
+  const eq=v205PdsProjectEquipment(code);
+  return eq.find(e=>g.tag&&pdsSameValue(e.tag,g.tag))||eq.find(e=>!g.tag&&g.name&&pdsSameValue(e.name,g.name))||null;
+}
+function v205PdsGroupsForProject(code=S.projectWorkspace.code){
+  const map=new Map(),rows=S.pds.summary||[];
+  for(const row of rows){
+    if(!v205PdsRowBelongsToProject(row,code))continue;
+    const tag=pdsScopeValue(row,'tag'),name=pdsScopeValue(row,'equipmentName'),ref=pdsScopeValue(row,'sectionRef');
+    const fallback=pick(row,['Item_Name','Material_Name','Instrument_Tag','PDS_Name','Name'],'');
+    const identity=tag||ref||name||fallback||idOf(row);if(!identity)continue;
+    const key=`${nk(code)}::${nk(identity)}`;
+    if(!map.has(key))map.set(key,{key,project:code,tag,name:name||fallback,sectionRef:ref,plantSection:pdsScopeValue(row,'plantSection'),plantSectionType:pdsScopeValue(row,'plantSectionType'),groupCode:pdsScopeValue(row,'groupCode'),department:pdsScopeValue(row,'department'),equipmentCategory:pdsScopeValue(row,'category'),equipmentType:pdsScopeValue(row,'equipmentType'),types:{},raw:[]});
+    const g=map.get(key);g.raw.push(row);
+    const fill={tag:'tag',name:'equipmentName',sectionRef:'sectionRef',plantSection:'plantSection',plantSectionType:'plantSectionType',groupCode:'groupCode',department:'department',equipmentCategory:'category',equipmentType:'equipmentType'};
+    for(const [k,src] of Object.entries(fill))if(!g[k])g[k]=pdsScopeValue(row,src)||g[k];
+    const related=pdsRelatedTypeKey(row);
+    if(related){
+      if(!g.types[related])g.types[related]={statuses:[],rows:[]};
+      const st=pdsStatusValue(row,related);if(st)g.types[related].statuses.push(st);g.types[related].rows.push(row);
+    }else{
+      // Legacy fallback only when PDS_Related_To is unavailable.
+      for(const t of pdsAssignableTypes()){
+        const st=pdsStatusValue(row,t.key);if(!st)continue;
+        if(!g.types[t.key])g.types[t.key]={statuses:[],rows:[]};
+        g.types[t.key].statuses.push(st);g.types[t.key].rows.push(row);
+      }
+    }
+  }
+  for(const g of map.values()){
+    const eq=v205PdsEquipmentForGroup(g,code);
+    if(eq){
+      g.eq=eq;g.tag=g.tag||eq.tag||'';g.name=g.name||eq.name||'';g.plantSection=g.plantSection||eq.plantSection||'';g.plantSectionType=g.plantSectionType||eq.plantSectionType||'';g.groupCode=g.groupCode||eq.groupCode||'';g.department=g.department||eq.department||'';g.equipmentCategory=g.equipmentCategory||eq.equipmentCategory||'';g.equipmentType=g.equipmentType||eq.equipmentType||'';
+    }
+  }
+  return [...map.values()].sort((a,b)=>`${a.tag||''} ${a.name||''}`.localeCompare(`${b.tag||''} ${b.name||''}`,undefined,{numeric:true}));
+}
+function v205PdsAllUnits(code=S.projectWorkspace.code){
+  const out=[];
+  for(const g of v205PdsGroupsForProject(code))for(const type of Object.keys(g.types))out.push({key:`${g.key}::${type}`,group:g,type,typeLabel:pdsTypeLabel(type),statuses:v205PdsStatusTextList(g.types[type].statuses),sourceRows:g.types[type].rows||[]});
+  return out;
+}
+function v205PdsExistingWork(p,drawing,unit){
+  const wantedType=unit.type;
+  return S.assignments.find(a=>{
+    if(scalar(a[AF.assignedFrom]))return false;
+    if(!pdsSameValue(scalar(a[AF.projectCode]),p.code))return false;
+    if(!(scalar(a[AF.drawingMasterId])===String(drawing.id)||scalar(a[AF.drawingDocument])===drawing.name))return false;
+    if(pdsAssignmentTypeKey(a)!==wantedType)return false;
+    const at=scalar(a[AF.tagNo]),an=scalar(a[AF.equipmentName]);
+    if(unit.group.tag)return pdsSameValue(at,unit.group.tag);
+    return !at&&unit.group.name&&pdsSameValue(an,unit.group.name);
+  })||null;
+}
+function v205PdsTypeOptions(d){return `<option value="all">All PDS Types</option>${pdsAssignableTypes().map(t=>`<option value="${h(t.key)}" ${d.pdsTypeFilter===t.key?'selected':''}>${h(t.label)}</option>`).join('')}`}
+function v205PdsStatusOptions(d){
+  const found=new Set(['Pending','Under Approval','Approved']);
+  for(const u of v205PdsAllUnits())for(const st of u.statuses||[])if(st)found.add(st);
+  return `<option value="All">All Status</option>${[...found].map(st=>`<option value="${h(st)}" ${nk(d.pdsStatusFilter)===nk(st)?'selected':''}>${h(st)}</option>`).join('')}`;
+}
+function v205PdsNamesForUnit(u){return v204Unique((u.sourceRows||[]).map(r=>pick(r,['PDS_Name','PDS_Name1','PDS'],'')).filter(Boolean))}
+function v205PdsFilterCount(d){const f=d.scopeFilters||{};return [f.section,f.type,f.category,f.equipmentType,d.pdsNameFilter,d.pdsDepartmentFilter,d.pdsGroupFilter].filter(x=>String(x||'').trim()).length}
+function v205PdsFilterPanelHtml(d,units){
+  const groups=units.map(u=>u.group),f=d.scopeFilters||{},pdsNames=units.flatMap(v205PdsNamesForUnit);
+  return `<div id="v205PdsFilterPanel" class="v205-pds-filter-panel ${d.pdsFiltersOpen?'':'hidden'}"><div class="v204-filter-head"><div><div class="v204-filter-title">Optional PDS / Tag Filters</div><div class="v204-filter-copy">Old PDS filters are retained: PDS Name, Section, Section Type, Department, Group, Category and Equipment Type.</div></div><button type="button" class="btn sm" data-v205-reset-filters>Reset Filters</button></div><div class="v205-pds-filter-grid"><div class="field"><label>PDS Name</label><select id="v205PdsName">${v204OptionHtml(pdsNames,d.pdsNameFilter,'All PDS Names')}</select></div><div class="field"><label>Plant Section</label><select id="v205PdsSection">${v204OptionHtml(groups.map(g=>g.plantSection),f.section,'All Plant Sections')}</select></div><div class="field"><label>Plant Section Type</label><select id="v205PdsSectionType">${v204OptionHtml(groups.map(g=>g.plantSectionType),f.type,'All Section Types')}</select></div><div class="field"><label>Department Code</label><select id="v205PdsDepartment">${v204OptionHtml(groups.map(g=>g.department),d.pdsDepartmentFilter,'All Departments')}</select></div><div class="field"><label>Group Code</label><select id="v205PdsGroup">${v204OptionHtml(groups.map(g=>g.groupCode),d.pdsGroupFilter,'All Groups')}</select></div><div class="field"><label>Equipment Category</label><select id="v205PdsCategory">${v204OptionHtml(groups.map(g=>g.equipmentCategory),f.category,'All Categories')}</select></div><div class="field"><label>Equipment Type</label><select id="v205PdsEquipmentType">${v204OptionHtml(groups.map(g=>g.equipmentType),f.equipmentType,'All Equipment Types')}</select></div></div></div>`;
+}
+function v205PdsUnitMatchesDraft(unit,d){
+  const f=d.scopeFilters||{},g=unit.group,q=String(d.pdsSearch||'').trim().toLowerCase();
+  if(d.pdsTypeFilter&&d.pdsTypeFilter!=='all'&&unit.type!==d.pdsTypeFilter)return false;
+  if(d.pdsStatusFilter&&d.pdsStatusFilter!=='All'&&!unit.statuses.some(s=>nk(s)===nk(d.pdsStatusFilter)))return false;
+  if(f.section&&!pdsSameValue(g.plantSection,f.section))return false;
+  if(f.type&&!pdsSameValue(g.plantSectionType,f.type))return false;
+  if(f.category&&!pdsSameValue(g.equipmentCategory,f.category))return false;
+  if(f.equipmentType&&!pdsSameValue(g.equipmentType,f.equipmentType))return false;
+  if(d.pdsDepartmentFilter&&!pdsSameValue(g.department,d.pdsDepartmentFilter))return false;
+  if(d.pdsGroupFilter&&!pdsSameValue(g.groupCode,d.pdsGroupFilter))return false;
+  if(d.pdsNameFilter&&!v205PdsNamesForUnit(unit).some(x=>pdsSameValue(x,d.pdsNameFilter)))return false;
+  if(q){const hay=[g.tag,g.name,g.plantSection,g.plantSectionType,g.groupCode,g.department,g.equipmentCategory,g.equipmentType,unit.typeLabel,...unit.statuses].join(' ').toLowerCase();if(!hay.includes(q))return false;}
+  return true;
+}
+function v205PdsVisibleUnits(d=v205PdsDraft()){return v205PdsAllUnits().filter(u=>v205PdsUnitMatchesDraft(u,d))}
+function v205PdsUnitByKey(key){return v205PdsAllUnits().find(u=>u.key===key)||null}
+function v205PdsSelectedUnits(d=v205PdsDraft()){const set=new Set(d.pdsSelectedUnits||[]);return v205PdsAllUnits().filter(u=>set.has(u.key))}
+function v205PdsStatusHtml(unit){return unit.statuses.length?unit.statuses.map(s=>pdsStatusPill(s)).join(''):'<span class="pill">No source status</span>'}
+function v205PdsScopePickerHtml(d,drawing){
+  if(!Array.isArray(S.pds.summary)){
+    if(!S.pds.loading.all)setTimeout(()=>guarded(async()=>{busy('Loading PDS source data…');try{await ensurePdsData('all');renderV18AssignModal()}finally{idle()}}),0);
+    return `<div class="v205-pds-loading"><b>Loading Process Data Sheet data…</b><br>Reading the existing All_PD_Sheet source. No PDS source record will be modified.</div>`;
+  }
+  if(!S.pds.resolved.all&&S.pds.errors.all)return `<div class="notice danger"><b>PDS source could not be read.</b><br>${h(S.pds.errors.all)}<br><span class="tiny">Expected primary source: All_PD_Sheet.</span></div>`;
+  const all=v205PdsAllUnits(),visible=v205PdsVisibleUnits(d),selected=new Set(d.pdsSelectedUnits||[]),p=v18ProjectForCode(S.projectWorkspace.code);
+  const available=visible.filter(u=>!v205PdsExistingWork(p,drawing,u));
+  const grouped=new Map();for(const u of visible){if(!grouped.has(u.group.key))grouped.set(u.group.key,{group:u.group,units:[]});grouped.get(u.group.key).units.push(u)}
+  return `<div class="v205-pds-info"><div><div class="title">PDS assignment logic from the old widget is active</div><div class="copy">One Tag is shown once. Each real <b>PDS_Related_To</b> value underneath that Tag is an independent work item. Source PDS data stays read-only.</div></div><span class="pill brand">${all.length} PDS work items</span></div>
+  <div class="v205-pds-toolbar"><div class="field"><label>Search Tag / Equipment / Section</label><input id="v205PdsSearch" class="input" value="${h(d.pdsSearch||'')}" placeholder="e.g. TK-1401, Tank, CO2 Recovery"></div><div class="field"><label>PDS Type</label><select id="v205PdsTypeFilter">${v205PdsTypeOptions(d)}</select></div><div class="field"><label>PDS Source Status</label><select id="v205PdsStatusFilter">${v205PdsStatusOptions(d)}</select></div><div class="v205-pds-tools"><button type="button" class="btn sm v204-filter-toggle" data-v205-toggle-filters>Filters <span class="count ${v205PdsFilterCount(d)?'':'hidden'}">${v205PdsFilterCount(d)}</span></button><button type="button" class="btn sm" data-v205-select-all>Select All Shown</button><button type="button" class="btn sm" data-v205-clear>Deselect All</button></div></div>
+  ${v205PdsFilterPanelHtml(d,all)}
+  <div class="v205-pds-meta"><span class="selected-count">${selected.size} selected</span><span class="tiny muted">${visible.length} shown • ${available.length} available to assign • maximum ${CONFIG.MAX_BATCH} per batch</span></div>
+  ${visible.length?`<div class="v205-pds-list">${[...grouped.values()].map(x=>{const g=x.group;return `<div class="v205-pds-tag"><div class="v205-pds-tag-head"><div><div class="v205-pds-tag-name">${h(g.tag||g.name||'PDS Work')}${g.tag&&g.name?` — ${h(g.name)}`:''}</div><div class="v205-pds-tag-context">${h([g.plantSection,g.plantSectionType,g.equipmentCategory,g.equipmentType].filter(Boolean).join(' • ')||'Project '+S.projectWorkspace.code)}</div></div><span class="pill">${x.units.length} PDS type${x.units.length===1?'':'s'}</span></div><div class="v205-pds-units">${x.units.map(u=>{const existing=v205PdsExistingWork(p,drawing,u),checked=selected.has(u.key);return `<label class="v205-pds-unit ${checked?'selected':''} ${existing?'assigned':''}" data-v205-pds-unit-row="${h(u.key)}"><input type="checkbox" class="v205-pds-check" value="${h(u.key)}" ${checked?'checked':''} ${existing?'disabled':''}><div><div class="name">${h(u.typeLabel)}</div><div class="sub">${v205PdsStatusHtml(u)}${u.sourceRows.length?`<span class="pill">${u.sourceRows.length} source row${u.sourceRows.length===1?'':'s'}</span>`:''}</div></div><div class="owner">${existing?`<span class="pill green">Already Assigned</span><div>${h(assignmentDisplayUser(existing))}</div>`:'<span class="pill">Yet to Assign</span>'}</div></label>`}).join('')}</div></div>`}).join('')}</div>`:`<div class="v205-pds-empty"><b>No matching PDS work items</b>Change the filters or confirm that All_PD_Sheet contains PDS_Related_To rows for Project ${h(S.projectWorkspace.code)}.</div>`}`;
+}
+function v205PdsResponsibility(unit){const g=unit.group;return [`Project ${S.projectWorkspace.code}`,g.plantSection,g.plantSectionType,[g.tag,g.name].filter(Boolean).join(' — '),unit.typeLabel].filter(Boolean).join(' › ')}
+function v205PdsPreview(d){const units=v205PdsSelectedUnits(d);if(!units.length)return'Select one or more Tag + PDS Type work items to continue.';const names=units.slice(0,3).map(u=>`${u.group.tag||u.group.name||'PDS'} — ${u.typeLabel}`);return names.join(' | ')+(units.length>3?` | +${units.length-3} more`:'')}
+function v205PdsReadablePayload(p,drawing,recipient,draft,unit){
+  const g=unit.group,eq=g.eq||v205PdsEquipmentForGroup(g,p.code),scope=v205PdsResponsibility(unit),sourceIds=[...new Set((unit.sourceRows||[]).map(idOf).filter(Boolean))];
+  const data={
+    [AF.projectCode]:p.code,[AF.projectRecordId]:p.id||'',[AF.drawingDocument]:drawing.name,[AF.drawingMasterId]:drawing.id,[AF.shortName]:drawing.short||'PDS',
+    [AF.designType]:unit.typeLabel,[AF.designTitle]:`${drawing.name} — ${g.tag||g.name||'PDS Work'} — ${unit.typeLabel}`,[AF.scopeLevel]:v19ScopeLevel('Tag Wise'),
+    [AF.assignmentLevel]:0,[AF.assignedFrom]:'',[AF.assignedBy]:v19BackendUserValue(),[AF.assignedTo]:recipient.backendValue,[AF.assignedEmployeeName]:recipient.name,
+    [AF.criteria]:'Tag / Equipment, PDS Type',[AF.responsibility]:scope,[AF.startDate]:toCreatorDate(draft.start),[AF.targetDate]:toCreatorDate(draft.target),[AF.endDate]:toCreatorDate(draft.end),
+    [AF.priority]:draft.priority||'Medium',[AF.status]:'Not Started',[AF.progress]:0,[AF.remark]:draft.remark||'',
+    [AF.plantSection]:g.plantSection||eq?.plantSection||'',[AF.plantSectionType]:g.plantSectionType||eq?.plantSectionType||'',[AF.tagNo]:g.tag||eq?.tag||'',[AF.equipmentName]:g.name||eq?.name||'',
+    [AF.equipmentRecordId]:eq?.id||'',[AF.sourceEquipmentRecordId]:eq?.id||'',[AF.groupCode]:g.groupCode||eq?.groupCode||'',[AF.department]:g.department||eq?.department||'',[AF.equipmentCategory]:g.equipmentCategory||eq?.equipmentCategory||'',[AF.equipmentType]:g.equipmentType||eq?.equipmentType||'',
+    [AF.pdsRecordId]:sourceIds.join(','),
+    [AF.logicalTaskKey]:`PDS_ASSIGN::${nk(p.code)}::${nk(drawing.id||drawing.short||drawing.name)}::${nk(g.tag||g.name||g.sectionRef||g.key)}::${unit.type}`,
+    [AF.activityLog]:initialActivity('PDS Work Created',`${recipient.name} assigned ${unit.typeLabel} for ${g.tag||g.name||'PDS work'}.`,{kind:'assignment',assignedTo:recipient.email,assignedToName:recipient.name})
+  };
+  return data;
+}
+async function v205CreatePdsDesignWork(draft,p,drawing){
+  if(!draft.user)throw new Error('Select Assigned To.');if(!draft.start||!draft.target)throw new Error('Start Date and Target / Forecast Date are required.');if(draft.target<draft.start)throw new Error('Target / Forecast Date cannot be before Start Date.');if(draft.end&&draft.end<draft.start)throw new Error('Planned End Date cannot be before Start Date.');
+  const recipient=requireAssignmentRecipient(draft.user),units=v205PdsSelectedUnits(draft);if(!units.length)throw new Error('Select at least one Tag + PDS Type work item.');if(units.length>CONFIG.MAX_BATCH)throw new Error(`Maximum ${CONFIG.MAX_BATCH} PDS work items can be created in one batch.`);
+  busy(`Creating ${units.length} PDS work item${units.length===1?'':'s'}…`);
+  try{const created=[],failures=[];let skipped=0;for(const unit of units){if(v205PdsExistingWork(p,drawing,unit)){skipped++;continue;}try{const data=v205PdsReadablePayload(p,drawing,recipient,draft,unit),id=await addRecord(data),rec={ID:id,...data};S.records.push(rec);S.assignments.push(rec);created.push(rec)}catch(err){failures.push({unit,error:err});console.error('V20.5 PDS work creation failed',unit,err)}}if(created.length)await notifyCreatedAssignments(created);if(!created.length&&failures.length)throw new Error(`No PDS work items were created. ${failures[0].error?.message||'Creator save failed.'}`);closeModal();const parts=[`${created.length} PDS work item${created.length===1?'':'s'} created for ${recipient.name}`];if(skipped)parts.push(`${skipped} already existed`);if(failures.length)parts.push(`${failures.length} failed`);toast(parts.join(' • '),failures.length?'warn':'good');S.projectWorkspace.tab='designs';renderView()}finally{idle()}
+}
+function v205PdsSelectionCount(d=v205PdsDraft()){return (d.pdsSelectedUnits||[]).length}
+function v205PdsSyncSelection(){
+  const d=v205PdsDraft(),n=v205PdsSelectionCount(d),sum=$('v19SummaryCount'),txt=$('v19ScopeSummaryText'),label=$('v19CreateButtonText'),btn=document.querySelector('[data-v18-create-assignment]');
+  document.querySelectorAll('.v205-pds-unit').forEach(el=>{const cb=el.querySelector('.v205-pds-check');if(cb)el.classList.toggle('selected',cb.checked)});
+  const selectedBadge=document.querySelector('.v205-pds-meta .selected-count');if(selectedBadge)selectedBadge.textContent=`${n} selected`;
+  if(sum)sum.textContent=n;if(txt)txt.textContent=v205PdsPreview(d);if(label)label.textContent=`Create ${n} PDS Work Item${n===1?'':'s'}`;if(btn)btn.disabled=!(d.drawingId&&d.user&&d.start&&d.target&&n>0&&n<=CONFIG.MAX_BATCH);
+}
+function v205PdsUpdateFiltersFromUi(){const d=v205PdsDraft();d.pdsSearch=$('v205PdsSearch')?.value||d.pdsSearch||'';d.pdsTypeFilter=$('v205PdsTypeFilter')?.value||'all';d.pdsStatusFilter=$('v205PdsStatusFilter')?.value||'All';d.pdsNameFilter=$('v205PdsName')?.value||'';d.pdsDepartmentFilter=$('v205PdsDepartment')?.value||'';d.pdsGroupFilter=$('v205PdsGroup')?.value||'';const f=d.scopeFilters||{};f.section=$('v205PdsSection')?.value||'';f.type=$('v205PdsSectionType')?.value||'';f.category=$('v205PdsCategory')?.value||'';f.equipmentType=$('v205PdsEquipmentType')?.value||'';d.scopeFilters=f;return d}
+function v205RenderAssignKeepDraft(){v18CollectAssignDraft();v205PdsUpdateFiltersFromUi();renderV18AssignModal()}
+function wireV205Pds(){
+  document.addEventListener('change',e=>{
+    if(e.target.id==='v18Drawing'){
+      const d=v205PdsDraft();d.pdsSelectedUnits=[];d.pdsTypeFilter='all';d.pdsStatusFilter='All';d.pdsSearch='';d.pdsNameFilter='';d.pdsDepartmentFilter='';d.pdsGroupFilter='';d.pdsFiltersOpen=false;return;
+    }
+    if(e.target.matches('.v205-pds-check')){const d=v205PdsDraft(),set=new Set(d.pdsSelectedUnits||[]);e.target.checked?set.add(e.target.value):set.delete(e.target.value);d.pdsSelectedUnits=[...set];return v205PdsSyncSelection()}
+    if(['v205PdsTypeFilter','v205PdsStatusFilter','v205PdsName','v205PdsSection','v205PdsSectionType','v205PdsDepartment','v205PdsGroup','v205PdsCategory','v205PdsEquipmentType'].includes(e.target.id)){v205PdsUpdateFiltersFromUi();return renderV18AssignModal()}
+  });
+  document.addEventListener('input',e=>{if(e.target.id==='v205PdsSearch'){const d=v205PdsDraft();d.pdsSearch=e.target.value||'';clearTimeout(S.cache.searchTimer);S.cache.searchTimer=setTimeout(()=>renderV18AssignModal(),180)}});
+  document.addEventListener('click',e=>{
+    const tog=e.target.closest('[data-v205-toggle-filters]');if(tog){const d=v205PdsDraft();d.pdsFiltersOpen=!d.pdsFiltersOpen;return renderV18AssignModal()}
+    const reset=e.target.closest('[data-v205-reset-filters]');if(reset){const d=v205PdsDraft();d.scopeFilters={section:'',type:'',category:'',equipmentType:''};d.pdsNameFilter='';d.pdsDepartmentFilter='';d.pdsGroupFilter='';return renderV18AssignModal()}
+    const all=e.target.closest('[data-v205-select-all]');if(all){const d=v205PdsUpdateFiltersFromUi(),set=new Set(d.pdsSelectedUnits||[]),p=v18ProjectForCode(S.projectWorkspace.code),drawing=S.drawings.find(x=>String(x.id)===String(d.drawingId));for(const u of v205PdsVisibleUnits(d))if(!v205PdsExistingWork(p,drawing,u))set.add(u.key);d.pdsSelectedUnits=[...set];return renderV18AssignModal()}
+    const clear=e.target.closest('[data-v205-clear]');if(clear){const d=v205PdsDraft();d.pdsSelectedUnits=[];return renderV18AssignModal()}
+  });
+}
+
+wire();wireV19();wireV20();wireV205Pds();bootstrap();
 </script>
 </body>
 </html>
