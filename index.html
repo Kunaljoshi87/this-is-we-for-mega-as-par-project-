@@ -173,6 +173,11 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 .v19-overview-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:12px}.v19-info-card{border:1px solid var(--line2);border-radius:12px;background:#fff;padding:13px}.v19-info-card h3{margin:0 0 9px;font-size:12px}.v19-human{font-weight:850;color:#25354a}.v19-tech-hidden{display:none!important}
 @media(max-width:900px){.v19-auto-scope{align-items:flex-start;flex-direction:column}.v19-overview-grid{grid-template-columns:1fr}}
 
+
+/* ================= V20 RELIABLE DOCUMENT DEPENDENCIES ================= */
+.dep-v20-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.dep-v20-card{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}.dep-v20-head{padding:13px 14px;border-bottom:1px solid var(--line2);display:flex;justify-content:space-between;gap:10px;align-items:center;background:#fafbfc}.dep-v20-head h3{margin:0;font-size:14px}.dep-v20-list{display:grid}.dep-v20-row{display:grid;grid-template-columns:minmax(0,1.5fr) 100px 72px 90px auto;gap:9px;align-items:center;padding:11px 13px;border-bottom:1px solid var(--line2)}.dep-v20-row:last-child{border-bottom:0}.dep-v20-work{min-width:0}.dep-v20-work b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dep-v20-work span{display:block;font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dep-v20-arrow{font-weight:900;color:var(--brand2)}.dep-v20-empty{padding:24px 14px;text-align:center;color:var(--muted);font-size:11px}.dep-v20-project{display:grid;gap:9px}.dep-v20-project-row{display:grid;grid-template-columns:minmax(180px,1fr) 48px minmax(180px,1fr) 100px 70px 90px;gap:9px;align-items:center;border:1px solid var(--line);border-radius:11px;background:#fff;padding:10px}.dep-v20-node{min-width:0}.dep-v20-node b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dep-v20-node span{font-size:9px;color:var(--muted);display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dep-setup{padding:15px;border:1px solid #f0d59b;background:#fff8e7;border-radius:12px;color:#7a5707}.dep-setup code{background:#fff;border:1px solid #ead6ad;padding:2px 5px;border-radius:5px}.dep-modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.dep-modal-grid .wide{grid-column:1/-1}.dep-direction{display:flex;gap:8px;padding:5px;background:#f4f6f8;border-radius:11px}.dep-direction button{flex:1;border:0;border-radius:8px;padding:9px;background:transparent;font-weight:850;color:var(--muted)}.dep-direction button.active{background:#fff;color:var(--brand2);box-shadow:var(--shadow-sm)}
+@media(max-width:950px){.dep-v20-grid{grid-template-columns:1fr}.dep-v20-project-row{grid-template-columns:1fr}.dep-v20-arrow{text-align:center}.dep-modal-grid{grid-template-columns:1fr}.dep-modal-grid .wide{grid-column:auto}.dep-v20-row{grid-template-columns:1fr 90px 65px auto}.dep-v20-row .dep-rel{display:none}}
+
 </style>
 </head>
 <body>
@@ -195,7 +200,6 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
     <div class="navtabs">
       <button class="navtab active" data-view="projects">▦ Projects</button>
       <button class="navtab" data-view="mine">✓ My Work</button>
-      <button class="navtab" data-view="team">♧ My Team</button>
       <button class="navtab" data-view="home">⌂ Dashboard</button>
     </div>
     <div class="nav-actions"><button id="refreshBtn" class="btn">↻ Refresh</button><button id="setupBtn" class="btn icon" title="Setup / field mapping">⚙</button></div>
@@ -274,9 +278,11 @@ const CONFIG={
     plantSections:"All_Plant_Section_Types",
     pds:"All_Equipment_PDS",
     bom:"All_Equipment_BOM_Details",
-    tracking:"Design_Tracking_Report"
+    tracking:"Design_Tracking_Report",
+    dependencies:"All_Design_Dependencies"
   },
-  FORMS:{tracking:"Design_Tracking"},
+  FORMS:{tracking:"Design_Tracking",dependencies:"Design_Dependency"},
+  DEPENDENCY_REPORT_CANDIDATES:["All_Design_Dependencies","Design_Dependency_Report","Design_Dependencies"],
   // The current Creator response already proves Design_Tracking_Report exists:
   // code 9220 means the report is valid but empty. We therefore use this exact
   // old report link and never fail startup merely because it has zero records.
@@ -349,6 +355,20 @@ const AF={
   primaryAssignment:"Primary_Assignment_ID",assignedFrom:"Assigned_From_ID",assignmentLevel:"Assignment_Level",
   assignedBy:"Assigned_By",criteria:"Assignment_Criteria",responsibility:"Responsibility",furtherAssigned:"Further_Assigned",activityLog:"Activity_Log"
 };
+
+/* ================= V20: DESIGN DEPENDENCY FIELDS =====================
+   One record = one directed engineering dependency edge.
+   This allows unlimited predecessors and successors without overloading
+   assignment hierarchy fields. Users only see readable titles/names.
+   ======================================================================= */
+const DF={
+  projectCode:"Project_Code",projectRecordId:"Project_Record_ID",
+  predecessorId:"Predecessor_Design_ID",predecessorTitle:"Predecessor_Design_Title",
+  successorId:"Successor_Design_ID",successorTitle:"Successor_Design_Title",
+  linkType:"Link_Type",relationshipType:"Relationship_Type",lagDays:"Lag_Days",
+  status:"Status",remark:"Remarks",createdByEmail:"Created_By_Email",createdByName:"Created_By_Name"
+};
+
 
 /* ================= SECTION 03: ASSIGNMENT CRITERIA ==================
    Defines which business filters can be used for further assignment:
@@ -587,6 +607,9 @@ const S={
   drawer:{open:false,assignmentId:"",tab:"overview"},
   search:{loading:false,error:"",returnView:"projects",lastLoadedQuery:""},
   notifications:{open:false},
+  dependencies:[],
+  dependency:{report:"",loadedProjects:new Set(),loadingProjects:new Set(),error:""},
+  capabilities:{activityLog:true,scopeLevel:true,scopeLevelChoices:[],trackingFieldsLoaded:false,warnedActivity:false,warnedScope:false},
   cache:{equipmentByProject:new Map(),equipmentProjects:new Set(),equipmentFullLoaded:false,equipmentFull:null,searchTimer:null,alertTimer:null},
   // PDS data is loaded lazily. Summary is read from All_PD_Sheet; each detailed
   // source is loaded only after its Equipment/Nozzle/Structure/etc. card is used.
@@ -715,63 +738,105 @@ function assertResp(r,label){
   }
   return r;
 }
+function normalizeScopeLevelForCreator(value){
+  const desired=String(value||"").trim();
+  if(!desired)return "";
+  const choices=Array.isArray(S.capabilities?.scopeLevelChoices)?S.capabilities.scopeLevelChoices:[];
+  if(!choices.length)return desired;
+  const aliases={
+    "Project Document":["Project Document","Project","Project Wise","Project Level"],
+    "Plant Section Document":["Plant Section Document","Plant Section","Section Wise","Section"],
+    "Plant Section Type Document":["Plant Section Type Document","Plant Section Type","Section Type Wise","Section Type"],
+    "Equipment Design":["Equipment Design","Tag Wise","Tag Number","Tag","Equipment"]
+  };
+  const wanted=(aliases[desired]||[desired]).map(nk);
+  const exact=choices.find(x=>wanted.includes(nk(x)));
+  return exact||"";
+}
 function prepareCreatorPayload(data){
   const out={...data};
-  // These decision boxes are intentionally not written by the widget. The
-  // hierarchy itself tells us whether an assignment has children.
   delete out[AF.furtherAssigned];
   delete out[AF.active];
-  return out;
-}
-
-// Legacy-compatible report reader. Code 9220 means the report exists but is
-// empty; 9280 means the criteria matched no records. Both are valid empty data.
-/* =================== SECTION 07: CREATOR DATA API =====================
-   Reads/writes Design_Tracking and handles file upload/download.
-   Zoho Creator permissions still apply even in POC open-access mode.
-   ======================================================================= */
-// fetchRecords(): reads paginated rows from one Creator report.
-async function fetchRecords(report,criteria="",max=20){
-  if(S.demo)return demoFetch(report,criteria);
-  const out=[];
-  let cursor="";
-  for(let i=0;i<max;i++){
-    const c=withApp({report_name:report,field_config:"all",max_records:1000});
-    if(criteria)c.criteria=criteria;
-    if(cursor)c.record_cursor=cursor;
-    let raw;
-    try{
-      raw=await ZOHO.CREATOR.DATA.getRecords(c);
-    }catch(e){
-      if(isNoDataError(e))return out;
-      throw e;
-    }
-    let r;
-    try{
-      r=assertResp(raw,`Read ${report}`);
-    }catch(e){
-      if(isNoDataError(e)||isNoDataError(raw))return out;
-      throw e;
-    }
-    const rows=Array.isArray(r.data)?r.data:[];
-    out.push(...rows);
-    cursor=r.record_cursor||r.cursor||"";
-    if(!cursor||!rows.length)break;
+  if(S.capabilities?.activityLog===false)delete out[AF.activityLog];
+  if(S.capabilities?.scopeLevel===false)delete out[AF.scopeLevel];
+  if(Object.prototype.hasOwnProperty.call(out,AF.scopeLevel)){
+    const mapped=normalizeScopeLevelForCreator(out[AF.scopeLevel]);
+    if(mapped)out[AF.scopeLevel]=mapped;else delete out[AF.scopeLevel];
   }
   return out;
 }
-
+async function loadTrackingFieldMetadata(){
+  if(S.demo||S.capabilities.trackingFieldsLoaded)return;
+  S.capabilities.trackingFieldsLoaded=true;
+  try{
+    if(!ZOHO?.CREATOR?.META?.getFields)return;
+    const raw=await ZOHO.CREATOR.META.getFields(withApp({form_link_name:CONFIG.FORMS.tracking}));
+    const meta=(raw&&raw.code!=null)?assertResp(raw,"Get Design_Tracking fields"):raw;
+    const fields=meta?.fields||meta?.data||[];
+    const f=(Array.isArray(fields)?fields:[]).find(x=>nk(x?.link_name||x?.field_link_name||x?.api_name||"")===nk(AF.scopeLevel));
+    if(f){
+      const rawChoices=f.choices||f.choice_values||f.values||[];
+      const values=[];
+      for(const c of (Array.isArray(rawChoices)?rawChoices:[])){
+        const v=typeof c==="object"?(c.value??c.display_value??c.name??c.choice):c;
+        if(v!=null&&String(v).trim())values.push(String(v).trim());
+      }
+      S.capabilities.scopeLevelChoices=[...new Set(values)];
+      if(values.length)log("scope-level-choices",{choices:values});
+    }
+  }catch(e){
+    console.warn("Design_Tracking field metadata unavailable; save fallback remains active.",e);
+  }
+}
+function optionalFieldFailure(raw,field){
+  const t=String(raw||"");
+  return t.includes(field)&&(/invalid column value/i.test(t)||/invalid column/i.test(t)||/not available/i.test(t)||/does not exist/i.test(t));
+}
 async function addRecord(data){
   if(S.demo)return demoAdd(data);if(!CONFIG.LIVE_WRITES)throw new Error("Live writes are disabled in CONFIG.");
-  const attempt=async payload=>assertResp(await ZOHO.CREATOR.DATA.addRecords(withApp({form_name:CONFIG.FORMS.tracking,payload:{data:prepareCreatorPayload(payload)}})),"Create Design_Tracking");
-  try{const r=await attempt(data);return String(r?.data?.ID||r?.data?.id||"")}
-  catch(e){if(Object.prototype.hasOwnProperty.call(data,AF.activityLog)&&/Activity_Log|invalid column/i.test(errorText(e))){const retry={...data};delete retry[AF.activityLog];toast("Activity_Log is not available yet. Saved without timeline persistence.","warn");const r=await attempt(retry);return String(r?.data?.ID||r?.data?.id||"")}throw e}
+  let payload={...data};
+  const attempt=async p=>assertResp(await ZOHO.CREATOR.DATA.addRecords(withApp({form_name:CONFIG.FORMS.tracking,payload:{data:prepareCreatorPayload(p)}})),"Create Design_Tracking");
+  for(let pass=0;pass<4;pass++){
+    try{const r=await attempt(payload);return String(r?.data?.ID||r?.data?.id||"")}
+    catch(e){
+      const raw=errorText(e);
+      if(Object.prototype.hasOwnProperty.call(payload,AF.activityLog)&&optionalFieldFailure(raw,AF.activityLog)){
+        S.capabilities.activityLog=false;delete payload[AF.activityLog];
+        if(!S.capabilities.warnedActivity){S.capabilities.warnedActivity=true;toast("Activity timeline field is not configured yet. Work will still save normally.","warn")}
+        continue;
+      }
+      if(Object.prototype.hasOwnProperty.call(payload,AF.scopeLevel)&&optionalFieldFailure(raw,AF.scopeLevel)){
+        S.capabilities.scopeLevel=false;delete payload[AF.scopeLevel];
+        if(!S.capabilities.warnedScope){S.capabilities.warnedScope=true;toast("Scope Level choice does not match the Creator dropdown. Saved using Responsibility + Assignment Criteria instead.","warn")}
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw new Error("Creator save retry limit reached.");
 }
 async function updateRecord(id,data){
   if(S.demo)return demoUpdate(id,data);if(!CONFIG.LIVE_WRITES)throw new Error("Live writes are disabled in CONFIG.");
-  const attempt=async payload=>assertResp(await ZOHO.CREATOR.DATA.updateRecordById(withApp({report_name:CONFIG.REPORTS.tracking,id:String(id),payload:{data:prepareCreatorPayload(payload)}})),"Update Design_Tracking");
-  try{await attempt(data);return id}
-  catch(e){if(Object.prototype.hasOwnProperty.call(data,AF.activityLog)&&/Activity_Log|invalid column/i.test(errorText(e))){const retry={...data};delete retry[AF.activityLog];toast("Activity_Log is not available yet. Update saved without timeline persistence.","warn");await attempt(retry);return id}throw e}
+  let payload={...data};
+  const attempt=async p=>assertResp(await ZOHO.CREATOR.DATA.updateRecordById(withApp({report_name:CONFIG.REPORTS.tracking,id:String(id),payload:{data:prepareCreatorPayload(p)}})),"Update Design_Tracking");
+  for(let pass=0;pass<4;pass++){
+    try{await attempt(payload);return id}
+    catch(e){
+      const raw=errorText(e);
+      if(Object.prototype.hasOwnProperty.call(payload,AF.activityLog)&&optionalFieldFailure(raw,AF.activityLog)){
+        S.capabilities.activityLog=false;delete payload[AF.activityLog];
+        if(!S.capabilities.warnedActivity){S.capabilities.warnedActivity=true;toast("Activity timeline field is not configured yet. Update will still save normally.","warn")}
+        continue;
+      }
+      if(Object.prototype.hasOwnProperty.call(payload,AF.scopeLevel)&&optionalFieldFailure(raw,AF.scopeLevel)){
+        S.capabilities.scopeLevel=false;delete payload[AF.scopeLevel];
+        if(!S.capabilities.warnedScope){S.capabilities.warnedScope=true;toast("Scope Level dropdown choice mismatch detected. Update saved without that optional field.","warn")}
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw new Error("Creator update retry limit reached.");
 }
 async function uploadFile(id,field,file){
   if(!file)return null;
@@ -1038,12 +1103,10 @@ function employeeRecordFor(value){
 }
 function requireAssignmentRecipient(value){
   const emp=employeeRecordFor(value);
+  const raw=scalar(value).trim();
   const email=String(emp?.email||employeeEmailFor(value)||"").trim();
-  const name=String(emp?.name||employeeNameFor(value)||"").trim();
-  if(!email || !email.includes("@")){
-    throw new Error(`${name||"Selected employee"} does not have a valid normal Email in ${CONFIG.REPORTS.employees}. Add the Email value before assigning work.`);
-  }
-  return {employee:emp,email,name:name||email,id:String(emp?.id||"")};
+  const name=String(emp?.name||employeeNameFor(value)||v19HumanizeEmail(raw)||raw||"Selected Employee").trim();
+  return {employee:emp,email,name:name||email||raw,id:String(emp?.id||""),backendValue:email||String(emp?.id||"")||name||raw};
 }
 function assignmentRecipientFromRecord(record){
   return requireAssignmentRecipient(scalar(record?.[AF.assignedTo])||scalar(record?.[AF.assignedEmployeeName]));
@@ -1115,27 +1178,20 @@ function assignmentEmailHtml(recipient,records){
     </div>
   </div>`;
 }
-async function invokeAssignmentEmailCustomApi(recipient,records){
-  if(!CONFIG.NOTIFICATIONS?.enabled || !records?.length)return {skipped:true};
-  if(S.demo){console.info("DEMO assignment email",recipient,records);return {demo:true};}
-  if(!ZOHO?.CREATOR?.DATA?.invokeCustomApi){
-    throw new Error("Creator Custom API invocation is unavailable. Confirm Widget JS API v2 is loaded.");
-  }
-  const cfg={
-    api_name:CONFIG.NOTIFICATIONS.assignmentEmailApi,
-    http_method:"POST",
-    content_type:"application/json",
-    payload:{
-      to_email:recipient.email,
-      to_name:recipient.name||recipient.email,
-      subject_text:assignmentEmailSubject(records),
-      message_html:assignmentEmailHtml(recipient,records)
-    }
-  };
+async function invokeNotificationCustomApi(recipient,subject,html,logAction="design-email"){
+  if(!CONFIG.NOTIFICATIONS?.enabled)return {skipped:true};
+  if(!recipient?.email||!String(recipient.email).includes("@"))return {skipped:true,reason:"email-missing"};
+  if(S.demo){console.info("DEMO design email",recipient,subject);return {demo:true};}
+  if(!ZOHO?.CREATOR?.DATA?.invokeCustomApi)throw new Error("Creator Custom API invocation is unavailable. Confirm Widget JS API v2 is loaded.");
+  const cfg={api_name:CONFIG.NOTIFICATIONS.assignmentEmailApi,http_method:"POST",content_type:"application/json",payload:{to_email:recipient.email,to_name:recipient.name||recipient.email,subject_text:subject,message_html:html}};
   if(CONFIG.NOTIFICATIONS.workspaceName)cfg.workspace_name=CONFIG.NOTIFICATIONS.workspaceName;
   const response=await ZOHO.CREATOR.DATA.invokeCustomApi(cfg);
-  log("assignment-email",{to:recipient.email,count:records.length,response});
+  log(logAction,{to:recipient.email,response});
   return response||{status:"sent"};
+}
+async function invokeAssignmentEmailCustomApi(recipient,records){
+  if(!records?.length)return {skipped:true};
+  return invokeNotificationCustomApi(recipient,assignmentEmailSubject(records),assignmentEmailHtml(recipient,records),"assignment-email");
 }
 async function notifyCreatedAssignments(records){
   const valid=(records||[]).filter(Boolean);
@@ -1150,7 +1206,8 @@ async function notifyCreatedAssignments(records){
   let sent=0,failed=0;
   for(const {recipient,records:rows} of groups.values()){
     try{
-      await invokeAssignmentEmailCustomApi(recipient,rows);
+      const mail=await invokeAssignmentEmailCustomApi(recipient,rows);
+      if(mail?.skipped){toast(`${recipient.name} assigned successfully. Email was skipped because no normal Email is available.`,"warn");continue;}
       sent++;
       toast(`Email sent to ${recipient.name} (${recipient.email})${rows.length>1?` for ${rows.length} assignments`:""}.`,"good");
     }catch(e){
@@ -1835,7 +1892,7 @@ function buildPdsAssignmentPayload(parent,unit,draft,user,target){
   const data={
     [AF.projectCode]:scalar(parent[AF.projectCode]),[AF.projectRecordId]:scalar(parent[AF.projectRecordId]),[AF.drawingDocument]:d.name,[AF.drawingMasterId]:d.id,[AF.shortName]:d.short||"",
     [AF.primaryAssignment]:scalar(parent[AF.primaryAssignment])||idOf(primaryForRows(groupForAssignment(parent)?.rows||[])),[AF.assignedFrom]:idOf(parent),[AF.assignmentLevel]:num(parent[AF.assignmentLevel])+1,
-    [AF.assignedBy]:S.user||assignmentUser(parent),[AF.assignedTo]:recipient.email,[AF.assignedEmployeeName]:recipient.name,[AF.criteria]:"Tag / Equipment, PDS Type",
+    [AF.assignedBy]:S.user||assignmentUser(parent),[AF.assignedTo]:recipient.backendValue,[AF.assignedEmployeeName]:recipient.name,[AF.criteria]:"Tag / Equipment, PDS Type",
     [AF.designType]:unit.typeLabel,[AF.designTitle]:`${unit.typeLabel} — ${g.tag||g.name||"PDS Work"}`,
     // Reuse the existing Logical_Task_Key as a deterministic PDS-assignment identity.
     // Assignment_Level still classifies this row as an Assignment, so this does not
@@ -2026,6 +2083,7 @@ async function bootstrap(){
     S.assignments=S.records.filter(isAssignmentRecord);
     S.revisions=S.records.filter(isRevisionRecord);
 
+    try{await loadTrackingFieldMetadata();}catch(_){ }
     $("sessionPill").textContent=S.user?`Signed in: ${personDisplay(S.user)||S.user}`:"Creator session connected";
     renderView();
     startSystemAlertRefresh();
@@ -2076,8 +2134,8 @@ function employeeOptions(value="",blank="Select team member…"){
     const email=String(e.email||"").trim();
     const val=email||e.id||e.name||"";
     const isSelected=selected?String(selected.id||selected.email)===String(e.id||e.email):String(val)===v;
-    const label=`${e.name||e.email||"Unnamed Employee"}${e.department?` — ${e.department}`:""}${email?` • ${email}`:" • EMAIL MISSING"}`;
-    return `<option value="${h(val)}" ${isSelected?"selected":""} ${email?"":"disabled"}>${h(label)}</option>`;
+    const label=`${e.name||e.email||"Unnamed Employee"}${e.department?` — ${e.department}`:""}${email?` • ${email}`:""}`;
+    return `<option value="${h(val)}" ${isSelected?"selected":""}>${h(label)}</option>`;
   }).join("");
 }
 function projectOptions(value=""){return `<option value="">Select project…</option>`+S.projects.map(p=>`<option value="${h(p.id)}" ${p.id===value?"selected":""}>${h(p.code)}${p.name?` — ${h(p.name)}`:""}</option>`).join("")}
@@ -2106,7 +2164,7 @@ function renderMyWork(){const q=S.globalSearch.trim().toLowerCase(),rows=myAssig
 function renderMyTeam(){
   const q=S.globalSearch.trim().toLowerCase(),groups=groupAssignments().filter(g=>myDirectDelegations().some(a=>groupKey(a)===g.key)).filter(g=>{const d=groupDrawing(g),st=myTeamGroupStats(g),hay=[g.projectCode,d.name,d.short,...st.engineers].join(" ").toLowerCase();return !q||hay.includes(q)});
   ensurePdsSummaryForDashboard(groups);
-  $("page").innerHTML=`<div class="section-row"><div><h2>My Team</h2><p>One card per Project + Drawing. Counts show current logical work and unique engineers, not raw Design_Tracking rows.</p></div><span class="pill brand">${groups.length} drawing${groups.length===1?"":"s"}</span></div>${groups.length?`<div class="group-grid">${groups.map(g=>{const st=myTeamGroupStats(g),d=groupDrawing(g),names=st.engineers.slice(0,5);return `<div class="group-card"><div class="group-head"><div class="doc-badge">${h(d.short||"DOC")}</div><div class="group-main"><div class="group-title">${h(d.name)}</div><div class="group-sub">Project ${h(g.projectCode)}</div></div><span class="pill">${st.engineers.length} current engineer${st.engineers.length===1?"":"s"}</span></div><div class="group-stats"><div class="mini-stat"><div class="n">${st.total}</div><div class="l">CURRENT WORK</div></div><div class="mini-stat"><div class="n">${st.completed}</div><div class="l">COMPLETED</div></div><div class="mini-stat"><div class="n">${st.progress}%</div><div class="l">AVG PROGRESS</div></div></div>${names.length?`<div class="engineer-line">Current engineers: <strong>${h(names.join(", "))}${st.engineers.length>5?` +${st.engineers.length-5} more`:""}</strong></div>`:""}<div style="margin-top:11px"><button class="btn sm primary" data-open-group="${h(g.key)}">Open structure</button></div></div>`}).join("")}</div>`:`<div class="empty"><div class="ico">♧</div><strong>No delegated responsibilities found</strong>Use <b>Assign Further</b> from one of your assignments to build your team structure.</div>`}`}
+  $("page").innerHTML=`<div class="section-row"><div><h2>My Team</h2><p>One card per Project + Drawing. Counts show current logical work and unique engineers, not raw Design_Tracking rows.</p></div><span class="pill brand">${groups.length} drawing${groups.length===1?"":"s"}</span></div>${groups.length?`<div class="group-grid">${groups.map(g=>{const st=myTeamGroupStats(g),d=groupDrawing(g),names=st.engineers.slice(0,5);return `<div class="group-card"><div class="group-head"><div class="doc-badge">${h(d.short||"DOC")}</div><div class="group-main"><div class="group-title">${h(d.name)}</div><div class="group-sub">Project ${h(g.projectCode)}</div></div><span class="pill">${st.engineers.length} current engineer${st.engineers.length===1?"":"s"}</span></div><div class="group-stats"><div class="mini-stat"><div class="n">${st.total}</div><div class="l">CURRENT WORK</div></div><div class="mini-stat"><div class="n">${st.completed}</div><div class="l">COMPLETED</div></div><div class="mini-stat"><div class="n">${st.progress}%</div><div class="l">AVG PROGRESS</div></div></div>${names.length?`<div class="engineer-line">Current engineers: <strong>${h(names.join(", "))}${st.engineers.length>5?` +${st.engineers.length-5} more`:""}</strong></div>`:""}<div style="margin-top:11px"><button class="btn sm primary" data-open-group="${h(g.key)}">Open structure</button></div></div>`}).join("")}</div>`:`<div class="empty"><div class="ico">♧</div><strong>No project design work found</strong>Open a Project and use <b>Assign Design</b> to create work.</div>`}`}
 
 function renderProjects(){
   const q=S.globalSearch.trim().toLowerCase();
@@ -2133,7 +2191,7 @@ function familyPath(a){const rows=currentGroupRows(),map=new Map(rows.map(x=>[id
 function renderTree(){const rows=currentGroupRows(),root=primaryForRows(rows);if(!root)return`<div class="tree-empty">No primary assignment.</div>`;const q=(S.treeSearch||"").toLowerCase();const allowed=new Set();if(q){for(const r of rows){const hay=[assignmentDisplayUser(r),scopeSummary(r),assignmentCriteria(r)].join(" ").toLowerCase();if(hay.includes(q)){let cur=r;while(cur){allowed.add(idOf(cur));cur=assignmentById(scalar(cur[AF.assignedFrom]))}}}}else rows.forEach(r=>allowed.add(idOf(r)));const renderNode=r=>{const id=idOf(r),kids=assignmentChildren(id,rows).filter(k=>allowed.has(idOf(k))),open=S.expanded.has(id),active=idOf(S.current)===id,rev=currentRevision(r);return `<div class="tree-node"><div class="node-row ${active?"active":""}" data-node="${h(id)}"><button class="expander ${kids.length?"":"blank"}" data-expand="${h(id)}">${open?"−":"+"}</button><div class="avatar">${h(initials(assignmentDisplayUser(r)))}</div><div class="node-main"><div class="node-user">${h(assignmentDisplayUser(r))}</div><div class="node-scope">${h(scopeSummary(r))}</div></div><div class="node-side">${rev?`<span class="pill purple">${h(scalar(rev[AF.revision])||"R0")}</span>`:statusPill(scalar(r[AF.status]))}<div class="node-level">Level ${num(r[AF.assignmentLevel])}</div></div></div>${open&&kids.length?`<div class="tree-children">${kids.map(renderNode).join("")}</div>`:""}</div>`};return renderNode(root)}
 function renderDetailPage(){if(!S.current){S.view="home";return renderHome()}const a=S.current,d=S.drawing||drawingForAssignment(a),path=familyPath(a);$("page").innerHTML=`<div class="detail-shell"><aside class="panel tree-panel"><div class="tree-head"><div class="strong">Assignment Structure</div><div class="tiny muted" style="margin:2px 0 9px">Expand people and responsibilities. Click a node for Quick View.</div><div class="tree-search"><input id="treeSearch" class="input" placeholder="Search person / scope…" value="${h(S.treeSearch||"")}"></div></div><div id="treeArea" class="tree-scroll">${renderTree()}</div></aside><section class="detail-main"><div class="detail-hero"><div class="crumbs"><button data-back>← Back</button><span>›</span><span>Project ${h(scalar(a[AF.projectCode]))}</span><span>›</span><span>${h(d.short||d.name)}</span>${path.map(p=>`<span>›</span><button class="btn link sm" data-open-assignment="${h(idOf(p))}">${h(assignmentDisplayUser(p))}</button>`).join("")}</div><div class="detail-top"><div class="detail-title"><div class="doc-badge">${h(d.short||"DOC")}</div><div><h2>${h(d.name)}</h2><p>Project ${h(scalar(a[AF.projectCode]))} • ${h(assignmentDisplayUser(a))}'s responsibility</p></div></div><div class="detail-actions">${statusPill(scalar(a[AF.status]))}${currentRevision(a)?`<span class="pill purple">Current ${h(scalar(currentRevision(a)[AF.revision])||"R0")}</span>`:""}</div></div><div class="detail-meta"><span class="pill">Assigned by ${h(assignmentByDisplay(a))}</span><span class="pill">Level ${num(a[AF.assignmentLevel])}</span><span class="pill">Target ${h(displayDate(a[AF.targetDate]))}</span>${assignmentAlerts(a).length?`<span class="pill red">${assignmentAlerts(a).length} alert${assignmentAlerts(a).length===1?"":"s"}</span>`:""}</div></div><div class="subtabs"><button class="subtab ${S.detailTab==="overview"?"active":""}" data-detail-tab="overview">Overview</button><button class="subtab ${S.detailTab==="activity"?"active":""}" data-detail-tab="activity">Activity & Alerts</button>${isPdsDrawing(a)?`<button class="subtab ${S.detailTab==="pds"?"active":""}" data-detail-tab="pds">PDS Workspace</button>`:""}<button class="subtab ${S.detailTab==="files"?"active":""}" data-detail-tab="files">Design Files</button><button class="subtab ${S.detailTab==="revisions"?"active":""}" data-detail-tab="revisions">Revision History</button><button class="subtab ${S.detailTab==="delegate"?"active":""}" data-detail-tab="delegate">Assign Further</button></div><div id="detailTabBody">${renderDetailTab()}</div></section></div>`}
 function renderDetailTab(){if(S.detailTab==="activity")return renderActivityAlertsTab();if(S.detailTab==="pds")return renderPdsWorkspaceTab();if(S.detailTab==="files")return renderFilesTab();if(S.detailTab==="revisions")return renderRevisionTab();if(S.detailTab==="delegate")return renderDelegateTab();return renderOverviewTab()}
-function renderActivityAlertsTab(){const a=S.current;return `<div class="tab-card"><div class="section-row" style="margin-top:0"><div><h2>Smart alerts</h2><p>Calculated from Target Date, work status and current revision.</p></div></div>${renderAlertList(a)}<div class="section-row"><div><h2>Activity timeline</h2><p>Persistent when Activity_Log exists; older records also show inferred Creator events.</p></div></div>${renderActivityTimeline(a)}</div>`}
+function renderActivityAlertsTab(){const a=S.current;return `<div class="tab-card"><div class="section-row" style="margin-top:0"><div><h2>Smart alerts</h2><p>Calculated from Target Date, work status and current revision.</p></div></div>${renderAlertList(a)}<div class="section-row"><div><h2>Activity timeline</h2><p>Shows Creator audit/system events; persistent custom activity is added when Activity_Log exists.</p></div></div>${renderActivityTimeline(a)}</div>`}
 function renderOverviewTab(){const a=S.current,k=childStats(a),r=currentRevision(a),canEdit=true; /* POC OPEN ACCESS: show update/delegate controls to any permitted Creator user. */ return `<div class="tab-card"><div class="scope-box"><div class="k">RESPONSIBILITY</div><div class="v">${h(scopeSummary(a))}</div></div><div class="summary"><div class="summary-item"><div class="k">ASSIGNED TO</div><div class="v">${h(assignmentDisplayUser(a))}</div></div><div class="summary-item"><div class="k">ASSIGNED BY</div><div class="v">${h(assignmentByDisplay(a))}</div></div><div class="summary-item"><div class="k">START DATE</div><div class="v">${h(displayDate(a[AF.startDate]))}</div></div><div class="summary-item"><div class="k">TARGET DATE</div><div class="v">${h(displayDate(a[AF.targetDate]))}</div></div><div class="summary-item"><div class="k">STATUS</div><div class="v">${statusPill(scalar(a[AF.status]))}</div></div><div class="summary-item"><div class="k">PROGRESS</div><div class="v">${num(a[AF.progress])}%</div></div><div class="summary-item"><div class="k">CRITERIA</div><div class="v">${h(assignmentCriteria(a))}</div></div><div class="summary-item"><div class="k">END DATE</div><div class="v">${h(displayDate(a[AF.endDate]))}</div></div></div><div class="two-col"><div><div class="section-row" style="margin-top:0"><div><h2>Design execution</h2><p>Files, workflow and current revision for this responsibility.</p></div></div>${r?`<div class="exec-hero"><div class="exec-rev"><div class="rev-circle">${h(scalar(r[AF.revision])||"R0")}</div><div><h3>${h(scalar(r[AF.status])||"Not Started")}</h3><p>${h(scalar(r[AF.revisionDescription])||"No revision description")}</p></div></div><button class="btn sm primary" data-detail-tab="files">Open design</button></div>`:`<div class="empty compact"><strong>No design revision started</strong>${canEdit?`<div style="margin-top:9px"><button class="btn sm primary" data-detail-tab="files">Start R0</button></div>`:"The assignee can start R0 from Design Files."}</div>`}</div><div><div class="section-row" style="margin-top:0"><div><h2>Further assignments</h2><p>${k.total} responsibility${k.total===1?"":"ies"} below this node.</p></div>${canEdit?'<button class="btn sm soft" data-detail-tab="delegate">Assign Further</button>':""}</div>${k.total?`<div class="child-list">${assignmentChildren(idOf(a)).slice(0,5).map(c=>`<div class="child-row"><div class="avatar">${h(initials(assignmentDisplayUser(c)))}</div><div class="main"><div class="name">${h(assignmentDisplayUser(c))}</div><div class="sc">${h(scopeSummary(c))}</div></div>${statusPill(scalar(c[AF.status]))}</div>`).join("")}</div>`:`<div class="empty compact"><strong>No further assignment</strong>This responsibility has not been divided further.</div>`}</div></div><div class="actions" style="margin-top:14px">${canEdit?'<button class="btn" data-act="edit-assignment">Update status / progress</button>':""}<button class="btn" data-detail-tab="revisions">Revision history (${revisionsForAssignment(a).length})</button></div></div>`}
 
 /* ================= V17.14: RIGHT-SIDE DETAIL DRAWER ================= */
@@ -2390,7 +2448,7 @@ function assignmentCriteriaPayload(labels){return (Array.isArray(labels)?labels:
 function buildChildPayload(parent,row,draft){const recipient=requireAssignmentRecipient(draft.user);draft={...draft,user:recipient.email};const d=drawingForAssignment(parent),criteriaLabels=[...S.selectedCriteria].map(k=>CRITERIA.find(c=>c.key===k).label),data={
   [AF.projectCode]:scalar(parent[AF.projectCode]),[AF.projectRecordId]:scalar(parent[AF.projectRecordId]),[AF.drawingDocument]:d.name,[AF.drawingMasterId]:d.id,[AF.shortName]:d.short||"",
   [AF.primaryAssignment]:scalar(parent[AF.primaryAssignment])||idOf(primaryForRows(groupForAssignment(parent)?.rows||[])),[AF.assignedFrom]:idOf(parent),[AF.assignmentLevel]:num(parent[AF.assignmentLevel])+1,
-  [AF.assignedBy]:S.user||assignmentUser(parent),[AF.assignedTo]:recipient.email,[AF.assignedEmployeeName]:recipient.name,[AF.criteria]:assignmentCriteriaPayload(criteriaLabels),
+  [AF.assignedBy]:S.user||assignmentUser(parent),[AF.assignedTo]:recipient.backendValue,[AF.assignedEmployeeName]:recipient.name,[AF.criteria]:assignmentCriteriaPayload(criteriaLabels),
   [AF.startDate]:toCreatorDate(draft.start),[AF.targetDate]:toCreatorDate(draft.target),[AF.endDate]:toCreatorDate(draft.end),[AF.priority]:draft.priority||scalar(parent[AF.priority])||"Medium",[AF.status]:"Not Started",[AF.progress]:0,[AF.remark]:draft.remark||"",[AF.activityLog]:initialActivity("Assignment Created",`${employeeNameFor(draft.user)} received ${targetLabel(row)}.`,{kind:"assignment",assignedTo:employeeEmailFor(draft.user)})
 };
 
@@ -2471,7 +2529,7 @@ async function createPrimary(){
   try{
     const data={
       [AF.projectCode]:p.code,[AF.projectRecordId]:p.id||"",[AF.drawingDocument]:d.name,[AF.drawingMasterId]:d.id,[AF.shortName]:d.short||"",
-      [AF.assignmentLevel]:0,[AF.assignedBy]:S.user||recipient.email,[AF.assignedTo]:recipient.email,[AF.assignedEmployeeName]:recipient.name,[AF.criteria]:"Project",
+      [AF.assignmentLevel]:0,[AF.assignedBy]:S.user||recipient.email,[AF.assignedTo]:recipient.backendValue,[AF.assignedEmployeeName]:recipient.name,[AF.criteria]:"Project",
       [AF.responsibility]:`Entire Project ${p.code}`,[AF.logicalTaskKey]:`ASSIGN::${nk(p.code)}::${nk(d.id||d.short||d.name)}::PROJECT`,
       [AF.startDate]:toCreatorDate(start),[AF.targetDate]:toCreatorDate(target),[AF.endDate]:toCreatorDate(end),[AF.priority]:priority,[AF.status]:status,[AF.progress]:status==="Completed"?100:0,[AF.remark]:remark,
       [AF.activityLog]:initialActivity("Primary Assignment Created",`${recipient.name} assigned entire Project ${p.code} / ${d.name}.`,{kind:"assignment",assignedTo:recipient.email})
@@ -3061,9 +3119,9 @@ function renderV18AssignModal(){
   `<button class="btn" data-modal="close">Cancel</button><button class="btn primary" data-v18-create-assignment ${createDisabled}>Create Assignment</button>`);
 }
 function v18CollectAssignDraft(){const d=S.projectWorkspace.assignDraft||{};for(const [id,key] of [['v18Drawing','drawingId'],['v18Mode','mode'],['v18Section','section'],['v18SectionType','sectionType'],['v18Tag','tag'],['v18User','user'],['v18Priority','priority'],['v18Start','start'],['v18Target','target'],['v18End','end'],['v18Remark','remark']]){const el=$(id);if(el)d[key]=el.value;}S.projectWorkspace.assignDraft=d;return d;}
-function v18RootData(p,drawing,recipient,draft){return {[AF.projectCode]:p.code,[AF.projectRecordId]:p.id||'',[AF.drawingDocument]:drawing.name,[AF.drawingMasterId]:drawing.id,[AF.shortName]:drawing.short||'',[AF.assignmentLevel]:0,[AF.assignedBy]:S.user||recipient.email,[AF.assignedTo]:recipient.email,[AF.assignedEmployeeName]:recipient.name,[AF.criteria]:'Project',[AF.responsibility]:`Entire Project ${p.code}`,[AF.logicalTaskKey]:`ASSIGN::${nk(p.code)}::${nk(drawing.id||drawing.short||drawing.name)}::PROJECT`,[AF.startDate]:toCreatorDate(draft.start),[AF.targetDate]:toCreatorDate(draft.target),[AF.endDate]:toCreatorDate(draft.end),[AF.priority]:draft.priority||'Medium',[AF.status]:'Not Started',[AF.progress]:0,[AF.remark]:draft.remark||'',[AF.activityLog]:initialActivity('Primary Assignment Created',`${recipient.name} assigned Project ${p.code} / ${drawing.name}.`,{kind:'assignment',assignedTo:recipient.email})};}
+function v18RootData(p,drawing,recipient,draft){return {[AF.projectCode]:p.code,[AF.projectRecordId]:p.id||'',[AF.drawingDocument]:drawing.name,[AF.drawingMasterId]:drawing.id,[AF.shortName]:drawing.short||'',[AF.assignmentLevel]:0,[AF.assignedBy]:S.user||recipient.email,[AF.assignedTo]:recipient.backendValue,[AF.assignedEmployeeName]:recipient.name,[AF.criteria]:'Project',[AF.responsibility]:`Entire Project ${p.code}`,[AF.logicalTaskKey]:`ASSIGN::${nk(p.code)}::${nk(drawing.id||drawing.short||drawing.name)}::PROJECT`,[AF.startDate]:toCreatorDate(draft.start),[AF.targetDate]:toCreatorDate(draft.target),[AF.endDate]:toCreatorDate(draft.end),[AF.priority]:draft.priority||'Medium',[AF.status]:'Not Started',[AF.progress]:0,[AF.remark]:draft.remark||'',[AF.activityLog]:initialActivity('Primary Assignment Created',`${recipient.name} assigned Project ${p.code} / ${drawing.name}.`,{kind:'assignment',assignedTo:recipient.email})};}
 async function v18EnsurePrimary(p,drawing,recipient,draft){let root=primaryAssignmentFor(p,drawing);if(root)return root;const data=v18RootData(p,drawing,recipient,draft),id=await addRecord(data);await updateRecord(id,{[AF.primaryAssignment]:id});root={ID:id,...data,[AF.primaryAssignment]:id};S.records.push(root);S.assignments.push(root);return root;}
-function v18ChildData(root,drawing,recipient,draft){const data={[AF.projectCode]:scalar(root[AF.projectCode]),[AF.projectRecordId]:scalar(root[AF.projectRecordId]),[AF.drawingDocument]:drawing.name,[AF.drawingMasterId]:drawing.id,[AF.shortName]:drawing.short||'',[AF.primaryAssignment]:scalar(root[AF.primaryAssignment])||idOf(root),[AF.assignedFrom]:idOf(root),[AF.assignmentLevel]:num(root[AF.assignmentLevel])+1,[AF.assignedBy]:S.user||assignmentUser(root),[AF.assignedTo]:recipient.email,[AF.assignedEmployeeName]:recipient.name,[AF.startDate]:toCreatorDate(draft.start),[AF.targetDate]:toCreatorDate(draft.target),[AF.endDate]:toCreatorDate(draft.end),[AF.priority]:draft.priority||'Medium',[AF.status]:'Not Started',[AF.progress]:0,[AF.remark]:draft.remark||'',[AF.activityLog]:initialActivity('Assignment Created',`${recipient.name} received ${v18ScopeDescription(draft)}.`,{kind:'assignment',assignedTo:recipient.email})};let labels=[];if(draft.mode==='Section Wise'){data[AF.plantSection]=draft.section;labels=['Plant Section'];}else if(draft.mode==='Section Type Wise'){data[AF.plantSection]=draft.section;data[AF.plantSectionType]=draft.sectionType;labels=['Plant Section','Plant Section Type'];}else if(draft.mode==='Tag Wise'){const eq=v18ProjectEquipment().find(x=>x.tag===draft.tag);data[AF.plantSection]=draft.section||eq?.plantSection||'';data[AF.plantSectionType]=draft.sectionType||eq?.plantSectionType||'';data[AF.tagNo]=draft.tag;data[AF.equipmentName]=eq?.name||'';data[AF.equipmentRecordId]=eq?.id||'';data[AF.groupCode]=eq?.groupCode||'';data[AF.department]=eq?.department||'';data[AF.equipmentCategory]=eq?.equipmentCategory||'';data[AF.equipmentType]=eq?.equipmentType||'';labels=['Plant Section','Plant Section Type','Tag / Equipment'];}data[AF.criteria]=assignmentCriteriaPayload(labels);data[AF.responsibility]=responsibilityFromData(data);data[AF.logicalTaskKey]=normalLogicalKeyFromAssignment(data);return data;}
+function v18ChildData(root,drawing,recipient,draft){const data={[AF.projectCode]:scalar(root[AF.projectCode]),[AF.projectRecordId]:scalar(root[AF.projectRecordId]),[AF.drawingDocument]:drawing.name,[AF.drawingMasterId]:drawing.id,[AF.shortName]:drawing.short||'',[AF.primaryAssignment]:scalar(root[AF.primaryAssignment])||idOf(root),[AF.assignedFrom]:idOf(root),[AF.assignmentLevel]:num(root[AF.assignmentLevel])+1,[AF.assignedBy]:S.user||assignmentUser(root),[AF.assignedTo]:recipient.backendValue,[AF.assignedEmployeeName]:recipient.name,[AF.startDate]:toCreatorDate(draft.start),[AF.targetDate]:toCreatorDate(draft.target),[AF.endDate]:toCreatorDate(draft.end),[AF.priority]:draft.priority||'Medium',[AF.status]:'Not Started',[AF.progress]:0,[AF.remark]:draft.remark||'',[AF.activityLog]:initialActivity('Assignment Created',`${recipient.name} received ${v18ScopeDescription(draft)}.`,{kind:'assignment',assignedTo:recipient.email})};let labels=[];if(draft.mode==='Section Wise'){data[AF.plantSection]=draft.section;labels=['Plant Section'];}else if(draft.mode==='Section Type Wise'){data[AF.plantSection]=draft.section;data[AF.plantSectionType]=draft.sectionType;labels=['Plant Section','Plant Section Type'];}else if(draft.mode==='Tag Wise'){const eq=v18ProjectEquipment().find(x=>x.tag===draft.tag);data[AF.plantSection]=draft.section||eq?.plantSection||'';data[AF.plantSectionType]=draft.sectionType||eq?.plantSectionType||'';data[AF.tagNo]=draft.tag;data[AF.equipmentName]=eq?.name||'';data[AF.equipmentRecordId]=eq?.id||'';data[AF.groupCode]=eq?.groupCode||'';data[AF.department]=eq?.department||'';data[AF.equipmentCategory]=eq?.equipmentCategory||'';data[AF.equipmentType]=eq?.equipmentType||'';labels=['Plant Section','Plant Section Type','Tag / Equipment'];}data[AF.criteria]=assignmentCriteriaPayload(labels);data[AF.responsibility]=responsibilityFromData(data);data[AF.logicalTaskKey]=normalLogicalKeyFromAssignment(data);return data;}
 async function createV18Assignment(){const draft=v18CollectAssignDraft(),p=v18ProjectForCode(S.projectWorkspace.code),drawing=S.drawings.find(x=>x.id===draft.drawingId);if(!drawing)throw new Error('Select Drawing / Design.');if(!draft.user||!draft.start||!draft.target)throw new Error('Assigned To, Start Date and Target Date are required.');if(draft.target<draft.start)throw new Error('Target / Forecast Date cannot be before Start Date.');if(draft.end&&draft.end<draft.start)throw new Error('Planned End Date cannot be before Start Date.');if(['Section Wise','Section Type Wise','Tag Wise'].includes(draft.mode)&&!draft.section)throw new Error('Select Plant Section.');if(['Section Type Wise','Tag Wise'].includes(draft.mode)&&!draft.sectionType)throw new Error('Select Plant Section Type.');if(draft.mode==='Tag Wise'&&!draft.tag)throw new Error('Select Tag / Equipment.');const recipient=requireAssignmentRecipient(draft.user);busy('Creating design assignment…');try{if(draft.mode==='Project Wise'){let root=primaryAssignmentFor(p,drawing);if(root){closeModal();toast('Project-wise primary assignment already exists. Opening it.','warn');return openAssignment(idOf(root));}root=await v18EnsurePrimary(p,drawing,recipient,draft);await notifyCreatedAssignments([root]);closeModal();toast(`Project-wise assignment created for ${recipient.name}.`,'good');S.projectWorkspace.tab='designs';renderView();return;}const root=await v18EnsurePrimary(p,drawing,recipient,draft);const data=v18ChildData(root,drawing,recipient,draft),id=await addRecord(data),rec={ID:id,...data};S.records.push(rec);S.assignments.push(rec);await notifyCreatedAssignments([rec]);closeModal();toast(`${draft.mode} assignment created for ${recipient.name}.`,'good');S.projectWorkspace.tab='designs';renderView();}finally{idle();}}
 
 
@@ -3175,7 +3233,7 @@ function primaryAssignmentFor(project,drawing){return S.assignments.find(a=>scal
 function v182ExistingScopedRoot(p,drawing,mode,u){return S.assignments.find(a=>{if(scalar(a[AF.projectCode])!==String(p.code||''))return false;if(!(scalar(a[AF.drawingMasterId])===drawing.id||scalar(a[AF.drawingDocument])===drawing.name))return false;if(num(a[AF.assignmentLevel],-1)!==0||scalar(a[AF.assignedFrom]))return false;if(mode==='Section Wise')return v18ScopeEq(scalar(a[AF.plantSection]),u.section)&&!scalar(a[AF.plantSectionType])&&!scalar(a[AF.tagNo]);if(mode==='Section Type Wise')return v18ScopeEq(scalar(a[AF.plantSection]),u.section)&&v18ScopeEq(scalar(a[AF.plantSectionType]),u.type)&&!scalar(a[AF.tagNo]);if(mode==='Tag Wise'){if(u.eq?.id)return scalar(a[AF.equipmentRecordId])===String(u.eq.id);return !!u.tag&&v18ScopeEq(scalar(a[AF.tagNo]),u.tag)&&v18ScopeEq(scalar(a[AF.plantSection]),u.section)&&v18ScopeEq(scalar(a[AF.plantSectionType]),u.type);}return false;});}
 function v182ScopedRootData(p,drawing,recipient,draft,u){const data=v18RootData(p,drawing,recipient,draft);data[AF.assignmentLevel]=0;data[AF.assignedFrom]='';let labels=[];if(draft.mode==='Section Wise'){data[AF.plantSection]=u.section;labels=['Plant Section'];}else if(draft.mode==='Section Type Wise'){data[AF.plantSection]=u.section;data[AF.plantSectionType]=u.type;labels=['Plant Section','Plant Section Type'];}else if(draft.mode==='Tag Wise'){const eq=u.eq||{};data[AF.plantSection]=u.section||eq.plantSection||'';data[AF.plantSectionType]=u.type||eq.plantSectionType||'';data[AF.tagNo]=u.tag||eq.tag||'';data[AF.equipmentName]=u.name||eq.name||'';data[AF.equipmentRecordId]=eq.id||'';data[AF.groupCode]=eq.groupCode||'';data[AF.department]=eq.department||'';data[AF.equipmentCategory]=eq.equipmentCategory||'';data[AF.equipmentType]=eq.equipmentType||'';labels=['Plant Section','Plant Section Type','Tag / Equipment'];}data[AF.criteria]=assignmentCriteriaPayload(labels);data[AF.responsibility]=responsibilityFromData(data);data[AF.logicalTaskKey]=normalLogicalKeyFromAssignment(data);data[AF.activityLog]=initialActivity('Primary Assignment Created',`${recipient.name} received ${v182ScopeDescriptionForUnit(draft.mode,u)}.`,{kind:'assignment',assignedTo:recipient.email});return data;}
 function v182ExistingChild(root,mode,u){return assignmentChildren(idOf(root)).find(ch=>{if(mode==='Section Wise')return v18ScopeEq(scalar(ch[AF.plantSection]),u.section)&&!scalar(ch[AF.plantSectionType])&&!scalar(ch[AF.tagNo]);if(mode==='Section Type Wise')return v18ScopeEq(scalar(ch[AF.plantSection]),u.section)&&v18ScopeEq(scalar(ch[AF.plantSectionType]),u.type)&&!scalar(ch[AF.tagNo]);if(mode==='Tag Wise'){if(u.eq?.id)return scalar(ch[AF.equipmentRecordId])===String(u.eq.id);return !!u.tag&&v18ScopeEq(scalar(ch[AF.tagNo]),u.tag)&&v18ScopeEq(scalar(ch[AF.plantSection]),u.section)&&v18ScopeEq(scalar(ch[AF.plantSectionType]),u.type);}return false;});}
-function v18ChildData(root,drawing,recipient,draft,u){const data={[AF.projectCode]:scalar(root[AF.projectCode]),[AF.projectRecordId]:scalar(root[AF.projectRecordId]),[AF.drawingDocument]:drawing.name,[AF.drawingMasterId]:drawing.id,[AF.shortName]:drawing.short||'',[AF.primaryAssignment]:scalar(root[AF.primaryAssignment])||idOf(root),[AF.assignedFrom]:idOf(root),[AF.assignmentLevel]:num(root[AF.assignmentLevel])+1,[AF.assignedBy]:S.user||assignmentUser(root),[AF.assignedTo]:recipient.email,[AF.assignedEmployeeName]:recipient.name,[AF.startDate]:toCreatorDate(draft.start),[AF.targetDate]:toCreatorDate(draft.target),[AF.endDate]:toCreatorDate(draft.end),[AF.priority]:draft.priority||'Medium',[AF.status]:'Not Started',[AF.progress]:0,[AF.remark]:draft.remark||'',[AF.activityLog]:initialActivity('Assignment Created',`${recipient.name} received ${v182ScopeDescriptionForUnit(draft.mode,u)}.`,{kind:'assignment',assignedTo:recipient.email})};let labels=[];if(draft.mode==='Section Wise'){data[AF.plantSection]=u.section;labels=['Plant Section'];}else if(draft.mode==='Section Type Wise'){data[AF.plantSection]=u.section;data[AF.plantSectionType]=u.type;labels=['Plant Section','Plant Section Type'];}else if(draft.mode==='Tag Wise'){const eq=u.eq||{};data[AF.plantSection]=u.section||eq.plantSection||'';data[AF.plantSectionType]=u.type||eq.plantSectionType||'';data[AF.tagNo]=u.tag||eq.tag||'';data[AF.equipmentName]=u.name||eq.name||'';data[AF.equipmentRecordId]=eq.id||'';data[AF.groupCode]=eq.groupCode||'';data[AF.department]=eq.department||'';data[AF.equipmentCategory]=eq.equipmentCategory||'';data[AF.equipmentType]=eq.equipmentType||'';labels=['Plant Section','Plant Section Type','Tag / Equipment'];}data[AF.criteria]=assignmentCriteriaPayload(labels);data[AF.responsibility]=responsibilityFromData(data);data[AF.logicalTaskKey]=normalLogicalKeyFromAssignment(data);return data;}
+function v18ChildData(root,drawing,recipient,draft,u){const data={[AF.projectCode]:scalar(root[AF.projectCode]),[AF.projectRecordId]:scalar(root[AF.projectRecordId]),[AF.drawingDocument]:drawing.name,[AF.drawingMasterId]:drawing.id,[AF.shortName]:drawing.short||'',[AF.primaryAssignment]:scalar(root[AF.primaryAssignment])||idOf(root),[AF.assignedFrom]:idOf(root),[AF.assignmentLevel]:num(root[AF.assignmentLevel])+1,[AF.assignedBy]:S.user||assignmentUser(root),[AF.assignedTo]:recipient.backendValue,[AF.assignedEmployeeName]:recipient.name,[AF.startDate]:toCreatorDate(draft.start),[AF.targetDate]:toCreatorDate(draft.target),[AF.endDate]:toCreatorDate(draft.end),[AF.priority]:draft.priority||'Medium',[AF.status]:'Not Started',[AF.progress]:0,[AF.remark]:draft.remark||'',[AF.activityLog]:initialActivity('Assignment Created',`${recipient.name} received ${v182ScopeDescriptionForUnit(draft.mode,u)}.`,{kind:'assignment',assignedTo:recipient.email})};let labels=[];if(draft.mode==='Section Wise'){data[AF.plantSection]=u.section;labels=['Plant Section'];}else if(draft.mode==='Section Type Wise'){data[AF.plantSection]=u.section;data[AF.plantSectionType]=u.type;labels=['Plant Section','Plant Section Type'];}else if(draft.mode==='Tag Wise'){const eq=u.eq||{};data[AF.plantSection]=u.section||eq.plantSection||'';data[AF.plantSectionType]=u.type||eq.plantSectionType||'';data[AF.tagNo]=u.tag||eq.tag||'';data[AF.equipmentName]=u.name||eq.name||'';data[AF.equipmentRecordId]=eq.id||'';data[AF.groupCode]=eq.groupCode||'';data[AF.department]=eq.department||'';data[AF.equipmentCategory]=eq.equipmentCategory||'';data[AF.equipmentType]=eq.equipmentType||'';labels=['Plant Section','Plant Section Type','Tag / Equipment'];}data[AF.criteria]=assignmentCriteriaPayload(labels);data[AF.responsibility]=responsibilityFromData(data);data[AF.logicalTaskKey]=normalLogicalKeyFromAssignment(data);return data;}
 async function createV18Assignment(){
   const draft=v18CollectAssignDraft(),p=v18ProjectForCode(S.projectWorkspace.code),drawing=S.drawings.find(x=>x.id===draft.drawingId);
   if(!drawing)throw new Error('Select Drawing / Design.');if(!draft.user)throw new Error('Select Assigned To.');if(!draft.start||!draft.target)throw new Error('Start Date and Target / Forecast Date are required.');if(draft.target<draft.start)throw new Error('Target / Forecast Date cannot be before Start Date.');if(draft.end&&draft.end<draft.start)throw new Error('Planned End Date cannot be before Start Date.');
@@ -3232,7 +3290,7 @@ function wire(){
 
 
 /* ======================================================================
-   V19 CLEAN PROJECT DESIGN MODEL
+   V20 FINAL PROJECT DESIGN MODEL
    ----------------------------------------------------------------------
    USER FLOW:
      Projects -> Open Project -> Assign Design -> Select Drawing.
@@ -3264,7 +3322,7 @@ function personDisplay(value){
 function assignmentDisplayUser(a){return scalar(a?.[AF.assignedEmployeeName])||personDisplay(a?.[AF.assignedTo])||'Unassigned'}
 function assignmentByDisplay(a){return personDisplay(a?.[AF.assignedBy])||'Design Control'}
 function v19CurrentUserReadable(){return personDisplay(S.user)||(!v19OpaqueId(S.user)?String(S.user||'').trim():'')||'Design Control'}
-function v19BackendUserValue(){const e=employeeRecordFor(S.user);const raw=String(S.user||'').trim();if(e?.email)return e.email;if(raw.includes('@'))return raw;if(raw&&!v19OpaqueId(raw))return raw;return''}
+function v19BackendUserValue(){return v19CurrentUserReadable()}
 
 function v19DrawingScopeRaw(d){
   if(!d)return'';
@@ -3409,7 +3467,7 @@ function v19ReadablePayload(p,drawing,recipient,draft,u=null){
     [AF.assignmentLevel]:0,
     [AF.assignedFrom]:'',
     [AF.assignedBy]:v19BackendUserValue(),
-    [AF.assignedTo]:recipient.email,
+    [AF.assignedTo]:recipient.backendValue,
     [AF.assignedEmployeeName]:recipient.name,
     [AF.criteria]:v19Criteria(mode),
     [AF.responsibility]:scope,
@@ -3524,7 +3582,125 @@ function wireV19(){
 }
 
 
-wire();wireV19();bootstrap();
+/* ======================================================================
+   V20 FINAL: PERSISTENT MANY-TO-MANY ENGINEERING DEPENDENCIES
+   ====================================================================== */
+function zcCriteriaText(v){return String(v??"").replace(/\\/g,"\\\\").replace(/"/g,'\\"')}
+function depWorkById(id){return S.assignments.find(a=>idOf(a)===String(id))||null}
+function depWorkTitle(a){if(!a)return"Unknown Design Work";const d=drawingForAssignment(a),tag=scalar(a[AF.tagNo]),sec=scalar(a[AF.plantSection]),typ=scalar(a[AF.plantSectionType]);let scope=tag||typ||sec||"Entire Project";return `${d.name} — ${scope}`}
+function depWorkSub(a){if(!a)return"";return `${assignmentDisplayUser(a)} • ${scalar(a[AF.status])||"Not Started"} • ${scopeSummary(a)}`}
+function dependencyTitleFromRecord(r,kind){const id=scalar(r[kind==='pred'?DF.predecessorId:DF.successorId]);const work=depWorkById(id);return work?depWorkTitle(work):(scalar(r[kind==='pred'?DF.predecessorTitle:DF.successorTitle])||"Design Work")}
+function dependencyStatus(r){return scalar(r[DF.status])||"Active"}
+function dependencyReportCandidates(){return [...new Set([S.dependency.report,CONFIG.REPORTS.dependencies,...(CONFIG.DEPENDENCY_REPORT_CANDIDATES||[])].filter(Boolean))]}
+async function resolveDependencyReport(){
+  if(S.dependency.report)return S.dependency.report;
+  let last=null;
+  for(const report of dependencyReportCandidates()){
+    try{await fetchRecords(report,"",1);S.dependency.report=report;CONFIG.REPORTS.dependencies=report;return report}catch(e){last=e}
+  }
+  S.dependency.error=last?errorText(last):"Dependency report was not found.";
+  return "";
+}
+async function loadDependenciesForProject(code,force=false){
+  code=String(code||"").trim();if(!code)return[];
+  if(!force&&S.dependency.loadedProjects.has(code))return S.dependencies.filter(r=>scalar(r[DF.projectCode])===code);
+  if(S.dependency.loadingProjects.has(code))return[];
+  S.dependency.loadingProjects.add(code);
+  try{
+    const report=await resolveDependencyReport();
+    if(!report)return[];
+    const rows=await fetchRecords(report,`${DF.projectCode} == "${zcCriteriaText(code)}"`,20);
+    S.dependencies=S.dependencies.filter(r=>scalar(r[DF.projectCode])!==code).concat(rows);
+    S.dependency.loadedProjects.add(code);S.dependency.error="";
+    return rows;
+  }catch(e){S.dependency.error=errorText(e);console.warn("Dependency load failed",e);return[]}
+  finally{S.dependency.loadingProjects.delete(code)}
+}
+async function addDependencyRecord(data){
+  if(S.demo){const rec={ID:`DEP-DEMO-${Date.now()}`,...data};S.dependencies.push(rec);return idOf(rec)}
+  const r=assertResp(await ZOHO.CREATOR.DATA.addRecords(withApp({form_name:CONFIG.FORMS.dependencies,payload:{data}})),"Create Design_Dependency");
+  return String(r?.data?.ID||r?.data?.id||"")
+}
+async function deleteDependencyRecord(id){
+  if(S.demo){S.dependencies=S.dependencies.filter(r=>idOf(r)!==String(id));return}
+  const report=await resolveDependencyReport();if(!report)throw new Error("Design Dependency report is not configured.");
+  if(!ZOHO?.CREATOR?.DATA?.deleteRecordById)throw new Error("Creator deleteRecordById is unavailable in this widget SDK session.");
+  const raw=await ZOHO.CREATOR.DATA.deleteRecordById(withApp({report_name:report,id:String(id)}));
+  if(raw&&raw.code!=null)assertResp(raw,"Delete Design_Dependency");
+  S.dependencies=S.dependencies.filter(r=>idOf(r)!==String(id));
+}
+function dependencyRowsForAssignment(a){const id=idOf(a);return {predecessors:S.dependencies.filter(r=>scalar(r[DF.successorId])===id&&dependencyStatus(r)!=="Closed"),successors:S.dependencies.filter(r=>scalar(r[DF.predecessorId])===id&&dependencyStatus(r)!=="Closed")}}
+function dependencyExists(pred,succ){return S.dependencies.some(r=>scalar(r[DF.predecessorId])===String(pred)&&scalar(r[DF.successorId])===String(succ)&&dependencyStatus(r)!=="Closed")}
+function dependencyWouldCycle(pred,succ){
+  pred=String(pred);succ=String(succ);if(pred===succ)return true;
+  const graph=new Map();
+  for(const r of S.dependencies){if(dependencyStatus(r)==="Closed")continue;const a=scalar(r[DF.predecessorId]),b=scalar(r[DF.successorId]);if(!a||!b)continue;if(!graph.has(a))graph.set(a,new Set());graph.get(a).add(b)}
+  if(!graph.has(pred))graph.set(pred,new Set());graph.get(pred).add(succ);
+  const stack=[succ],seen=new Set();
+  while(stack.length){const n=stack.pop();if(n===pred)return true;if(seen.has(n))continue;seen.add(n);for(const x of graph.get(n)||[])stack.push(x)}
+  return false;
+}
+function dependencySetupHtml(){return `<div class="dep-setup"><b>One-time dependency storage setup required.</b><div style="margin-top:6px">Create Creator form <code>Design_Dependency</code> and report <code>All_Design_Dependencies</code> using the included <b>CREATOR_SETUP.txt</b>. The rest of the widget continues to work even before this form is added.</div></div>`}
+function dependencyRowHtml(r,kind){
+  const otherId=scalar(r[kind==='pred'?DF.predecessorId:DF.successorId]),a=depWorkById(otherId),title=a?depWorkTitle(a):dependencyTitleFromRecord(r,kind),sub=a?depWorkSub(a):"Stored dependency",link=scalar(r[DF.linkType])||"Finish to Start (FS)",lag=num(r[DF.lagDays]),rel=scalar(r[DF.relationshipType])||"Reference";
+  return `<div class="dep-v20-row"><div class="dep-v20-work">${a?`<button class="btn link" data-open-assignment="${h(otherId)}"><b>${h(title)}</b></button>`:`<b>${h(title)}</b>`}<span>${h(sub)}</span></div><div class="dep-rel"><span class="pill">${h(rel)}</span></div><div><span class="pill blue">${h(link.replace(/\s*\(.*/,''))}</span></div><div class="tiny muted">${lag?`${lag} day${Math.abs(lag)===1?'':'s'} lag`:'No lag'}</div><button class="btn sm danger" data-v20-delete-dep="${h(idOf(r))}" title="Remove dependency">Remove</button></div>`
+}
+function scheduleDependencyLoad(projectCode,context="detail"){
+  if(!projectCode||S.dependency.loadedProjects.has(String(projectCode))||S.dependency.loadingProjects.has(String(projectCode)))return;
+  setTimeout(()=>guarded(async()=>{await loadDependenciesForProject(projectCode);if(context==="project"&&S.view==="project"&&S.projectWorkspace.tab==="dependencies")renderProjectWorkspace();else if(context==="detail"&&S.view==="detail"&&S.detailTab==="dependency")renderDetailPage()}),0)
+}
+function renderAssignmentDependencyTabV18(){
+  const a=S.current,code=scalar(a?.[AF.projectCode]);if(!a)return"";
+  if(!S.dependency.loadedProjects.has(code)){scheduleDependencyLoad(code,"detail");return `<div class="tab-card"><div class="empty compact"><strong>Loading dependencies…</strong>Reading project predecessor / successor links.</div></div>`}
+  if(!S.dependency.report&&S.dependency.error)return `<div class="tab-card">${dependencySetupHtml()}</div>`;
+  const rows=dependencyRowsForAssignment(a);
+  return `<div class="tab-card"><div class="section-row" style="margin-top:0"><div><h2>Dependencies</h2><p>Add any number of real engineering predecessors and successors. No assignment hierarchy is used.</p></div><div class="actions"><button class="btn" data-v20-add-dep="predecessor">＋ Add Predecessor</button><button class="btn primary" data-v20-add-dep="successor">＋ Add Successor</button></div></div><div class="dep-v20-grid"><div class="dep-v20-card"><div class="dep-v20-head"><h3>Predecessors</h3><span class="pill">${rows.predecessors.length}</span></div><div class="dep-v20-list">${rows.predecessors.length?rows.predecessors.map(r=>dependencyRowHtml(r,'pred')).join(''):`<div class="dep-v20-empty">No predecessor selected.</div>`}</div></div><div class="dep-v20-card"><div class="dep-v20-head"><h3>Successors</h3><span class="pill">${rows.successors.length}</span></div><div class="dep-v20-list">${rows.successors.length?rows.successors.map(r=>dependencyRowHtml(r,'succ')).join(''):`<div class="dep-v20-empty">No successor selected.</div>`}</div></div></div></div>`
+}
+function renderProjectDependenciesV18(){
+  const code=S.projectWorkspace.code;if(!S.dependency.loadedProjects.has(code)){scheduleDependencyLoad(code,"project");return `<div class="empty"><strong>Loading project dependencies…</strong>Fetching persistent predecessor / successor links.</div>`}
+  if(!S.dependency.report&&S.dependency.error)return dependencySetupHtml();
+  const rows=S.dependencies.filter(r=>scalar(r[DF.projectCode])===String(code)&&dependencyStatus(r)!=="Closed");
+  return `<div class="section-row"><div><h2>Document Dependencies</h2><p>Persistent engineering links for Project ${h(code)}. One design can have unlimited predecessors and successors.</p></div><span class="pill brand">${rows.length} link${rows.length===1?'':'s'}</span></div>${rows.length?`<div class="dep-v20-project">${rows.map(r=>{const pa=depWorkById(scalar(r[DF.predecessorId])),sa=depWorkById(scalar(r[DF.successorId]));return `<div class="dep-v20-project-row"><div class="dep-v20-node"><b>${h(pa?depWorkTitle(pa):dependencyTitleFromRecord(r,'pred'))}</b><span>${h(pa?depWorkSub(pa):'Predecessor')}</span></div><div class="dep-v20-arrow">→</div><div class="dep-v20-node"><b>${h(sa?depWorkTitle(sa):dependencyTitleFromRecord(r,'succ'))}</b><span>${h(sa?depWorkSub(sa):'Successor')}</span></div><div><span class="pill">${h(scalar(r[DF.relationshipType])||'Reference')}</span></div><div><span class="pill blue">${h(scalar(r[DF.linkType])||'FS')}</span></div><div class="tiny muted">${num(r[DF.lagDays])?`${num(r[DF.lagDays])}d lag`:'No lag'}</div></div>`}).join('')}</div>`:`<div class="empty"><strong>No dependencies yet</strong>Open a design work item and use Dependencies → Add Predecessor / Add Successor.</div>`}`;
+}
+function dependencyCandidateOptions(current){
+  const code=scalar(current[AF.projectCode]);return v18ProjectAssignments(code).filter(a=>idOf(a)!==idOf(current)).sort((a,b)=>depWorkTitle(a).localeCompare(depWorkTitle(b))).map(a=>`<option value="${h(idOf(a))}">${h(depWorkTitle(a))} • ${h(assignmentDisplayUser(a))}</option>`).join('')
+}
+function openDependencyModal(direction){
+  const a=S.current;if(!a)return;const isPred=direction==='predecessor';
+  openModal(isPred?'Add Predecessor':'Add Successor',`${h(depWorkTitle(a))} • Project ${h(scalar(a[AF.projectCode]))}`,
+  `<div class="dep-modal-grid"><div class="field wide"><label>${isPred?'Predecessor Design':'Successor Design'} *</label><select id="v20DepWork"><option value="">Select design work…</option>${dependencyCandidateOptions(a)}</select><div class="hint">Only readable project design work is shown; Creator record IDs are hidden.</div></div><div class="field"><label>Engineering Relationship</label><select id="v20DepRelation">${['Reference','Input Required','Must Follow','Vendor Input','For Information','Change Request','Supersedes'].map(x=>`<option>${h(x)}</option>`).join('')}</select></div><div class="field"><label>Link Type</label><select id="v20DepLink">${['Finish to Start (FS)','Start to Start (SS)','Finish to Finish (FF)','Start to Finish (SF)'].map(x=>`<option>${h(x)}</option>`).join('')}</select></div><div class="field"><label>Lag (Days)</label><input id="v20DepLag" type="number" step="1" value="0"></div><div class="field"><label>Status</label><select id="v20DepStatus"><option>Active</option><option>Closed</option></select></div><div class="field wide"><label>Remark</label><textarea id="v20DepRemark" rows="3" placeholder="Optional dependency note"></textarea></div></div>`,
+  `<button class="btn" data-modal="close">Cancel</button><button class="btn primary" data-v20-save-dep="${h(direction)}">Save Dependency</button>`)
+}
+async function sendDependencyEmail(record){
+  if(!CONFIG.NOTIFICATIONS?.enabled)return;const succ=depWorkById(scalar(record[DF.successorId]));if(!succ)return;const recipient=assignmentRecipientFromRecord(succ);if(!recipient.email)return;
+  const pred=depWorkById(scalar(record[DF.predecessorId]));const subject=`[Design Control] Dependency Added - ${scalar(record[DF.projectCode])}`;
+  const html=`<div style="font-family:Arial,sans-serif;color:#1f2937"><h2 style="color:#c42770">MEGA Engineering - Design Dependency</h2><p>Hello <b>${h(recipient.name)}</b>,</p><p>A dependency was added to your design work.</p><p><b>Predecessor:</b> ${h(pred?depWorkTitle(pred):scalar(record[DF.predecessorTitle]))}<br><b>Successor:</b> ${h(succ?depWorkTitle(succ):scalar(record[DF.successorTitle]))}<br><b>Relationship:</b> ${h(scalar(record[DF.relationshipType]))}<br><b>Link Type:</b> ${h(scalar(record[DF.linkType]))}<br><b>Lag:</b> ${num(record[DF.lagDays])} day(s)</p><p>Please open Drawing &amp; Document Control in Zoho Creator.</p></div>`;
+  try{await invokeNotificationCustomApi(recipient,subject,html,'dependency-email')}catch(e){console.warn('Dependency email failed',e)}
+}
+async function saveDependencyFromModal(direction){
+  const current=S.current;if(!current)return;const otherId=$("v20DepWork")?.value;if(!otherId)throw new Error("Select design work.");
+  const pred=direction==='predecessor'?depWorkById(otherId):current,succ=direction==='predecessor'?current:depWorkById(otherId);if(!pred||!succ)throw new Error("Selected design work could not be resolved.");
+  if(dependencyExists(idOf(pred),idOf(succ)))throw new Error("This dependency already exists.");
+  if(dependencyWouldCycle(idOf(pred),idOf(succ)))throw new Error("This link would create a circular dependency. Choose a different predecessor/successor.");
+  const p=v18ProjectForCode(scalar(current[AF.projectCode]));const data={
+    [DF.projectCode]:scalar(current[AF.projectCode]),[DF.projectRecordId]:p.id||scalar(current[AF.projectRecordId]),
+    [DF.predecessorId]:idOf(pred),[DF.predecessorTitle]:depWorkTitle(pred),[DF.successorId]:idOf(succ),[DF.successorTitle]:depWorkTitle(succ),
+    [DF.linkType]:$("v20DepLink")?.value||"Finish to Start (FS)",[DF.relationshipType]:$("v20DepRelation")?.value||"Reference",
+    [DF.lagDays]:Number($("v20DepLag")?.value||0),[DF.status]:$("v20DepStatus")?.value||"Active",[DF.remark]:$("v20DepRemark")?.value||"",
+    [DF.createdByEmail]:employeeEmailFor(S.user)|| (String(S.user||'').includes('@')?String(S.user):''),[DF.createdByName]:v19CurrentUserReadable()
+  };
+  busy("Saving dependency…");try{const id=await addDependencyRecord(data);const rec={ID:id,...data};S.dependencies.push(rec);closeModal();toast("Dependency saved.","good");await sendDependencyEmail(rec);renderDetailPage()}finally{idle()}
+}
+function wireV20(){
+  document.addEventListener('click',e=>{
+    const add=e.target.closest('[data-v20-add-dep]');if(add)return guarded(async()=>{const code=scalar(S.current?.[AF.projectCode]);await loadDependenciesForProject(code);if(!S.dependency.report)throw new Error('Create Design_Dependency and All_Design_Dependencies first. See CREATOR_SETUP.txt.');openDependencyModal(add.dataset.v20AddDep)});
+    const save=e.target.closest('[data-v20-save-dep]');if(save)return guarded(()=>saveDependencyFromModal(save.dataset.v20SaveDep));
+    const del=e.target.closest('[data-v20-delete-dep]');if(del)return guarded(async()=>{if(!confirm('Remove this dependency?'))return;busy('Removing dependency…');try{await deleteDependencyRecord(del.dataset.v20DeleteDep);toast('Dependency removed.','good');if(S.view==='detail')renderDetailPage();else if(S.view==='project')renderProjectWorkspace()}finally{idle()}})
+  });
+}
+
+
+wire();wireV19();wireV20();bootstrap();
 </script>
 </body>
 </html>
