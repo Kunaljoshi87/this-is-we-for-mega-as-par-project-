@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Drawing & Document Control V18 Project Workspace + Old Logic Preserved V20.4</title>
+<title>MEGA Engineering | Drawing & Document Control V18 Project Workspace + Old Logic Preserved V20.6</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -184,6 +184,12 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 /* ================= V20 RELIABLE DOCUMENT DEPENDENCIES ================= */
 .dep-v20-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.dep-v20-card{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}.dep-v20-head{padding:13px 14px;border-bottom:1px solid var(--line2);display:flex;justify-content:space-between;gap:10px;align-items:center;background:#fafbfc}.dep-v20-head h3{margin:0;font-size:14px}.dep-v20-list{display:grid}.dep-v20-row{display:grid;grid-template-columns:minmax(0,1.5fr) 100px 72px 90px auto;gap:9px;align-items:center;padding:11px 13px;border-bottom:1px solid var(--line2)}.dep-v20-row:last-child{border-bottom:0}.dep-v20-work{min-width:0}.dep-v20-work b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dep-v20-work span{display:block;font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dep-v20-arrow{font-weight:900;color:var(--brand2)}.dep-v20-empty{padding:24px 14px;text-align:center;color:var(--muted);font-size:11px}.dep-v20-project{display:grid;gap:9px}.dep-v20-project-row{display:grid;grid-template-columns:minmax(180px,1fr) 48px minmax(180px,1fr) 100px 70px 90px;gap:9px;align-items:center;border:1px solid var(--line);border-radius:11px;background:#fff;padding:10px}.dep-v20-node{min-width:0}.dep-v20-node b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dep-v20-node span{font-size:9px;color:var(--muted);display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dep-setup{padding:15px;border:1px solid #f0d59b;background:#fff8e7;border-radius:12px;color:#7a5707}.dep-setup code{background:#fff;border:1px solid #ead6ad;padding:2px 5px;border-radius:5px}.dep-modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.dep-modal-grid .wide{grid-column:1/-1}.dep-direction{display:flex;gap:8px;padding:5px;background:#f4f6f8;border-radius:11px}.dep-direction button{flex:1;border:0;border-radius:8px;padding:9px;background:transparent;font-weight:850;color:var(--muted)}.dep-direction button.active{background:#fff;color:var(--brand2);box-shadow:var(--shadow-sm)}
 @media(max-width:950px){.dep-v20-grid{grid-template-columns:1fr}.dep-v20-project-row{grid-template-columns:1fr}.dep-v20-arrow{text-align:center}.dep-modal-grid{grid-template-columns:1fr}.dep-modal-grid .wide{grid-column:auto}.dep-v20-row{grid-template-columns:1fr 90px 65px auto}.dep-v20-row .dep-rel{display:none}}
+/* ================= V20.6 DEPENDENCY UX PATCH - ONLY =================
+   Adds project-level dependency actions, an animated loading state and
+   friendly dependency errors. No Design/PDS/assignment logic is changed.
+   ==================================================================== */
+.dep-v206-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}.dep-v206-toolbar .copy h2{margin:0;font-size:17px}.dep-v206-toolbar .copy p{margin:3px 0 0;color:var(--muted);font-size:12px}.dep-v206-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.dep-v206-loader{min-height:245px;border:1px dashed #d9dee6;border-radius:16px;background:linear-gradient(135deg,#fff,#fbfcff);display:grid;place-items:center;text-align:center;padding:28px}.dep-v206-loader-inner{display:grid;justify-items:center;gap:9px}.dep-v206-spinner{width:40px;height:40px;border-radius:50%;border:4px solid #f1d6e3;border-top-color:var(--brand);animation:v206Spin .8s linear infinite}.dep-v206-pulse{display:flex;gap:5px;justify-content:center}.dep-v206-pulse i{width:7px;height:7px;border-radius:50%;background:var(--brand);opacity:.25;animation:v206Pulse 1.15s ease-in-out infinite}.dep-v206-pulse i:nth-child(2){animation-delay:.15s}.dep-v206-pulse i:nth-child(3){animation-delay:.3s}@keyframes v206Spin{to{transform:rotate(360deg)}}@keyframes v206Pulse{0%,100%{transform:translateY(0);opacity:.25}50%{transform:translateY(-4px);opacity:1}}.dep-v206-help{padding:14px 15px;border:1px solid #dfe4ea;border-radius:13px;background:#fff}.dep-v206-help strong{display:block;margin-bottom:4px}.dep-v206-help .steps{margin-top:10px;display:grid;gap:7px}.dep-v206-step{display:grid;grid-template-columns:24px 1fr;gap:8px;align-items:start;font-size:11px;color:#475467}.dep-v206-step b{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--brand-soft);color:var(--brand2)}.dep-v206-error{padding:16px;border:1px solid #f2c7cf;background:var(--red-soft);border-radius:13px}.dep-v206-error h3{margin:0 0 5px;font-size:14px;color:#9d273a}.dep-v206-error p{margin:0;color:#6b3340;font-size:11px;line-height:1.55}.dep-v206-error details{margin-top:10px;font-size:10px;color:#7c4650}.dep-v206-error summary{cursor:pointer;font-weight:850}.dep-v206-direction-note{padding:10px 11px;border:1px solid #e2e7ee;border-radius:10px;background:#fafbfc;color:#475467;font-size:11px}.dep-v206-direction-note b{color:var(--ink)}
+@media(max-width:720px){.dep-v206-actions{width:100%}.dep-v206-actions .btn{flex:1}.dep-v206-toolbar{align-items:flex-start}}
 
 
 
@@ -206,7 +212,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V20.4</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V20.6</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -3876,21 +3882,57 @@ function scheduleDependencyLoad(projectCode,context="detail"){
   if(!projectCode||S.dependency.loadedProjects.has(String(projectCode))||S.dependency.loadingProjects.has(String(projectCode)))return;
   setTimeout(()=>guarded(async()=>{await loadDependenciesForProject(projectCode);if(context==="project"&&S.view==="project"&&S.projectWorkspace.tab==="dependencies")renderProjectWorkspace();else if(context==="detail"&&S.view==="detail"&&S.detailTab==="dependency")renderDetailPage()}),0)
 }
+function v206DependencyLoadingHtml(title="Loading dependencies…",sub="Reading predecessor / successor links for this project."){
+  return `<div class="dep-v206-loader"><div class="dep-v206-loader-inner"><div class="dep-v206-spinner"></div><strong>${h(title)}</strong><div class="small muted">${h(sub)}</div><div class="dep-v206-pulse"><i></i><i></i><i></i></div></div></div>`
+}
+function v206DependencyFriendlyMessage(err){
+  const raw=errorText(err||S.dependency.error||"");const k=String(raw||"").toLowerCase();
+  if(k.includes("not found")||k.includes("does not exist")||k.includes("invalid report")||k.includes("9220")||k.includes("9280"))return "Dependency storage is not available yet. Create the Design_Dependency form and All_Design_Dependencies report once, then press Retry.";
+  if(k.includes("permission")||k.includes("unauthor")||k.includes("access"))return "The dependency report exists, but this Creator user cannot access it. Please allow View/Create access to Design_Dependency and All_Design_Dependencies.";
+  if(k.includes("network")||k.includes("timeout")||k.includes("failed to fetch"))return "Creator could not be reached. Check the connection and press Retry.";
+  if(k.includes("circular"))return "This link would create a circular dependency. Choose a different predecessor or successor.";
+  if(k.includes("already exists"))return "This dependency already exists. No duplicate link was created.";
+  return "The dependency action could not be completed. Your design records were not changed. Please check the details below or try again.";
+}
+function v206ShowDependencyError(err,title="Dependency could not be completed"){
+  const raw=errorText(err||S.dependency.error||"Unknown dependency error");
+  openModal(title,"Nothing else in the project was changed.",`<div class="dep-v206-error"><h3>${h(v206DependencyFriendlyMessage(err))}</h3><p>You can close this message, correct the dependency setup/selection, and try again.</p><details><summary>Technical details</summary><div style="margin-top:7px;word-break:break-word">${h(raw)}</div></details></div>`,`<button class="btn primary" data-modal="close">OK</button>`)
+}
+function v206DependencySetupHtml(code){
+  return `<div class="dep-v206-help"><strong>Dependency storage needs one-time Creator setup</strong><div class="small muted">Project ${h(code)} is ready for dependencies, but the persistent dependency report could not be opened.</div><div class="steps"><div class="dep-v206-step"><b>1</b><div>Create form <code>Design_Dependency</code>.</div></div><div class="dep-v206-step"><b>2</b><div>Create report <code>All_Design_Dependencies</code>.</div></div><div class="dep-v206-step"><b>3</b><div>Give the current Creator users View/Create permission, then press Retry.</div></div></div><div class="actions" style="margin-top:12px"><button class="btn primary" data-v206-dep-retry="${h(code)}">↻ Retry Connection</button><button class="btn" data-v206-dep-help>View Required Fields</button></div></div>`
+}
+function v206DependencyRequiredFieldsHtml(){
+  const fields=["Project_Code","Project_Record_ID","Predecessor_Design_ID","Predecessor_Design_Title","Successor_Design_ID","Successor_Design_Title","Relationship_Type","Link_Type","Lag_Days","Status","Remarks","Created_By_Email","Created_By_Name"];
+  return `<div class="dep-v206-help"><strong>Design_Dependency field link names</strong><div class="small muted">Use these exact link names so the current widget can save and read dependency links.</div><div class="table-wrap" style="margin-top:10px"><table><thead><tr><th>#</th><th>Field Link Name</th></tr></thead><tbody>${fields.map((x,i)=>`<tr><td>${i+1}</td><td><code>${h(x)}</code></td></tr>`).join("")}</tbody></table></div><div class="notice" style="margin-top:10px">Report link name: <b>All_Design_Dependencies</b></div></div>`
+}
+function v206ProjectDependencyToolbar(code,count=""){
+  return `<div class="dep-v206-toolbar"><div class="copy"><h2>Document Dependencies</h2><p>Define real predecessor / successor relationships for Project ${h(code)}. One design can have any number of links.</p></div><div class="dep-v206-actions"><button class="btn" data-v206-project-dep="predecessor">＋ Add Predecessor</button><button class="btn primary" data-v206-project-dep="successor">＋ Add Successor</button><button class="btn" data-v206-dep-retry="${h(code)}">↻ Refresh</button>${count!==""?`<span class="pill brand">${h(count)} link${Number(count)===1?'':'s'}</span>`:""}</div></div>`
+}
 function renderAssignmentDependencyTabV18(){
   const a=S.current,code=scalar(a?.[AF.projectCode]);if(!a)return"";
-  if(!S.dependency.loadedProjects.has(code)){scheduleDependencyLoad(code,"detail");return `<div class="tab-card"><div class="empty compact"><strong>Loading dependencies…</strong>Reading project predecessor / successor links.</div></div>`}
-  if(!S.dependency.report&&S.dependency.error)return `<div class="tab-card">${dependencySetupHtml()}</div>`;
+  if(!S.dependency.loadedProjects.has(code)){
+    if(S.dependency.error&&!S.dependency.loadingProjects.has(code))return `<div class="tab-card">${v206DependencySetupHtml(code)}</div>`;
+    scheduleDependencyLoad(code,"detail");
+    return `<div class="tab-card">${v206DependencyLoadingHtml("Loading dependencies…",`Project ${code} • reading predecessor / successor links`)}</div>`
+  }
   const rows=dependencyRowsForAssignment(a);
   return `<div class="tab-card"><div class="section-row" style="margin-top:0"><div><h2>Dependencies</h2><p>Add any number of real engineering predecessors and successors. No assignment hierarchy is used.</p></div><div class="actions"><button class="btn" data-v20-add-dep="predecessor">＋ Add Predecessor</button><button class="btn primary" data-v20-add-dep="successor">＋ Add Successor</button></div></div><div class="dep-v20-grid"><div class="dep-v20-card"><div class="dep-v20-head"><h3>Predecessors</h3><span class="pill">${rows.predecessors.length}</span></div><div class="dep-v20-list">${rows.predecessors.length?rows.predecessors.map(r=>dependencyRowHtml(r,'pred')).join(''):`<div class="dep-v20-empty">No predecessor selected.</div>`}</div></div><div class="dep-v20-card"><div class="dep-v20-head"><h3>Successors</h3><span class="pill">${rows.successors.length}</span></div><div class="dep-v20-list">${rows.successors.length?rows.successors.map(r=>dependencyRowHtml(r,'succ')).join(''):`<div class="dep-v20-empty">No successor selected.</div>`}</div></div></div></div>`
 }
 function renderProjectDependenciesV18(){
-  const code=S.projectWorkspace.code;if(!S.dependency.loadedProjects.has(code)){scheduleDependencyLoad(code,"project");return `<div class="empty"><strong>Loading project dependencies…</strong>Fetching persistent predecessor / successor links.</div>`}
-  if(!S.dependency.report&&S.dependency.error)return dependencySetupHtml();
-  const rows=S.dependencies.filter(r=>scalar(r[DF.projectCode])===String(code)&&dependencyStatus(r)!=="Closed");
-  return `<div class="section-row"><div><h2>Document Dependencies</h2><p>Persistent engineering links for Project ${h(code)}. One design can have unlimited predecessors and successors.</p></div><span class="pill brand">${rows.length} link${rows.length===1?'':'s'}</span></div>${rows.length?`<div class="dep-v20-project">${rows.map(r=>{const pa=depWorkById(scalar(r[DF.predecessorId])),sa=depWorkById(scalar(r[DF.successorId]));return `<div class="dep-v20-project-row"><div class="dep-v20-node"><b>${h(pa?depWorkTitle(pa):dependencyTitleFromRecord(r,'pred'))}</b><span>${h(pa?depWorkSub(pa):'Predecessor')}</span></div><div class="dep-v20-arrow">→</div><div class="dep-v20-node"><b>${h(sa?depWorkTitle(sa):dependencyTitleFromRecord(r,'succ'))}</b><span>${h(sa?depWorkSub(sa):'Successor')}</span></div><div><span class="pill">${h(scalar(r[DF.relationshipType])||'Reference')}</span></div><div><span class="pill blue">${h(scalar(r[DF.linkType])||'FS')}</span></div><div class="tiny muted">${num(r[DF.lagDays])?`${num(r[DF.lagDays])}d lag`:'No lag'}</div></div>`}).join('')}</div>`:`<div class="empty"><strong>No dependencies yet</strong>Open a design work item and use Dependencies → Add Predecessor / Add Successor.</div>`}`;
+  const code=String(S.projectWorkspace.code||"");
+  if(!S.dependency.loadedProjects.has(code)){
+    if(S.dependency.error&&!S.dependency.loadingProjects.has(code))return `${v206ProjectDependencyToolbar(code)}${v206DependencySetupHtml(code)}`;
+    scheduleDependencyLoad(code,"project");
+    return `${v206ProjectDependencyToolbar(code)}${v206DependencyLoadingHtml("Loading project dependencies…","Fetching persistent predecessor / successor links.")}`
+  }
+  const rows=S.dependencies.filter(r=>scalar(r[DF.projectCode])===code&&dependencyStatus(r)!=="Closed");
+  return `${v206ProjectDependencyToolbar(code,rows.length)}${rows.length?`<div class="dep-v20-project">${rows.map(r=>{const pa=depWorkById(scalar(r[DF.predecessorId])),sa=depWorkById(scalar(r[DF.successorId]));return `<div class="dep-v20-project-row"><div class="dep-v20-node"><b>${h(pa?depWorkTitle(pa):dependencyTitleFromRecord(r,'pred'))}</b><span>${h(pa?depWorkSub(pa):'Predecessor')}</span></div><div class="dep-v20-arrow">→</div><div class="dep-v20-node"><b>${h(sa?depWorkTitle(sa):dependencyTitleFromRecord(r,'succ'))}</b><span>${h(sa?depWorkSub(sa):'Successor')}</span></div><div><span class="pill">${h(scalar(r[DF.relationshipType])||'Reference')}</span></div><div><span class="pill blue">${h(scalar(r[DF.linkType])||'FS')}</span></div><div class="tiny muted">${num(r[DF.lagDays])?`${num(r[DF.lagDays])}d lag`:'No lag'}</div></div>`}).join('')}</div>`:`<div class="empty"><strong>No dependencies yet</strong>Use <b>+ Add Predecessor</b> or <b>+ Add Successor</b> above. You can create as many links as required.</div>`}`;
 }
 function dependencyCandidateOptions(current){
-  const code=scalar(current[AF.projectCode]);return v18ProjectAssignments(code).filter(a=>idOf(a)!==idOf(current)).sort((a,b)=>depWorkTitle(a).localeCompare(depWorkTitle(b))).map(a=>`<option value="${h(idOf(a))}">${h(depWorkTitle(a))} • ${h(assignmentDisplayUser(a))}</option>`).join('')
+  const code=scalar(current[AF.projectCode]);return v18ProjectAssignments(code).filter(a=>idOf(a)!==idOf(current)).sort((a,b)=>depWorkTitle(a).localeCompare(depWorkTitle(b))).map(a=>`<option value="${h(idOf(a))}">${h(depWorkTitle(a))} • ${h(scopeSummary(a))} • ${h(assignmentDisplayUser(a))}</option>`).join('')
+}
+function v206ProjectDependencyOptions(code){
+  return v18ProjectAssignments(code).slice().sort((a,b)=>depWorkTitle(a).localeCompare(depWorkTitle(b),undefined,{numeric:true})).map(a=>`<option value="${h(idOf(a))}">${h(depWorkTitle(a))} • ${h(scopeSummary(a))} • ${h(assignmentDisplayUser(a))}</option>`).join("")
 }
 function openDependencyModal(direction){
   const a=S.current;if(!a)return;const isPred=direction==='predecessor';
@@ -3898,31 +3940,62 @@ function openDependencyModal(direction){
   `<div class="dep-modal-grid"><div class="field wide"><label>${isPred?'Predecessor Design':'Successor Design'} *</label><select id="v20DepWork"><option value="">Select design work…</option>${dependencyCandidateOptions(a)}</select><div class="hint">Only readable project design work is shown; Creator record IDs are hidden.</div></div><div class="field"><label>Engineering Relationship</label><select id="v20DepRelation">${['Reference','Input Required','Must Follow','Vendor Input','For Information','Change Request','Supersedes'].map(x=>`<option>${h(x)}</option>`).join('')}</select></div><div class="field"><label>Link Type</label><select id="v20DepLink">${['Finish to Start (FS)','Start to Start (SS)','Finish to Finish (FF)','Start to Finish (SF)'].map(x=>`<option>${h(x)}</option>`).join('')}</select></div><div class="field"><label>Lag (Days)</label><input id="v20DepLag" type="number" step="1" value="0"></div><div class="field"><label>Status</label><select id="v20DepStatus"><option>Active</option><option>Closed</option></select></div><div class="field wide"><label>Remark</label><textarea id="v20DepRemark" rows="3" placeholder="Optional dependency note"></textarea></div></div>`,
   `<button class="btn" data-modal="close">Cancel</button><button class="btn primary" data-v20-save-dep="${h(direction)}">Save Dependency</button>`)
 }
+function openProjectDependencyModal(direction){
+  const code=String(S.projectWorkspace.code||"");const works=v18ProjectAssignments(code);if(works.length<2)throw new Error("At least two design work items are required before a dependency can be created.");
+  const isPred=direction==='predecessor',opts=v206ProjectDependencyOptions(code);
+  const currentLabel=isPred?'Design that needs the predecessor':'Predecessor / starting design';
+  const otherLabel=isPred?'Predecessor design / required input':'Successor design / dependent work';
+  const note=isPred?'Select the design that needs an input, then select the design that must come before it.':'Select the design that provides the input, then select the design that depends on it.';
+  openModal(isPred?'Add Predecessor':'Add Successor',`Project ${h(code)} • ${works.length} design work items available`,
+  `<div class="dep-v206-direction-note"><b>${h(isPred?'Predecessor':'Successor')}:</b> ${h(note)}</div><div class="dep-modal-grid" style="margin-top:12px"><div class="field wide"><label>${h(currentLabel)} *</label><select id="v206DepCurrent"><option value="">Select design work…</option>${opts}</select></div><div class="field wide"><label>${h(otherLabel)} *</label><select id="v206DepOther"><option value="">Select design work…</option>${opts}</select></div><div class="field"><label>Engineering Relationship</label><select id="v20DepRelation">${['Reference','Input Required','Must Follow','Vendor Input','For Information','Change Request','Supersedes'].map(x=>`<option>${h(x)}</option>`).join('')}</select></div><div class="field"><label>Link Type</label><select id="v20DepLink">${['Finish to Start (FS)','Start to Start (SS)','Finish to Finish (FF)','Start to Finish (SF)'].map(x=>`<option>${h(x)}</option>`).join('')}</select></div><div class="field"><label>Lag (Days)</label><input id="v20DepLag" type="number" step="1" value="0"></div><div class="field"><label>Status</label><select id="v20DepStatus"><option>Active</option><option>Closed</option></select></div><div class="field wide"><label>Remark</label><textarea id="v20DepRemark" rows="3" placeholder="Optional dependency note"></textarea></div></div>`,
+  `<button class="btn" data-modal="close">Cancel</button><button class="btn primary" data-v206-save-project-dep="${h(direction)}">Save Dependency</button>`)
+}
 async function sendDependencyEmail(record){
   if(!CONFIG.NOTIFICATIONS?.enabled)return;const succ=depWorkById(scalar(record[DF.successorId]));if(!succ)return;const recipient=assignmentRecipientFromRecord(succ);if(!recipient.email)return;
   const pred=depWorkById(scalar(record[DF.predecessorId]));const subject=`[Design Control] Dependency Added - ${scalar(record[DF.projectCode])}`;
   const html=`<div style="font-family:Arial,sans-serif;color:#1f2937"><h2 style="color:#c42770">MEGA Engineering - Design Dependency</h2><p>Hello <b>${h(recipient.name)}</b>,</p><p>A dependency was added to your design work.</p><p><b>Predecessor:</b> ${h(pred?depWorkTitle(pred):scalar(record[DF.predecessorTitle]))}<br><b>Successor:</b> ${h(succ?depWorkTitle(succ):scalar(record[DF.successorTitle]))}<br><b>Relationship:</b> ${h(scalar(record[DF.relationshipType]))}<br><b>Link Type:</b> ${h(scalar(record[DF.linkType]))}<br><b>Lag:</b> ${num(record[DF.lagDays])} day(s)</p><p>Please open Drawing &amp; Document Control in Zoho Creator.</p></div>`;
   try{await invokeNotificationCustomApi(recipient,subject,html,'dependency-email')}catch(e){console.warn('Dependency email failed',e)}
 }
-async function saveDependencyFromModal(direction){
-  const current=S.current;if(!current)return;const otherId=$("v20DepWork")?.value;if(!otherId)throw new Error("Select design work.");
-  const pred=direction==='predecessor'?depWorkById(otherId):current,succ=direction==='predecessor'?current:depWorkById(otherId);if(!pred||!succ)throw new Error("Selected design work could not be resolved.");
-  if(dependencyExists(idOf(pred),idOf(succ)))throw new Error("This dependency already exists.");
-  if(dependencyWouldCycle(idOf(pred),idOf(succ)))throw new Error("This link would create a circular dependency. Choose a different predecessor/successor.");
-  const p=v18ProjectForCode(scalar(current[AF.projectCode]));const data={
-    [DF.projectCode]:scalar(current[AF.projectCode]),[DF.projectRecordId]:p.id||scalar(current[AF.projectRecordId]),
+function v206DependencyRecordData(pred,succ,currentProjectCode,currentProjectRecordId){
+  const p=v18ProjectForCode(currentProjectCode);return {
+    [DF.projectCode]:currentProjectCode,[DF.projectRecordId]:p.id||currentProjectRecordId||"",
     [DF.predecessorId]:idOf(pred),[DF.predecessorTitle]:depWorkTitle(pred),[DF.successorId]:idOf(succ),[DF.successorTitle]:depWorkTitle(succ),
     [DF.linkType]:$("v20DepLink")?.value||"Finish to Start (FS)",[DF.relationshipType]:$("v20DepRelation")?.value||"Reference",
     [DF.lagDays]:Number($("v20DepLag")?.value||0),[DF.status]:$("v20DepStatus")?.value||"Active",[DF.remark]:$("v20DepRemark")?.value||"",
     [DF.createdByEmail]:employeeEmailFor(S.user)|| (String(S.user||'').includes('@')?String(S.user):''),[DF.createdByName]:v19CurrentUserReadable()
-  };
+  }
+}
+async function saveDependencyFromModal(direction){
+  const current=S.current;if(!current)return;const otherId=$("v20DepWork")?.value;if(!otherId)throw new Error("Please select the related design work.");
+  const pred=direction==='predecessor'?depWorkById(otherId):current,succ=direction==='predecessor'?current:depWorkById(otherId);if(!pred||!succ)throw new Error("The selected design work could not be found. Refresh and try again.");
+  if(dependencyExists(idOf(pred),idOf(succ)))throw new Error("This dependency already exists.");
+  if(dependencyWouldCycle(idOf(pred),idOf(succ)))throw new Error("This link would create a circular dependency. Choose a different predecessor/successor.");
+  const data=v206DependencyRecordData(pred,succ,scalar(current[AF.projectCode]),scalar(current[AF.projectRecordId]));
   busy("Saving dependency…");try{const id=await addDependencyRecord(data);const rec={ID:id,...data};S.dependencies.push(rec);closeModal();toast("Dependency saved.","good");await sendDependencyEmail(rec);renderDetailPage()}finally{idle()}
+}
+async function saveProjectDependencyFromModal(direction){
+  const code=String(S.projectWorkspace.code||"");const currentId=$("v206DepCurrent")?.value,otherId=$("v206DepOther")?.value;
+  if(!currentId||!otherId)throw new Error("Please select both design work items.");
+  const current=depWorkById(currentId),other=depWorkById(otherId);if(!current||!other)throw new Error("One of the selected design work items could not be found. Refresh and try again.");
+  const pred=direction==='predecessor'?other:current,succ=direction==='predecessor'?current:other;
+  if(idOf(pred)===idOf(succ))throw new Error("Predecessor and successor must be different design work items.");
+  if(dependencyExists(idOf(pred),idOf(succ)))throw new Error("This dependency already exists.");
+  if(dependencyWouldCycle(idOf(pred),idOf(succ)))throw new Error("This link would create a circular dependency. Choose a different predecessor/successor.");
+  const p=v18ProjectForCode(code),data=v206DependencyRecordData(pred,succ,code,p.id||"");
+  busy("Saving dependency…");try{const id=await addDependencyRecord(data);const rec={ID:id,...data};S.dependencies.push(rec);closeModal();toast("Dependency saved successfully.","good");await sendDependencyEmail(rec);S.dependency.loadedProjects.add(code);renderProjectWorkspace()}finally{idle()}
+}
+async function v206DependencyAction(fn){
+  try{return await fn()}catch(e){console.error("Dependency action failed",e);v206ShowDependencyError(e)}finally{while(loadDepth>0)idle()}
 }
 function wireV20(){
   document.addEventListener('click',e=>{
-    const add=e.target.closest('[data-v20-add-dep]');if(add)return guarded(async()=>{const code=scalar(S.current?.[AF.projectCode]);await loadDependenciesForProject(code);if(!S.dependency.report)throw new Error('Create Design_Dependency and All_Design_Dependencies first. See CREATOR_SETUP.txt.');openDependencyModal(add.dataset.v20AddDep)});
-    const save=e.target.closest('[data-v20-save-dep]');if(save)return guarded(()=>saveDependencyFromModal(save.dataset.v20SaveDep));
-    const del=e.target.closest('[data-v20-delete-dep]');if(del)return guarded(async()=>{if(!confirm('Remove this dependency?'))return;busy('Removing dependency…');try{await deleteDependencyRecord(del.dataset.v20DeleteDep);toast('Dependency removed.','good');if(S.view==='detail')renderDetailPage();else if(S.view==='project')renderProjectWorkspace()}finally{idle()}})
+    const projectAdd=e.target.closest('[data-v206-project-dep]');if(projectAdd)return v206DependencyAction(async()=>{const code=String(S.projectWorkspace.code||"");await loadDependenciesForProject(code);if(!S.dependency.report)throw new Error(S.dependency.error||'Design_Dependency / All_Design_Dependencies is not configured.');openProjectDependencyModal(projectAdd.dataset.v206ProjectDep)});
+    const retry=e.target.closest('[data-v206-dep-retry]');if(retry)return v206DependencyAction(async()=>{const code=String(retry.dataset.v206DepRetry||S.projectWorkspace.code||scalar(S.current?.[AF.projectCode])||"");S.dependency.error="";S.dependency.loadedProjects.delete(code);delete S.dependency.report;await loadDependenciesForProject(code,true);if(S.view==='project')renderProjectWorkspace();else if(S.view==='detail')renderDetailPage();if(!S.dependency.report)throw new Error(S.dependency.error||'Dependency report is not available.');toast('Dependency connection refreshed.','good')});
+    const help=e.target.closest('[data-v206-dep-help]');if(help)return openModal('Dependency Setup','One-time Creator setup',v206DependencyRequiredFieldsHtml(),`<button class="btn primary" data-modal="close">Close</button>`);
+    const add=e.target.closest('[data-v20-add-dep]');if(add)return v206DependencyAction(async()=>{const code=scalar(S.current?.[AF.projectCode]);await loadDependenciesForProject(code);if(!S.dependency.report)throw new Error(S.dependency.error||'Design_Dependency / All_Design_Dependencies is not configured.');openDependencyModal(add.dataset.v20AddDep)});
+    const saveProject=e.target.closest('[data-v206-save-project-dep]');if(saveProject)return v206DependencyAction(()=>saveProjectDependencyFromModal(saveProject.dataset.v206SaveProjectDep));
+    const save=e.target.closest('[data-v20-save-dep]');if(save)return v206DependencyAction(()=>saveDependencyFromModal(save.dataset.v20SaveDep));
+    const del=e.target.closest('[data-v20-delete-dep]');if(del)return v206DependencyAction(async()=>{if(!confirm('Remove this dependency?'))return;busy('Removing dependency…');try{await deleteDependencyRecord(del.dataset.v20DeleteDep);toast('Dependency removed.','good');if(S.view==='detail')renderDetailPage();else if(S.view==='project')renderProjectWorkspace()}finally{idle()}})
   });
 }
 
