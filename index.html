@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Drawing & Document Control V18 Project Workspace + Old Logic Preserved V20.7</title>
+<title>MEGA Engineering | Drawing & Document Control V18 Project Workspace + Old Logic Preserved V20.8</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -207,6 +207,10 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 /* ================= V20.7 RELIABILITY + PERFORMANCE LAYER ================= */
 .connection-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;border:1px solid #ffffff35;background:#ffffff16;color:#fff;font-size:9px;font-weight:900;white-space:nowrap}.connection-pill .dot{width:7px;height:7px;border-radius:50%;background:#65d58a;box-shadow:0 0 0 3px #65d58a22}.connection-pill.slow .dot{background:#f2b84b;box-shadow:0 0 0 3px #f2b84b22}.connection-pill.offline .dot{background:#ef6a73;box-shadow:0 0 0 3px #ef6a7322}.loading-box{min-width:320px;max-width:min(92vw,460px)}.loading-sub{margin-top:5px;font-size:10px;color:var(--muted);line-height:1.4}.loading-track{height:5px;border-radius:999px;background:#f1e3ea;margin-top:12px;overflow:hidden}.loading-bar{height:100%;width:34%;border-radius:999px;background:linear-gradient(90deg,var(--brand2),var(--brand));animation:loadmove 1.25s ease-in-out infinite alternate}.loading-bar.determinate{animation:none;width:0}.loading-meta{display:flex;justify-content:space-between;gap:12px;margin-top:7px;font-size:9px;color:var(--muted2)}@keyframes loadmove{from{transform:translateX(-20%)}to{transform:translateX(190%)}}.runtime-error-banner{border:1px solid #f2b8c1;background:#fff6f7;border-radius:11px;padding:10px 12px;margin-bottom:12px;color:#8b2233}.runtime-error-banner b{display:block;margin-bottom:3px}.runtime-error-banner details{margin-top:6px;color:#667085}.health-grid{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:8px;margin:10px 0}.health-card{border:1px solid var(--line2);background:#fff;border-radius:11px;padding:10px}.health-card .hk{font-size:8px;text-transform:uppercase;color:var(--muted);font-weight:900}.health-card .hv{font-size:13px;font-weight:950;margin-top:4px}.health-ok{color:#176541}.health-warn{color:#8a5c0a}.health-bad{color:#a82b3d}.health-table td,.health-table th{font-size:10px}.health-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}@media(max-width:760px){.health-grid{grid-template-columns:repeat(2,minmax(120px,1fr))}.connection-pill{display:none}}
 
+
+/* ================= V20.8 PRODUCTION SCALE + DATA INTEGRITY ================= */
+.v208-demand{display:inline-flex;align-items:center;gap:6px;color:#667085;font-size:10px}.v208-demand .mini-spinner{width:12px;height:12px;border:2px solid #ead7e2;border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}.v208-pager{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line2);background:#fbfafb}.v208-pager .pages{font-size:10px;color:var(--muted);font-weight:800}.v208-scale-note{display:flex;gap:8px;align-items:flex-start;border:1px solid #eadde4;background:#fffafd;border-radius:10px;padding:9px 11px;margin:8px 0;font-size:10px;color:#5d5962}.v208-impact{border:1px solid #f1c66d;background:#fff9e9;border-radius:10px;padding:9px 11px;color:#76520b;font-size:10px}.v208-impact strong{display:block;margin-bottom:2px}.v208-health-tags{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.v208-loading-skeleton{display:grid;gap:10px}.v208-sk{height:58px;border-radius:11px;background:linear-gradient(90deg,#f3edf0 20%,#fff 40%,#f3edf0 60%);background-size:220% 100%;animation:v208shimmer 1.25s linear infinite}@keyframes v208shimmer{to{background-position:-220% 0}}.v208-conflict{border:1px solid #f0b7c0;background:#fff5f7;color:#8b2233;border-radius:10px;padding:10px}.v208-page-size{min-width:92px}.v208-load-state{font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.03em}.v208-load-state.loaded{color:#176541}.v208-load-state.ondemand{color:#7b6572}
+
 </style>
 </head>
 <body>
@@ -216,7 +220,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V20.7</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V20.8</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -318,7 +322,7 @@ const CONFIG={
   TRACKING_REPORT_CANDIDATES:["Design_Tracking_Report"],
   SYNC_ASSIGNMENT_START:true,
   PAGE_SIZE:100,
-  MAX_BATCH:250,
+  MAX_BATCH:5000,
   ALERT_REFRESH_MS:60000,
   READ_TIMEOUT_MS:20000,
   WRITE_TIMEOUT_MS:45000,
@@ -327,6 +331,14 @@ const CONFIG={
   RETRY_BASE_MS:700,
   MAX_REPORT_PAGES:100,
   SLOW_REQUEST_MS:7000,
+  PROJECT_SCOPED_TRACKING:true,
+  TRACKING_CACHE_TTL_MS:120000,
+  EQUIPMENT_CACHE_TTL_MS:300000,
+  CLIENT_BATCH_CHUNK:20,
+  MAX_SCOPE_RENDER:200,
+  PROJECT_DESIGN_PAGE_SIZE:100,
+  ROUTE_TTL_MS:8*60*60*1000,
+  SYSTEM_LOG:{enabled:true,form:"Design_System_Log",failOpen:true},
 
   /* ================= V17.14 ASSIGNMENT EMAIL NOTIFICATION =================
      After a successful Design_Tracking save, the widget invokes one Creator
@@ -389,7 +401,7 @@ const AF={
   revisionKey:"Revision_Key",equipmentRecordId:"Equipment_Record_ID",
   drawingDocument:"Drawing_Document_Name",shortName:"Short_Name",active:"Active",
   primaryAssignment:"Primary_Assignment_ID",assignedFrom:"Assigned_From_ID",assignmentLevel:"Assignment_Level",
-  assignedBy:"Assigned_By",criteria:"Assignment_Criteria",responsibility:"Responsibility",furtherAssigned:"Further_Assigned",activityLog:"Activity_Log"
+  assignedBy:"Assigned_By",criteria:"Assignment_Criteria",responsibility:"Responsibility",furtherAssigned:"Further_Assigned",activityLog:"Activity_Log",workKey:"Work_Key",impactReviewStatus:"Impact_Review_Status",impactSourceDesignId:"Impact_Source_Design_ID",impactSourceRevision:"Impact_Source_Revision",impactReviewOn:"Impact_Review_On"
 };
 
 /* ================= V20: DESIGN DEPENDENCY FIELDS =====================
@@ -402,7 +414,7 @@ const DF={
   predecessorId:"Predecessor_Design_ID",predecessorTitle:"Predecessor_Design_Title",
   successorId:"Successor_Design_ID",successorTitle:"Successor_Design_Title",
   linkType:"Link_Type",relationshipType:"Relationship_Type",lagDays:"Lag_Days",
-  status:"Status",remark:"Remarks",createdByEmail:"Created_By_Email",createdByName:"Created_By_Name"
+  status:"Status",remark:"Remarks",createdByEmail:"Created_By_Email",createdByName:"Created_By_Name",predecessorRevision:"Predecessor_Revision_At_Link",impactStatus:"Impact_Status",impactedOn:"Impacted_On"
 };
 
 
@@ -645,9 +657,9 @@ const S={
   notifications:{open:false},
   dependencies:[],
   dependency:{report:"",loadedProjects:new Set(),loadingProjects:new Set(),error:""},
-  capabilities:{activityLog:true,scopeLevel:true,scopeLevelChoices:[],trackingFieldsLoaded:false,warnedActivity:false,warnedScope:false},
-  runtime:{health:new Map(),lastGoodReports:new Map(),writeLocks:new Set(),loaderStartedAt:0,loaderTimer:null,slowRequests:0,online:navigator.onLine},
-  cache:{equipmentByProject:new Map(),equipmentProjects:new Set(),equipmentFullLoaded:false,equipmentFull:null,equipmentPromises:new Map(),searchTimer:null,alertTimer:null},
+  capabilities:{activityLog:true,scopeLevel:true,scopeLevelChoices:[],trackingFieldsLoaded:false,warnedActivity:false,warnedScope:false,workKey:true,impactFields:true,trackingFieldLinks:new Set()},
+  runtime:{health:new Map(),lastGoodReports:new Map(),writeLocks:new Set(),loaderStartedAt:0,loaderTimer:null,slowRequests:0,online:navigator.onLine,systemLogDisabled:false,lastBatch:null},
+  cache:{equipmentByProject:new Map(),equipmentProjects:new Set(),equipmentFullLoaded:false,equipmentFull:null,equipmentPromises:new Map(),equipmentLoadedAt:new Map(),trackingByProject:new Map(),trackingProjects:new Set(),trackingLoadedAt:new Map(),trackingPromises:new Map(),trackingReportResolved:"",myTrackingLoaded:false,myTrackingPromise:null,searchTimer:null,alertTimer:null},
   // PDS data is loaded lazily. Summary is read from All_PD_Sheet; each detailed
   // source is loaded only after its Equipment/Nozzle/Structure/etc. card is used.
   pds:{
@@ -800,7 +812,7 @@ function friendlyErrorMessage(e){const raw=errorText(e);if(e?.isWriteTimeout)ret
 function showRuntimeError(e,title="Operation could not be completed"){const raw=errorText(e),friendly=friendlyErrorMessage(e);console.error(title,e);const modalOpen=!$("modalBackdrop")?.classList.contains("hidden");if(modalOpen){const body=$("modalBody");if(body){body.querySelectorAll(".runtime-error-banner").forEach(x=>x.remove());body.insertAdjacentHTML("afterbegin",`<div class="runtime-error-banner"><b>${h(friendly)}</b><div>Your current selections have been kept. Correct the issue or try again.</div><details><summary>Technical details</summary><div class="tiny" style="margin-top:5px;overflow-wrap:anywhere">${h(raw)}</div></details></div>`)}return}openModal(title,"Your current workspace is safe.",`<div class="notice warn"><b>${h(friendly)}</b><br>Please retry the operation. If this is a write timeout, refresh before trying again.</div><details style="margin-top:12px"><summary>Technical details</summary><div class="tiny" style="margin-top:8px;overflow-wrap:anywhere">${h(raw)}</div></details>`,`<button class="btn" data-modal="close">Close</button><button class="btn primary" data-runtime-refresh>Refresh Data</button>`)}
 function updateConnectionIndicator(state=navigator.onLine?"online":"offline"){S.runtime.online=state!=="offline";const pill=$("connectionPill"),text=$("connectionText");if(!pill||!text)return;pill.classList.remove("offline","slow");if(state==="offline"){pill.classList.add("offline");text.textContent="Offline"}else if(state==="slow"){pill.classList.add("slow");text.textContent="Slow connection"}else{text.textContent="Connected"}}
 function startReliabilityObservers(){updateConnectionIndicator();window.addEventListener("online",()=>{updateConnectionIndicator("online");toast("Connection restored.","good")});window.addEventListener("offline",()=>{updateConnectionIndicator("offline");toast("You are offline. Loaded data remains visible; saves are paused until the connection returns.","warn")})}
-function systemHealthHtml(){const rows=[...S.runtime.health.values()].sort((a,b)=>String(a.label||a.key).localeCompare(String(b.label||b.key)));const healthRows=rows.length?rows.map(x=>`<tr><td>${h(x.label||x.key)}</td><td><span class="pill ${x.status==="ok"?"green":x.status==="slow"?"amber":"red"}">${h(x.status)}</span></td><td>${x.rows!=null?h(x.rows):"—"}</td><td>${x.ms!=null?`${h(x.ms)} ms`:"—"}</td><td>${x.error?h(String(x.error).slice(0,140)):"—"}</td></tr>`).join(""):`<tr><td colspan="5">No health samples yet. Use the system and reopen this panel.</td></tr>`;return `<div class="health-grid"><div class="health-card"><div class="hk">Connection</div><div class="hv ${navigator.onLine?"health-ok":"health-bad"}">${navigator.onLine?"Online":"Offline"}</div></div><div class="health-card"><div class="hk">Projects</div><div class="hv">${S.projects.length}</div></div><div class="health-card"><div class="hk">Design Records</div><div class="hv">${S.records.length}</div></div><div class="health-card"><div class="hk">Equipment Cached</div><div class="hv">${S.equipment.length}</div></div></div><div class="table-wrap health-table"><table><thead><tr><th>Source / Operation</th><th>Status</th><th>Rows</th><th>Time</th><th>Last Error</th></tr></thead><tbody>${healthRows}</tbody></table></div><div class="notice good" style="margin-top:10px"><b>Reliability policy:</b> report reads can retry automatically. Create/update/delete operations are never blindly retried, which protects against duplicate records after a timeout.</div>`}
+function systemHealthHtml(){const rows=[...S.runtime.health.values()].sort((a,b)=>String(a.label||a.key).localeCompare(String(b.label||b.key)));const healthRows=rows.length?rows.map(x=>`<tr><td>${h(x.label||x.key)}</td><td><span class="pill ${x.status==="ok"?"green":x.status==="slow"?"amber":"red"}">${h(x.status)}</span></td><td>${x.rows!=null?h(x.rows):"—"}</td><td>${x.ms!=null?`${h(x.ms)} ms`:"—"}</td><td>${x.error?h(String(x.error).slice(0,140)):"—"}</td></tr>`).join(""):`<tr><td colspan="5">No health samples yet. Use the system and reopen this panel.</td></tr>`;return `<div class="health-grid"><div class="health-card"><div class="hk">Connection</div><div class="hv ${navigator.onLine?"health-ok":"health-bad"}">${navigator.onLine?"Online":"Offline"}</div></div><div class="health-card"><div class="hk">Projects</div><div class="hv">${S.projects.length}</div></div><div class="health-card"><div class="hk">Design Records Loaded</div><div class="hv">${S.records.length}</div></div><div class="health-card"><div class="hk">Equipment Cached</div><div class="hv">${S.equipment.length}</div></div></div><div class="table-wrap health-table"><table><thead><tr><th>Source / Operation</th><th>Status</th><th>Rows</th><th>Time</th><th>Last Error</th></tr></thead><tbody>${healthRows}</tbody></table></div><div class="notice good" style="margin-top:10px"><b>Reliability policy:</b> report reads can retry automatically. Create/update/delete operations are never blindly retried, which protects against duplicate records after a timeout.</div>`}
 function openSystemHealthModal(){openModal("System Health","Live Creator connectivity, source health and cache status.",systemHealthHtml(),`<button class="btn" data-runtime-health-refresh>Run Health Refresh</button><button class="btn primary" data-modal="close">Close</button>`)}
 
 /* =================== CREATOR REPORT READER HOTFIX ===================
@@ -2137,8 +2149,8 @@ function assertRuntimeIntegrity(){
   if(typeof fetchRecords!=="function")problems.push("fetchRecords helper missing");
   if(!S.demo && (!window.ZOHO||!ZOHO.CREATOR))problems.push("Zoho Creator Widget SDK unavailable");
   if(!S.demo && !ZOHO?.CREATOR?.DATA?.getRecords)problems.push("ZOHO.CREATOR.DATA.getRecords unavailable");
-  if(problems.length)throw new Error(`V20.7 runtime check failed: ${problems.join("; ")}`);
-  console.info("MEGA Project Design Control build V20.7 loaded", {fetchRecords:typeof fetchRecords, app:CONFIG.APP_NAME});
+  if(problems.length)throw new Error(`V20.8 runtime check failed: ${problems.join("; ")}`);
+  console.info("MEGA Project Design Control build V20.8 loaded", {fetchRecords:typeof fetchRecords, app:CONFIG.APP_NAME});
 }
 
 // bootstrap(): starts the complete widget.
@@ -3004,7 +3016,7 @@ async function saveAssignmentStatus(){const a=S.current,s=$("assignmentStatusEdi
 // openModal(): opens the reusable dialog shell.
 function openModal(title,sub,body,foot){$("modalTitle").textContent=title;$("modalSub").textContent=sub||"";$("modalBody").innerHTML=body||"";$("modalFoot").innerHTML=foot||"";$("modalBackdrop").classList.remove("hidden")}
 function closeModal(){$("modalBackdrop").classList.add("hidden")}
-function setupModal(){openModal("V17.18 One-Form + Universal Search + System Alerts","Assignment + Design Files + Revision History use your existing Design_Tracking form.",`<div class="notice good"><b>No new transaction form is used.</b> Assignment rows and Revision rows are both stored in Design_Tracking and separated by their backend identity fields.</div><div class="section-row"><div><h2>Assignment hierarchy</h2><p>Already added to your form.</p></div></div><div class="table-wrap"><table><thead><tr><th>Field</th><th>Link Name</th><th>Purpose</th></tr></thead><tbody><tr><td>Primary Assignment ID</td><td>Primary_Assignment_ID</td><td>First project-level assignment</td></tr><tr><td>Assigned From ID</td><td>Assigned_From_ID</td><td>Immediate previous responsibility</td></tr><tr><td>Assignment Level</td><td>Assignment_Level</td><td>0, 1, 2, 3… N</td></tr><tr><td>Assignment Criteria</td><td>Assignment_Criteria</td><td>Single Line</td></tr><tr><td>Responsibility</td><td>Responsibility</td><td>Readable scope</td></tr></tbody></table></div><div class="section-row"><div><h2>Design / revision identity</h2><p>Uses fields already visible in your Design_Tracking screenshots.</p></div></div><div class="table-wrap"><table><thead><tr><th>Field</th><th>Link Name</th><th>Use</th></tr></thead><tbody><tr><td>Logical Task Key</td><td>Logical_Task_Key</td><td>EXEC::AssignmentID::R0 / R1 / R2</td></tr><tr><td>Revision Key</td><td>Revision_Key</td><td>Unique revision identity</td></tr><tr><td>Parent Design ID</td><td>Parent_Design_ID</td><td>R0 → R1 → R2 chain</td></tr><tr><td>Revision</td><td>Revision</td><td>R0 / R1 / R2</td></tr><tr><td>Files</td><td>Drawing_File / Native_File / Supporting_File</td><td>Controlled document files</td></tr></tbody></table></div><div class="notice warn" style="margin-top:12px"><b>Do not use Parent_Design_ID for assignment hierarchy.</b> It is reserved only for revision history. Further_Assigned and Active are not written by the widget because this Creator app rejected Decision Box API values; children are derived from Assigned_From_ID.</div><div class="section-row"><div><h2>V17.14 Employee Email Notification</h2><p>Add one field to persist the timeline.</p></div></div><div class="table-wrap"><table><thead><tr><th>Field</th><th>Link Name</th><th>Type</th><th>Use</th></tr></thead><tbody><tr><td>Activity Log</td><td>Activity_Log</td><td>Multi Line</td><td>Assignment, revision, upload and workflow event history.</td></tr></tbody></table></div><div class="notice good" style="margin-top:10px"><b>Email source:</b> selected Employee Name is resolved against Employ_to_Create_ticket_Report and the normal <b>Email</b> is written to Assigned_To.</div><div class="notice good" style="margin-top:10px"><b>Automatic assignment email:</b> after save, the widget invokes Creator Custom API <b>send_design_assignment_email</b>. Single = one mail. Bulk = one summary mail per person.</div><div class="notice good" style="margin-top:10px"><b>Performance:</b> Project, Drawing and Employee masters load at startup. Equipment loads only for the opened Project and is cached. PDS reports remain lazy and cached after first use.</div><div class="notice good" style="margin-top:10px"><b>Universal Search:</b> typing in the top search opens a dedicated result page and searches Tag/Equipment, Project, Drawing, Design_Tracking assignments/revisions and All_PD_Sheet. Equipment and PDS are loaded lazily on first search.</div><div class="notice good" style="margin-top:10px"><b>System Alerts:</b> the new bell shows personal assignment, due/overdue and Checker/Reviewer/Approver workflow alerts. Read/unread is stored per logged-in user in this browser; no new Creator form is used.</div><div class="notice good" style="margin-top:10px"><b>PDS Workspace:</b> When the selected Drawing is PDS, the widget reads existing All_PD_Sheet plus Equipment / Nozzle / Structure / Piping / Bought Out / Consumable / E&amp;I PDS reports as read-only source data. V17.12 uses logical-work architecture and can bulk-assign Tag + PDS Type responsibilities; each assignment is a separate Design_Tracking row, while the source PDS report itself is never modified or copied.</div><div class="notice good" style="margin-top:10px"><b>V20.7 Reliability:</b> Creator report reads have timeout + safe retry, large reports use cursor pagination, equipment requests are coalesced, writes are never blindly retried, bulk saves show progress, last-good in-memory report data can be reused after a temporary read failure, and the new System Health button shows live source status.</div>`,`<button class="btn primary" data-modal="close">Close</button>`)}
+function setupModal(){openModal("V17.18 One-Form + Universal Search + System Alerts","Assignment + Design Files + Revision History use your existing Design_Tracking form.",`<div class="notice good"><b>No new transaction form is used.</b> Assignment rows and Revision rows are both stored in Design_Tracking and separated by their backend identity fields.</div><div class="section-row"><div><h2>Assignment hierarchy</h2><p>Already added to your form.</p></div></div><div class="table-wrap"><table><thead><tr><th>Field</th><th>Link Name</th><th>Purpose</th></tr></thead><tbody><tr><td>Primary Assignment ID</td><td>Primary_Assignment_ID</td><td>First project-level assignment</td></tr><tr><td>Assigned From ID</td><td>Assigned_From_ID</td><td>Immediate previous responsibility</td></tr><tr><td>Assignment Level</td><td>Assignment_Level</td><td>0, 1, 2, 3… N</td></tr><tr><td>Assignment Criteria</td><td>Assignment_Criteria</td><td>Single Line</td></tr><tr><td>Responsibility</td><td>Responsibility</td><td>Readable scope</td></tr></tbody></table></div><div class="section-row"><div><h2>Design / revision identity</h2><p>Uses fields already visible in your Design_Tracking screenshots.</p></div></div><div class="table-wrap"><table><thead><tr><th>Field</th><th>Link Name</th><th>Use</th></tr></thead><tbody><tr><td>Logical Task Key</td><td>Logical_Task_Key</td><td>EXEC::AssignmentID::R0 / R1 / R2</td></tr><tr><td>Revision Key</td><td>Revision_Key</td><td>Unique revision identity</td></tr><tr><td>Parent Design ID</td><td>Parent_Design_ID</td><td>R0 → R1 → R2 chain</td></tr><tr><td>Revision</td><td>Revision</td><td>R0 / R1 / R2</td></tr><tr><td>Files</td><td>Drawing_File / Native_File / Supporting_File</td><td>Controlled document files</td></tr></tbody></table></div><div class="notice warn" style="margin-top:12px"><b>Do not use Parent_Design_ID for assignment hierarchy.</b> It is reserved only for revision history. Further_Assigned and Active are not written by the widget because this Creator app rejected Decision Box API values; children are derived from Assigned_From_ID.</div><div class="section-row"><div><h2>V17.14 Employee Email Notification</h2><p>Add one field to persist the timeline.</p></div></div><div class="table-wrap"><table><thead><tr><th>Field</th><th>Link Name</th><th>Type</th><th>Use</th></tr></thead><tbody><tr><td>Activity Log</td><td>Activity_Log</td><td>Multi Line</td><td>Assignment, revision, upload and workflow event history.</td></tr></tbody></table></div><div class="notice good" style="margin-top:10px"><b>Email source:</b> selected Employee Name is resolved against Employ_to_Create_ticket_Report and the normal <b>Email</b> is written to Assigned_To.</div><div class="notice good" style="margin-top:10px"><b>Automatic assignment email:</b> after save, the widget invokes Creator Custom API <b>send_design_assignment_email</b>. Single = one mail. Bulk = one summary mail per person.</div><div class="notice good" style="margin-top:10px"><b>Performance:</b> Project, Drawing and Employee masters load at startup. Equipment loads only for the opened Project and is cached. PDS reports remain lazy and cached after first use.</div><div class="notice good" style="margin-top:10px"><b>Universal Search:</b> typing in the top search opens a dedicated result page and searches Tag/Equipment, Project, Drawing, Design_Tracking assignments/revisions and All_PD_Sheet. Equipment and PDS are loaded lazily on first search.</div><div class="notice good" style="margin-top:10px"><b>System Alerts:</b> the new bell shows personal assignment, due/overdue and Checker/Reviewer/Approver workflow alerts. Read/unread is stored per logged-in user in this browser; no new Creator form is used.</div><div class="notice good" style="margin-top:10px"><b>PDS Workspace:</b> When the selected Drawing is PDS, the widget reads existing All_PD_Sheet plus Equipment / Nozzle / Structure / Piping / Bought Out / Consumable / E&amp;I PDS reports as read-only source data. V17.12 uses logical-work architecture and can bulk-assign Tag + PDS Type responsibilities; each assignment is a separate Design_Tracking row, while the source PDS report itself is never modified or copied.</div><div class="notice good" style="margin-top:10px"><b>V20.8 Production Scale:</b> Creator report reads have timeout + safe retry, large reports use cursor pagination, equipment requests are coalesced, writes are never blindly retried, bulk saves show progress, last-good in-memory report data can be reused after a temporary read failure, and the new System Health button shows live source status.</div>`,`<button class="btn primary" data-modal="close">Close</button>`)}
 
 async function handleAction(act){if(act==="create-primary")return createPrimary();if(act==="edit-assignment")return editAssignmentModal();if(act==="start-r0")return startR0();if(act==="save-revision")return saveRevision();if(act==="new-revision")return openNewRevisionModal();if(act==="select-next-10"){const rows=S.targetRows.filter(r=>!existingChildForTarget(S.current,r)&&!S.selectedTargets.has(targetKey(r))).slice(0,10);rows.forEach(r=>S.selectedTargets.add(targetKey(r)));return renderView()}if(act==="select-all-targets"){S.targetRows.filter(r=>!existingChildForTarget(S.current,r)).forEach(r=>S.selectedTargets.add(targetKey(r)));return renderView()}if(act==="clear-targets"){S.selectedTargets.clear();return renderView()}if(act==="review-bulk")return reviewBulk()}
 async function handleModal(act,el){if(act==="close")return closeModal();if(act==="confirm-bulk")return confirmBulk();if(act==="confirm-pds-bulk")return confirmPdsBulk();if(act==="save-assignment-status")return saveAssignmentStatus();if(act==="confirm-return")return confirmReturn();if(act==="confirm-new-revision")return confirmNewRevision(el.dataset.nextRev)}
@@ -3389,7 +3401,7 @@ function wire(){
     const vm=e.target.closest('[data-v18-view]');if(vm){S.projectWorkspace.viewMode=vm.dataset.v18View;return renderView()}
     if(e.target.closest('[data-v18-assign]'))return guarded(()=>openV18AssignModal());
     if(e.target.closest('[data-v18-global-assign]')){const first=S.projects[0];if(!first)return toast('No Project available.','warn');return guarded(()=>openProjectWorkspace(first.code,'designs').then(()=>openV18AssignModal()))}
-    if(e.target.closest('[data-v18-refresh-project]'))return guarded(async()=>{await ensureEquipmentForProject(S.projectWorkspace.code,true);await refreshData();S.view='project';renderView()});
+    if(e.target.closest('[data-v18-refresh-project]'))return guarded(async()=>{await refreshData();S.view='project';renderView()});
     if(e.target.closest('[data-v18-reload-scope]'))return guarded(async()=>{v18CollectAssignDraft();busy(`Reloading Project ${S.projectWorkspace.code} scope…`);try{await ensureEquipmentForProject(S.projectWorkspace.code,true);renderV18AssignModal();}finally{idle();}});
     if(e.target.closest('[data-v18-create-assignment]'))return guarded(()=>createV18Assignment());
   });
@@ -3736,7 +3748,8 @@ async function createV18Assignment(){
       try{
         const data=v19ReadablePayload(p,drawing,recipient,draft,draft.mode==='Project Wise'?null:u),id=await addRecord(data),rec={ID:id,...data};
         S.records.push(rec);S.assignments.push(rec);created.push(rec);
-      }catch(err){failures.push({unit:u,error:err});console.error('V19 design work creation failed',u,err)}
+      }catch(err){if(typeof v208IsDuplicateError==='function'&&v208IsDuplicateError(err))skipped++;else{failures.push({unit:u,error:err});console.error('V20.8 design work creation failed',u,err)}}
+      if(processed%CONFIG.CLIENT_BATCH_CHUNK===0)await sleep(20)
     }
     if(created.length)await notifyCreatedAssignments(created);
     if(!created.length&&failures.length)throw new Error(`No work items were created. ${failures[0].error?.message||'Creator save failed.'}`);
@@ -4199,7 +4212,8 @@ async function v205CreatePdsDesignWork(draft,p,drawing){
     for(const unit of units){
       processed++;updateBusyProgress(processed,units.length,`Creating ${units.length} PDS work item${units.length===1?'':'s'}…`);
       if(v205PdsExistingWork(p,drawing,unit)){skipped++;continue;}
-      try{const data=v205PdsReadablePayload(p,drawing,recipient,draft,unit),id=await addRecord(data),rec={ID:id,...data};S.records.push(rec);S.assignments.push(rec);created.push(rec)}catch(err){failures.push({unit,error:err});console.error('V20.7 PDS work creation failed',unit,err)}
+      try{const data=v205PdsReadablePayload(p,drawing,recipient,draft,unit),id=await addRecord(data),rec={ID:id,...data};S.records.push(rec);S.assignments.push(rec);created.push(rec)}catch(err){if(typeof v208IsDuplicateError==='function'&&v208IsDuplicateError(err))skipped++;else{failures.push({unit,error:err});console.error('V20.8 PDS work creation failed',unit,err)}}
+      if(processed%CONFIG.CLIENT_BATCH_CHUNK===0)await sleep(20)
     }
     if(created.length)await notifyCreatedAssignments(created);if(!created.length&&failures.length)throw new Error(`No PDS work items were created. ${failures[0].error?.message||'Creator save failed.'}`);closeModal();const parts=[`${created.length} PDS work item${created.length===1?'':'s'} created for ${recipient.name}`];if(skipped)parts.push(`${skipped} already existed`);if(failures.length)parts.push(`${failures.length} failed`);toast(parts.join(' • '),failures.length?'warn':'good');S.projectWorkspace.tab='designs';renderView()
   }finally{idle()}
@@ -4230,8 +4244,314 @@ function wireV205Pds(){
   });
 }
 
-wire();wireV19();wireV20();wireV205Pds();bootstrap();
+
+
+/* ======================================================================
+   V20.8 PRODUCTION SCALE / INTEGRITY LAYER
+   ----------------------------------------------------------------------
+   This layer intentionally leaves the engineering business flow unchanged.
+   It adds project-scoped Design_Tracking reads, cache TTLs, work-key support,
+   concurrency guards, chunked high-volume writes, persistent fail-open error
+   logging, dependency revision-impact awareness, paged rendering, route
+   recovery and non-blocking notification delivery.
+
+   IMPORTANT:
+   - Existing Creator link names remain unchanged.
+   - Optional fields/forms are fail-open: the widget continues if they are not
+     created yet. See V20_8_CREATOR_SETUP.txt for the recommended hardening.
+   ====================================================================== */
+
+// ---------- Optional production field helpers ----------
+function v208FieldConfigured(link){
+  const set=S.capabilities?.trackingFieldLinks;
+  return set instanceof Set&&set.size?set.has(nk(link)):true; // unknown metadata => try once, then fail-open
+}
+function v208WorkKeyFromData(data){
+  const parts=[
+    scalar(data?.[AF.projectCode]),scalar(data?.[AF.drawingMasterId])||scalar(data?.[AF.shortName])||scalar(data?.[AF.drawingDocument]),
+    scalar(data?.[AF.scopeLevel])||scalar(data?.[AF.criteria]),scalar(data?.[AF.plantSection]),scalar(data?.[AF.plantSectionType]),
+    scalar(data?.[AF.tagNo])||scalar(data?.[AF.equipmentRecordId])||"PROJECT",scalar(data?.[AF.designType])
+  ].map(x=>nk(x)||"_");
+  return `WORK::${parts.join('::')}`.slice(0,240);
+}
+function v208IsDuplicateError(e){return /duplicate|already exists|unique|same work key|work_key/i.test(errorText(e))}
+function v208IsOptionalFieldError(e,field){const t=errorText(e);return t.includes(field)&&/invalid column|invalid expression|not available|does not exist|field/i.test(t)}
+
+// Capture available Design_Tracking field links once. This lets optional hardening
+// fields be used without breaking older Creator forms.
+const v208LoadTrackingFieldMetadataBase=loadTrackingFieldMetadata;
+loadTrackingFieldMetadata=async function(){
+  await v208LoadTrackingFieldMetadataBase();
+  if(S.demo||!ZOHO?.CREATOR?.META?.getFields)return;
+  try{
+    const raw=await creatorReadCall(()=>ZOHO.CREATOR.META.getFields(withApp({form_link_name:CONFIG.FORMS.tracking})),"Read Design_Tracking hardening fields",{retries:1,healthKey:"meta:tracking-hardening"});
+    const meta=(raw&&raw.code!=null)?assertResp(raw,"Get Design_Tracking fields"):raw;
+    const fields=meta?.fields||meta?.data||[];
+    S.capabilities.trackingFieldLinks=new Set((Array.isArray(fields)?fields:[]).map(x=>nk(x?.link_name||x?.field_link_name||x?.api_name||"" )).filter(Boolean));
+    if(S.capabilities.trackingFieldLinks.size){
+      S.capabilities.workKey=v208FieldConfigured(AF.workKey);
+      S.capabilities.impactFields=[AF.impactReviewStatus,AF.impactSourceDesignId,AF.impactSourceRevision,AF.impactReviewOn].every(v208FieldConfigured);
+    }
+  }catch(e){console.warn("V20.8 field-capability metadata unavailable",e)}
+};
+
+const v208PrepareCreatorPayloadBase=prepareCreatorPayload;
+prepareCreatorPayload=function(data){
+  const out=v208PrepareCreatorPayloadBase(data);
+  if(S.capabilities.workKey===false)delete out[AF.workKey];
+  if(S.capabilities.impactFields===false){delete out[AF.impactReviewStatus];delete out[AF.impactSourceDesignId];delete out[AF.impactSourceRevision];delete out[AF.impactReviewOn]}
+  return out;
+};
+
+// Add stable Work_Key to every direct work assignment. Creator-side Unique
+// validation is the final protection against two users creating the same work.
+const v208V19ReadablePayloadBase=v19ReadablePayload;
+v19ReadablePayload=function(p,drawing,recipient,draft,u=null){const data=v208V19ReadablePayloadBase(p,drawing,recipient,draft,u);data[AF.workKey]=v208WorkKeyFromData(data);return data};
+const v208PdsReadablePayloadBase=v205PdsReadablePayload;
+v205PdsReadablePayload=function(p,drawing,recipient,draft,unit){const data=v208PdsReadablePayloadBase(p,drawing,recipient,draft,unit);data[AF.workKey]=v208WorkKeyFromData(data);return data};
+
+// Retry once WITHOUT optional Work_Key only when the Creator field is not yet
+// configured. Duplicate/unique failures are never retried as a second create.
+const v208AddRecordBase=addRecord;
+addRecord=async function(data){
+  let payload={...data};if(isAssignmentRecord(payload)&&!payload[AF.workKey])payload[AF.workKey]=v208WorkKeyFromData(payload);
+  try{return await v208AddRecordBase(payload)}catch(e){
+    if(Object.prototype.hasOwnProperty.call(payload,AF.workKey)&&v208IsOptionalFieldError(e,AF.workKey)&&!v208IsDuplicateError(e)){
+      S.capabilities.workKey=false;delete payload[AF.workKey];console.warn("Work_Key field not configured; continuing with legacy duplicate protection.");return await v208AddRecordBase(payload)
+    }
+    throw e;
+  }
+};
+
+// ---------- Optimistic concurrency guard ----------
+function v208ModifiedStamp(r){return pick(r,SYSTEM_ALIASES.modifiedTime,"")||pick(r,SYSTEM_ALIASES.addedTime,"")}
+async function v208AssertNotChanged(id){
+  const local=S.records.find(x=>idOf(x)===String(id));if(!local)return null;
+  const localStamp=v208ModifiedStamp(local);if(!localStamp)return null;
+  const fresh=await getTrackingRecordById(id);if(!fresh)return null;
+  const freshStamp=v208ModifiedStamp(fresh);
+  if(freshStamp&&localStamp&&String(freshStamp)!==String(localStamp)){
+    const e=new Error("This record changed after you opened it. Refresh the design before saving so another user's update is not overwritten.");e.code="MEGA_CONFLICT";e.fresh=fresh;throw e;
+  }
+  return fresh;
+}
+const v208UpdateRecordBase=updateRecord;
+updateRecord=async function(id,data){
+  const local=S.records.find(x=>idOf(x)===String(id));
+  if(local)await v208AssertNotChanged(id);
+  const result=await v208UpdateRecordBase(id,data);
+  // Refresh system Modified_Time after successful writes so the next edit does
+  // not conflict with this user's own previous save.
+  if(local&&!S.demo){try{const fresh=await getTrackingRecordById(id);if(fresh)Object.assign(local,adaptRecord(fresh))}catch(e){console.warn("Post-save record refresh skipped",e)}}
+  return result;
+};
+
+const v208FriendlyErrorBase=friendlyErrorMessage;
+friendlyErrorMessage=function(e){if(e?.code==="MEGA_CONFLICT")return"Someone else updated this work item while you had it open. Refresh before saving.";return v208FriendlyErrorBase(e)};
+
+// ---------- Persistent fail-open system error log ----------
+async function v208PersistSystemLog({module="Widget",operation="",error,status="ERROR",project=""}={}){
+  const cfg=CONFIG.SYSTEM_LOG||{};if(!cfg.enabled||S.demo||S.runtime.systemLogDisabled||!ZOHO?.CREATOR?.DATA?.addRecords)return;
+  const raw=errorText(error||"");
+  const data={Occurred_On:toCreatorDateTime(),Module:String(module).slice(0,100),Project_Code:String(project||S.projectWorkspace?.code||scalar(S.current?.[AF.projectCode])||"").slice(0,100),Operation:String(operation||"").slice(0,150),User_Name:personDisplay(S.user)||String(S.user||""),Status:status,Error_Message:friendlyErrorMessage(error||raw).slice(0,500),Technical_Detail:raw.slice(0,5000),Widget_Build:"V20.8"};
+  try{await withTimeout(()=>ZOHO.CREATOR.DATA.addRecords(withApp({form_name:cfg.form,payload:{data}})),8000,"System log",{write:true})}catch(e){S.runtime.systemLogDisabled=true;console.warn("Design_System_Log unavailable; persistent error logging disabled for this session.",e)}
+}
+const v208ShowRuntimeErrorBase=showRuntimeError;
+showRuntimeError=function(e,title="Operation could not be completed"){setTimeout(()=>v208PersistSystemLog({module:"Widget",operation:title,error:e}),0);return v208ShowRuntimeErrorBase(e,title)};
+
+// ---------- Session cache for non-sensitive master display data ----------
+function v208SessionSet(key,value){try{sessionStorage.setItem(`MEGA_DESIGN_${key}`,JSON.stringify({at:Date.now(),value}))}catch(_){}}
+function v208SessionGet(key,maxAge=CONFIG.EQUIPMENT_CACHE_TTL_MS){try{const x=JSON.parse(sessionStorage.getItem(`MEGA_DESIGN_${key}`)||"null");if(x&&Date.now()-Number(x.at||0)<=maxAge)return x.value}catch(_){ }return null}
+function v208CacheMasters(){v208SessionSet("PROJECTS",S.projects);v208SessionSet("DRAWINGS",S.drawings);v208SessionSet("PLANT_SECTIONS",S.plantSections)}
+function v208RestoreMasterCache(){if(!S.projects.length)S.projects=v208SessionGet("PROJECTS",30*60*1000)||[];if(!S.drawings.length)S.drawings=v208SessionGet("DRAWINGS",30*60*1000)||[];if(!S.plantSections.length)S.plantSections=v208SessionGet("PLANT_SECTIONS",30*60*1000)||[]}
+
+// ---------- Project-scoped Design_Tracking ----------
+function v208ProjectLoaded(code){return S.cache.trackingProjects.has(String(code||""))}
+function v208ReplaceProjectTracking(code,rawRows){
+  code=String(code||"");const adapted=(rawRows||[]).map(adaptRecord);
+  const keep=S.records.filter(r=>scalar(r[AF.projectCode])!==code);
+  S.records=keep.concat(adapted);S.assignments=S.records.filter(isAssignmentRecord);S.revisions=S.records.filter(isRevisionRecord);
+  S.cache.trackingByProject.set(code,adapted);S.cache.trackingProjects.add(code);S.cache.trackingLoadedAt.set(code,Date.now());
+  setHealth(`tracking-project:${code}`,"ok",{label:`Design Tracking — Project ${code}`,rows:adapted.length,error:""});
+  return adapted;
+}
+async function v208DiscoverTrackingReportLink(){
+  if(S.cache.trackingReportResolved)return S.cache.trackingReportResolved;
+  const candidate=CONFIG.REPORTS.tracking;if(candidate){S.cache.trackingReportResolved=candidate;return candidate}
+  if(ZOHO?.CREATOR?.META?.getReports){const meta=assertResp(await creatorReadCall(()=>ZOHO.CREATOR.META.getReports(withApp({})),"Resolve Design Tracking report",{retries:1,healthKey:"meta:tracking-report"}),"Get Reports");const reports=meta.reports||[];const m=reports.find(r=>{const k=nk(r.link_name||r.display_name||"");return k.includes("designtracking")});if(m?.link_name){CONFIG.REPORTS.tracking=m.link_name;S.cache.trackingReportResolved=m.link_name;return m.link_name}}
+  throw new Error("Design Tracking report link could not be resolved.")
+}
+async function v208FetchTrackingForProject(code){
+  code=String(code||"").trim();if(!code)return[];if(S.demo)return demoFetch(CONFIG.REPORTS.tracking).filter(r=>scalar(r[AF.projectCode])===code);
+  let report=await v208DiscoverTrackingReportLink(),esc=creatorCriteriaEscape(code),criteria=[`(${AF.projectCode} == "${esc}")`,`(${AF.projectCode}.Project_Code == "${esc}")`],last=null;
+  for(let reportPass=0;reportPass<2;reportPass++){
+    for(const c of criteria){try{const rows=await fetchRecords(report,c,CONFIG.MAX_REPORT_PAGES);if(rows.length)return rows;if(last===null)last=[]}catch(e){last=e;console.warn("Project-scoped tracking criteria failed",c,e)}}
+    if(reportPass===0&&last instanceof Error&&ZOHO?.CREATOR?.META?.getReports){
+      try{const meta=assertResp(await creatorReadCall(()=>ZOHO.CREATOR.META.getReports(withApp({})),"Resolve Design Tracking report",{retries:1,healthKey:"meta:tracking-report"}),"Get Reports");const reports=meta.reports||[];const m=reports.find(r=>{const k=nk(r.link_name||r.display_name||"");return k.includes("designtracking")});if(m?.link_name&&m.link_name!==report){report=m.link_name;CONFIG.REPORTS.tracking=report;S.cache.trackingReportResolved=report;last=null;continue}}catch(metaErr){console.warn("Tracking report metadata resolution unavailable",metaErr)}
+    }
+    break;
+  }
+  if(Array.isArray(last))return last;throw last||new Error(`Design Tracking could not be read for Project ${code}.`)
+}
+async function ensureTrackingForProject(code,force=false){
+  code=String(code||"").trim();if(!code)return[];
+  const age=Date.now()-Number(S.cache.trackingLoadedAt.get(code)||0),cached=S.cache.trackingByProject.get(code);
+  if(!force&&Array.isArray(cached)&&age<CONFIG.TRACKING_CACHE_TTL_MS)return cached;
+  const key=`${code}:${force?'force':'normal'}`;if(S.cache.trackingPromises.has(key))return await S.cache.trackingPromises.get(key);
+  const task=(async()=>{const started=reliabilityNow();try{const rows=await v208FetchTrackingForProject(code);v208ReplaceProjectTracking(code,rows);const ms=reliabilityNow()-started;setHealth(`tracking-project:${code}`,ms>=CONFIG.SLOW_REQUEST_MS?"slow":"ok",{label:`Design Tracking — Project ${code}`,rows:rows.length,ms:Math.round(ms),error:""});return rows}catch(e){const old=S.cache.trackingByProject.get(code);setHealth(`tracking-project:${code}`,"error",{label:`Design Tracking — Project ${code}`,error:errorText(e)});if(Array.isArray(old)){toast(`Project ${code} refresh failed. Keeping the previously loaded design data.`,"warn");return old}throw e}})();
+  S.cache.trackingPromises.set(key,task);try{return await task}finally{S.cache.trackingPromises.delete(key)}
+}
+
+// My Work / workflow alerts load only records related to the current person,
+// rather than forcing an all-project Design_Tracking download at startup.
+async function v208EnsureMyTracking(force=false){
+  if(S.cache.myTrackingLoaded&&!force)return S.assignments.filter(a=>currentUserMatches(a[AF.assignedTo])||currentUserMatches(a[AF.checker])||currentUserMatches(a[AF.reviewer])||currentUserMatches(a[AF.approver]));
+  if(S.cache.myTrackingPromise&&!force)return await S.cache.myTrackingPromise;
+  const task=(async()=>{if(S.demo){S.cache.myTrackingLoaded=true;return S.assignments}const report=await v208DiscoverTrackingReportLink(),email=String(S.user||"").trim(),name=personDisplay(S.user)||email,queries=[];if(email)for(const f of [AF.assignedTo,AF.checker,AF.reviewer,AF.approver])queries.push(`(${f} == "${creatorCriteriaEscape(email)}")`);if(name&&name!==email)queries.push(`(${AF.assignedEmployeeName} == "${creatorCriteriaEscape(name)}")`);const map=new Map();for(const q of queries){try{for(const r of await fetchRecords(report,q,CONFIG.MAX_REPORT_PAGES))map.set(idOf(r),r)}catch(e){console.warn("My Work scoped query failed",q,e)}}const adapted=[...map.values()].map(adaptRecord);const existing=new Map(S.records.map(r=>[idOf(r),r]));for(const r of adapted)existing.set(idOf(r),r);S.records=[...existing.values()];S.assignments=S.records.filter(isAssignmentRecord);S.revisions=S.records.filter(isRevisionRecord);S.cache.myTrackingLoaded=true;setHealth("tracking-my-work","ok",{label:"Design Tracking — My Work",rows:adapted.length,error:""});return adapted})();
+  S.cache.myTrackingPromise=task;try{return await task}finally{S.cache.myTrackingPromise=null}
+}
+
+// Equipment cache TTL avoids stale scope data while preserving lazy loading.
+const v208EnsureEquipmentBase=ensureEquipmentForProject;
+ensureEquipmentForProject=async function(code,force=false){code=String(code||"").trim();const at=Number(S.cache.equipmentLoadedAt.get(code)||0),stale=Date.now()-at>CONFIG.EQUIPMENT_CACHE_TTL_MS;const rows=await v208EnsureEquipmentBase(code,force||stale);S.cache.equipmentLoadedAt.set(code,Date.now());return rows};
+
+// ---------- Background notification queue ----------
+const v208NotifyAssignmentsBase=notifyCreatedAssignments;
+notifyCreatedAssignments=async function(records){
+  const copy=(records||[]).map(r=>({...r}));
+  setTimeout(()=>v208NotifyAssignmentsBase(copy).catch(e=>{console.warn("Background assignment notification failed",e);v208PersistSystemLog({module:"Notification",operation:"Assignment email",error:e,project:scalar(copy[0]?.[AF.projectCode])})}),0);
+  return true;
+};
+
+// ---------- Dependency revision impact ----------
+function v208PredRevisionForDependency(r){return scalar(r?.[DF.predecessorRevision])}
+function v208DependencyImpactRequired(r){const pred=depWorkById(scalar(r?.[DF.predecessorId]));if(!pred)return false;const current=scalar(currentRevision(pred)?.[AF.revision]);const linked=v208PredRevisionForDependency(r);return Boolean(current&&linked&&nk(current)!==nk(linked))||nk(scalar(r?.[DF.impactStatus])).includes("reviewrequired")}
+const v208AddDependencyBase=addDependencyRecord;
+addDependencyRecord=async function(data){
+  const payload={...data},pred=depWorkById(scalar(payload[DF.predecessorId])),rev=scalar(currentRevision(pred)?.[AF.revision]);if(rev)payload[DF.predecessorRevision]=rev;
+  try{return await v208AddDependencyBase(payload)}catch(e){if(Object.prototype.hasOwnProperty.call(payload,DF.predecessorRevision)&&v208IsOptionalFieldError(e,DF.predecessorRevision)){delete payload[DF.predecessorRevision];return await v208AddDependencyBase(payload)}throw e}
+};
+async function v208UpdateDependencyRecord(id,data){
+  if(S.demo){const r=S.dependencies.find(x=>idOf(x)===String(id));if(r)Object.assign(r,data);return id}
+  const report=await resolveDependencyReport();if(!report)throw new Error("Dependency report is unavailable.");
+  const raw=await creatorWriteCall(()=>ZOHO.CREATOR.DATA.updateRecordById(withApp({report_name:report,id:String(id),payload:{data}})),"Update dependency impact",{healthKey:"write:dependency-impact"});if(raw&&raw.code!=null)assertResp(raw,"Update dependency impact");const local=S.dependencies.find(x=>idOf(x)===String(id));if(local)Object.assign(local,data);return id
+}
+async function v208FlagDependencyImpacts(assignment,newRevision){
+  if(!assignment)return;const code=scalar(assignment[AF.projectCode]);try{await loadDependenciesForProject(code);const links=S.dependencies.filter(r=>scalar(r[DF.predecessorId])===idOf(assignment)&&dependencyStatus(r)!=="Closed");for(const link of links){const patch={[DF.impactStatus]:"Review Required",[DF.impactedOn]:toCreatorDateTime()};try{await v208UpdateDependencyRecord(idOf(link),patch)}catch(e){if(v208IsOptionalFieldError(e,DF.impactStatus)||v208IsOptionalFieldError(e,DF.impactedOn)){Object.assign(link,patch);console.warn("Optional dependency impact fields are not configured; impact remains session-derived.")}else console.warn("Dependency impact update failed",e)}const succ=depWorkById(scalar(link[DF.successorId]));if(succ){
+      const impactPatch={[AF.impactReviewStatus]:"Review Required",[AF.impactSourceDesignId]:idOf(assignment),[AF.impactSourceRevision]:newRevision,[AF.impactReviewOn]:toCreatorDateTime()};
+      try{await updateRecord(idOf(succ),impactPatch);Object.assign(succ,impactPatch)}catch(impactErr){if(v208IsOptionalFieldError(impactErr,AF.impactReviewStatus)||v208IsOptionalFieldError(impactErr,AF.impactSourceRevision)){S.capabilities.impactFields=false;Object.assign(succ,impactPatch);console.warn("Optional successor impact fields are not configured; impact remains session-derived.")}else console.warn("Successor impact flag failed",impactErr)}
+      const recipient=assignmentRecipientFromRecord(succ);if(recipient.email){const subject=`[Design Control] Impact Review Required - ${code}`;const html=`<div style="font-family:Arial,sans-serif"><h3>Engineering dependency changed</h3><p>The predecessor <b>${h(depWorkTitle(assignment))}</b> has a new revision <b>${h(newRevision)}</b>.</p><p>Please review impact on <b>${h(depWorkTitle(succ))}</b>.</p></div>`;setTimeout(()=>invokeNotificationCustomApi(recipient,subject,html,"dependency-impact-email").catch(()=>{}),0)}
+    }}}catch(e){console.warn("Dependency impact engine failed open",e);v208PersistSystemLog({module:"Dependency",operation:"Revision impact",error:e,project:code})}
+}
+const v208ConfirmNewRevisionBase=confirmNewRevision;
+confirmNewRevision=async function(next){const a=S.current;await v208ConfirmNewRevisionBase(next);setTimeout(()=>v208FlagDependencyImpacts(a,next),0)};
+
+const v208DependencyRowHtmlBase=dependencyRowHtml;
+dependencyRowHtml=function(r,kind){const base=v208DependencyRowHtmlBase(r,kind);if(kind!=='pred'&&!v208DependencyImpactRequired(r))return base;const impact=v208DependencyImpactRequired(r)?`<div class="v208-impact"><strong>Impact Review Required</strong>Predecessor revision changed after this link was defined.</div>`:"";return base+impact};
+
+const v208RenderOverviewBase=renderOverviewTab;
+renderOverviewTab=function(){const a=S.current,impact=nk(scalar(a?.[AF.impactReviewStatus])).includes("reviewrequired");const notice=impact?`<div class="v208-impact"><strong>Dependency Impact Review Required</strong>Upstream ${h(scalar(a?.[AF.impactSourceRevision])||'design revision')} changed. Review this design before the next issue/revision.</div>`:"";return notice+v208RenderOverviewBase()};
+
+// ---------- Project-scoped startup / refresh ----------
+bootstrap=async function(){
+  busy("Loading project masters…");
+  try{
+    if(S.demo){S.user="rohan@mega.tc";$('demoBanner')?.classList.remove('hidden')}else{if(!window.ZOHO||!ZOHO.CREATOR)throw new Error("Zoho Creator Widget SDK is not available in this page.");const init=await withTimeout(()=>ZOHO.CREATOR.UTIL.getInitParams(),12000,"Connect to Zoho Creator");S.user=init?.loginUser||"";S.app=init?.appLinkName||CONFIG.APP_NAME}
+    assertRuntimeIntegrity();startReliabilityObservers();
+    const [pr,dr,er,psr]=await Promise.all([safeSource(CONFIG.REPORTS.projects,"Project master"),safeSource(CONFIG.REPORTS.drawings,"Drawing master"),safeSource(CONFIG.REPORTS.employees,"Employee master"),safeSource(CONFIG.REPORTS.plantSections,"Plant Section master")]);
+    S.projects=pr.map(adaptProject).filter(x=>x.code).sort((a,b)=>String(b.code).localeCompare(String(a.code),undefined,{numeric:true}));
+    S.drawings=dr.map(adaptDrawing).filter(x=>x.name).sort((a,b)=>a.name.localeCompare(b.name));
+    S.employees=er.map(adaptEmployee).filter(x=>x.email||x.name).sort((a,b)=>a.name.localeCompare(b.name));
+    S.plantSections=psr.map(adaptPlantSectionMaster).filter(x=>x.section||x.type);v208RestoreMasterCache();v208CacheMasters();
+    S.plantSectionTypeMap=new Map();S.plantSections.forEach(x=>{if(x.type&&x.section)S.plantSectionTypeMap.set(nk(x.type),x.section)});S.equipment=[];S.records=[];S.assignments=[];S.revisions=[];
+    try{await loadTrackingFieldMetadata()}catch(_){ }
+    $('sessionPill').textContent=S.user?`Signed in: ${personDisplay(S.user)||S.user}`:"Creator session connected";S.view='projects';renderView();startSystemAlertRefresh();setTimeout(()=>guarded(v208RestoreRoute),0);
+    const missing=[];if(!S.projects.length)missing.push(CONFIG.REPORTS.projects);if(!S.drawings.length)missing.push(CONFIG.REPORTS.drawings);if(!S.employees.length)missing.push(CONFIG.REPORTS.employees);if(missing.length)toast(`No rows could be read from: ${missing.join(', ')}.`,"warn")
+  }catch(e){console.error(e);$('sessionPill').textContent='Creator session error';v208RestoreMasterCache();if(S.projects.length){S.view='projects';renderView();showRuntimeError(e,"Live masters unavailable — cached project list shown")}else{$('page').innerHTML=`<div class="panel"><div class="panel-body"><div class="empty"><div class="ico">⚠</div><strong>Creator masters could not be loaded</strong><div>${h(friendlyErrorMessage(e))}</div></div></div></div>`}}
+  finally{idle()}
+};
+
+refreshData=async function(){
+  const code=String(S.projectWorkspace?.code||"");busy(code?`Refreshing Project ${code}…`:"Refreshing masters…");try{
+    if(code){await Promise.all([ensureEquipmentForProject(code,true),ensureTrackingForProject(code,true)]);if(S.dependency.loadedProjects.has(code)){S.dependency.loadedProjects.delete(code);await loadDependenciesForProject(code,true)}S.view='project'}
+    else{const [pr,dr,er,psr]=await Promise.all([safeSource(CONFIG.REPORTS.projects,"Project master"),safeSource(CONFIG.REPORTS.drawings,"Drawing master"),safeSource(CONFIG.REPORTS.employees,"Employee master"),safeSource(CONFIG.REPORTS.plantSections,"Plant Section master")]);S.projects=pr.map(adaptProject).filter(x=>x.code).sort((a,b)=>String(b.code).localeCompare(String(a.code),undefined,{numeric:true}));S.drawings=dr.map(adaptDrawing).filter(x=>x.name).sort((a,b)=>a.name.localeCompare(b.name));S.employees=er.map(adaptEmployee).filter(x=>x.email||x.name).sort((a,b)=>a.name.localeCompare(b.name));S.plantSections=psr.map(adaptPlantSectionMaster).filter(x=>x.section||x.type);v208CacheMasters()}
+    renderView();toast("Workspace refreshed.","good")
+  }finally{idle()}
+};
+
+silentAlertRefresh=async function(){if(S.demo||!navigator.onLine)return;try{if(S.cache.myTrackingLoaded)await v208EnsureMyTracking(true);const code=String(S.projectWorkspace?.code||"");if(code&&v208ProjectLoaded(code))await ensureTrackingForProject(code,true);updateNotificationBell()}catch(e){console.warn("Scoped alert refresh failed",e)}};
+
+openProjectWorkspace=async function(code,tab="designs"){
+  code=String(code||"").trim();if(!code)return;busy(`Loading Project ${code}…`);try{await Promise.all([ensureEquipmentForProject(code),ensureTrackingForProject(code)]);S.projectWorkspace.code=code;S.projectWorkspace.tab=tab;S.projectWorkspace.status='All';S.projectWorkspace.owner='All';S.projectWorkspace.page=1;S.view='project';S.previousView='projects';renderView()}finally{idle()}
+};
+
+// ---------- On-demand My Work ----------
+function v208MyWorkSkeleton(title){$('page').innerHTML=`<div class="section-row"><div><h2>${h(title)}</h2><p>Loading only the design records relevant to you.</p></div><span class="v208-demand"><span class="mini-spinner"></span>On-demand load</span></div><div class="v208-loading-skeleton">${'<div class="v208-sk"></div>'.repeat(5)}</div>`}
+const v208RenderHomeBase=renderHome, v208RenderMyWorkBase=renderMyWork;
+renderHome=function(){if(!S.cache.myTrackingLoaded){v208MyWorkSkeleton("Dashboard");if(!S.cache.myTrackingPromise)setTimeout(()=>guarded(async()=>{await v208EnsureMyTracking();if(S.view==='home')v208RenderHomeBase()}),0);return}return v208RenderHomeBase()};
+renderMyWork=function(){if(!S.cache.myTrackingLoaded){v208MyWorkSkeleton("My Work");if(!S.cache.myTrackingPromise)setTimeout(()=>guarded(async()=>{await v208EnsureMyTracking();if(S.view==='mine')v208RenderMyWorkBase()}),0);return}return v208RenderMyWorkBase()};
+
+// ---------- Project list shows on-demand state instead of forcing all data ----------
+renderProjects=function(){
+  const q=S.globalSearch.trim().toLowerCase(),codes=v18ProjectCodes().filter(code=>{const p=v18ProjectForCode(code),st=v208ProjectLoaded(code)?v18ProjectStats(code):{owners:[]};return !q||[code,p.name,...st.owners].join(' ').toLowerCase().includes(q)});
+  $('page').innerHTML=`<div class="project-index-head"><div class="project-index-title"><h2>Projects</h2><p>Projects load instantly. Engineering work is fetched only when that project is opened, so performance does not degrade as Design_Tracking grows.</p></div><div class="actions"><span class="pill brand">${codes.length} Projects</span></div></div><div class="project-list"><table class="project-table"><thead><tr><th>Project Code</th><th>Project Name</th><th>Status</th><th>Design Work</th><th>Open</th><th>Completed</th><th>Overdue</th><th>Engineering Progress</th><th>Current Owners</th></tr></thead><tbody>${codes.length?codes.map(code=>{const p=v18ProjectForCode(code),loaded=v208ProjectLoaded(code),st=loaded?v18ProjectStats(code):null;return `<tr class="project-row" data-project-open="${h(code)}"><td class="project-code">${h(code)}</td><td><div class="project-name">${h(p.name||'—')}</div><div class="v208-load-state ${loaded?'loaded':'ondemand'}">${loaded?'Loaded':'On demand'}</div></td><td>${loaded?v18ProjectStatus(st):'<span class="pill">Open to load</span>'}</td><td>${loaded?st.total:'—'}</td><td>${loaded?st.open.length:'—'}</td><td>${loaded?st.completed.length:'—'}</td><td>${loaded?(st.overdue?`<span class="pill red">${st.overdue}</span>`:'0'):'—'}</td><td>${loaded?`<div class="project-progress-label"><span>Engineering</span><b>${st.avg}%</b></div>${progressBar(st.avg)}`:'<span class="tiny muted">Loads with project</span>'}</td><td>${loaded?h(st.owners.slice(0,3).join(', ')||'—'):'—'}</td></tr>`}).join(''):`<tr><td colspan="9"><div class="empty compact"><strong>No projects found</strong>Project master data will appear here.</div></td></tr>`}</tbody></table></div>`
+};
+
+// ---------- Paged project-design rendering ----------
+renderProjectDesignsV18=function(){
+  const all=v18FilteredAssignments(),owners=[...new Set(v18ProjectAssignments(S.projectWorkspace.code).map(assignmentDisplayUser).filter(Boolean))].sort(),statuses=[...new Set(v18ProjectAssignments(S.projectWorkspace.code).map(a=>scalar(a[AF.status])).filter(Boolean))].sort();
+  const size=Math.max(25,Number(S.projectWorkspace.pageSize||CONFIG.PROJECT_DESIGN_PAGE_SIZE)),pages=Math.max(1,Math.ceil(all.length/size));S.projectWorkspace.page=Math.min(Math.max(1,Number(S.projectWorkspace.page||1)),pages);const start=(S.projectWorkspace.page-1)*size,rows=all.slice(start,start+size),heavy=S.projectWorkspace.viewMode!=='list'&&all.length>500,viewRows=heavy?all.slice(0,500):rows;
+  const body=S.projectWorkspace.viewMode==='kanban'?renderProjectKanbanV18(viewRows):S.projectWorkspace.viewMode==='gantt'?renderProjectGanttV18(viewRows):`<div class="task-list-panel"><table class="task-table v19-friendly-table"><thead><tr><th>Drawing / Design</th><th>Responsibility</th><th>Assigned To</th><th>Status</th><th>Start</th><th>Target</th><th>Progress</th><th>Revision</th></tr></thead><tbody>${rows.length?rows.map(v18AssignmentRow).join(''):`<tr><td colspan="8"><div class="empty compact"><strong>No design work yet</strong>Use Assign Design to start.</div></td></tr>`}</tbody></table>${all.length>size?`<div class="v208-pager"><div class="pages">Showing ${start+1}-${Math.min(start+size,all.length)} of ${all.length}</div><div class="actions"><button class="btn sm" data-v208-design-page="prev" ${S.projectWorkspace.page<=1?'disabled':''}>← Previous</button><span class="pill">Page ${S.projectWorkspace.page} / ${pages}</span><button class="btn sm" data-v208-design-page="next" ${S.projectWorkspace.page>=pages?'disabled':''}>Next →</button></div></div>`:''}</div>`;
+  return `<div class="project-toolbar"><div class="project-filters"><select id="v18StatusFilter"><option>All</option>${statuses.map(x=>`<option ${x===S.projectWorkspace.status?'selected':''}>${h(x)}</option>`).join('')}</select><select id="v18OwnerFilter"><option>All</option>${owners.map(x=>`<option ${x===S.projectWorkspace.owner?'selected':''}>${h(x)}</option>`).join('')}</select><span class="pill brand">${all.length} design work items</span></div><div class="view-switch"><button data-v18-view="list" class="${S.projectWorkspace.viewMode==='list'?'active':''}">List</button><button data-v18-view="kanban" class="${S.projectWorkspace.viewMode==='kanban'?'active':''}">Kanban</button><button data-v18-view="gantt" class="${S.projectWorkspace.viewMode==='gantt'?'active':''}">Gantt</button></div></div>${heavy?`<div class="v208-scale-note"><b>Large view:</b> Kanban/Gantt is limited to the first 500 filtered items for browser performance. List view remains fully paged.</div>`:''}<div style="margin-top:10px">${body}</div>`
+};
+
+// ---------- Paged scope selection (normal drawings) ----------
+function v208ScopeFilteredUnits(d){const q=String(d.scopeSearch||'').trim().toLowerCase(),f=d.scopeFilters||{};return v19Units(d.mode).filter(u=>{const hay=v19ScopeUnitText(d.mode,u).toLowerCase();if(q&&!hay.includes(q))return false;if(f.section&&u.section!==f.section)return false;if(f.type&&(d.mode==='Section Wise'?!(u.types||[]).includes(f.type):u.type!==f.type))return false;if(f.category&&u.category!==f.category)return false;if(f.equipmentType&&u.equipmentType!==f.equipmentType)return false;return true})}
+v204VisibleScopeKeys=function(){const d=v19EnsureDraft();return v208ScopeFilteredUnits(d).map(u=>u.key)};
+v204ApplyScopeFilters=function(){const d=v19EnsureDraft(),f=v204ActiveFilterValues();d.scopeFilters={...d.scopeFilters,...f};d.scopeSearch=$('v19ScopeSearch')?.value??d.scopeSearch??'';d.scopePage=1;clearTimeout(S.cache.searchTimer);S.cache.searchTimer=setTimeout(()=>renderV18AssignModal(),220)};
+v19ScopePickerHtml=function(d){
+  const drawing=S.drawings.find(x=>String(x.id)===String(d.drawingId));if(!drawing)return `<div class="v182-empty"><b>Select a Drawing / Design first</b>The system will automatically show the correct responsibility scope.</div>`;if(!d.mode)return `<div class="notice danger"><b>Drawing scope is not configured.</b><br>${h(drawing.name)} — ${h(v19DrawingScopeRaw(drawing)||'blank')}</div>`;if(v205IsPdsDrawingMaster(drawing))return v205PdsScopePickerHtml(v205PdsDraft(d),drawing);if(d.mode==='Project Wise')return `<div class="v182-project-scope"><div class="scope-ico">PRJ</div><div><div class="scope-title">Entire Project ${h(S.projectWorkspace.code)}</div><div class="scope-copy">One work item will be created for the complete project.</div></div><span class="pill green">Overall Project</span></div>`;
+  d.scopeSearch=d.scopeSearch||'';d.scopePage=Math.max(1,Number(d.scopePage||1));const units=v19Units(d.mode),filtered=v208ScopeFilteredUnits(d),selected=new Set(v19SelectedValues(d)),size=CONFIG.MAX_SCOPE_RENDER,pages=Math.max(1,Math.ceil(filtered.length/size));d.scopePage=Math.min(d.scopePage,pages);const start=(d.scopePage-1)*size,page=filtered.slice(start,start+size),filterCount=v204FilterCount(d);if(!units.length)return `<div class="v182-empty"><b>No ${h(v19ScopeLabel(d.mode))} found for Project ${h(S.projectWorkspace.code)}</b>Use Reload Scope Data.</div>`;
+  return `<div class="v182-scope-toolbar"><div class="v182-scope-search"><input id="v19ScopeSearch" class="input" value="${h(d.scopeSearch)}" placeholder="Search ${h(v19ScopeLabel(d.mode))}…"></div><div class="v182-scope-actions"><button type="button" class="btn sm v204-filter-toggle" data-v204-toggle-filters>Filters <span id="v204FilterCount" class="count ${filterCount?'':'hidden'}">${filterCount}</span></button><button type="button" class="btn sm" data-v19-action="select-all">Select All Filtered</button><button type="button" class="btn sm" data-v19-action="clear">Deselect All</button></div></div>${v204FilterPanelHtml(d,units)}<div class="v182-selection-meta"><span id="v19SelectedCount" class="selected-count">${selected.size} selected</span><span class="tiny muted">${filtered.length} matching • ${units.length} available</span><span class="tiny muted">High-volume queue supports up to ${CONFIG.MAX_BATCH} items</span></div><div class="v182-select-list">${page.map(u=>v204ScopeItemHtml(d.mode,u,selected.has(u.key))).join('')}</div>${filtered.length>size?`<div class="v208-pager"><div class="pages">Showing ${start+1}-${Math.min(start+size,filtered.length)} of ${filtered.length} filtered</div><div class="actions"><button type="button" class="btn sm" data-v208-scope-page="prev" ${d.scopePage<=1?'disabled':''}>← Previous</button><span class="pill">Page ${d.scopePage} / ${pages}</span><button type="button" class="btn sm" data-v208-scope-page="next" ${d.scopePage>=pages?'disabled':''}>Next →</button></div></div>`:''}`
+};
+
+// ---------- Paged PDS selection ----------
+const v208PdsScopePickerBase=v205PdsScopePickerHtml;
+v205PdsScopePickerHtml=function(d,drawing){
+  if(!Array.isArray(S.pds.summary))return v208PdsScopePickerBase(d,drawing);if(!S.pds.resolved.all&&S.pds.errors.all)return v208PdsScopePickerBase(d,drawing);
+  d.pdsPage=Math.max(1,Number(d.pdsPage||1));const all=v205PdsAllUnits(),visible=v205PdsVisibleUnits(d),size=CONFIG.MAX_SCOPE_RENDER,pages=Math.max(1,Math.ceil(visible.length/size));d.pdsPage=Math.min(d.pdsPage,pages);const start=(d.pdsPage-1)*size,page=visible.slice(start,start+size),selected=new Set(d.pdsSelectedUnits||[]),p=v18ProjectForCode(S.projectWorkspace.code),available=visible.filter(u=>!v205PdsExistingWork(p,drawing,u)),grouped=new Map();for(const u of page){if(!grouped.has(u.group.key))grouped.set(u.group.key,{group:u.group,units:[]});grouped.get(u.group.key).units.push(u)}
+  return `<div class="v205-pds-info"><div><div class="title">PDS assignment logic from the old widget is active</div><div class="copy">One Tag is shown once. Each real <b>PDS_Related_To</b> is an independent work item. Source PDS data remains read-only.</div></div><span class="pill brand">${all.length} PDS work items</span></div><div class="v205-pds-toolbar"><div class="field"><label>Search Tag / Equipment / Section</label><input id="v205PdsSearch" class="input" value="${h(d.pdsSearch||'')}" placeholder="e.g. TK-1401, Tank, CO2 Recovery"></div><div class="field"><label>PDS Type</label><select id="v205PdsTypeFilter">${v205PdsTypeOptions(d)}</select></div><div class="field"><label>PDS Source Status</label><select id="v205PdsStatusFilter">${v205PdsStatusOptions(d)}</select></div><div class="v205-pds-tools"><button type="button" class="btn sm v204-filter-toggle" data-v205-toggle-filters>Filters <span class="count ${v205PdsFilterCount(d)?'':'hidden'}">${v205PdsFilterCount(d)}</span></button><button type="button" class="btn sm" data-v205-select-all>Select All Filtered</button><button type="button" class="btn sm" data-v205-clear>Deselect All</button></div></div>${v205PdsFilterPanelHtml(d,all)}<div class="v205-pds-meta"><span class="selected-count">${selected.size} selected</span><span class="tiny muted">${visible.length} matching • ${available.length} available • up to ${CONFIG.MAX_BATCH} per queue</span></div>${page.length?`<div class="v205-pds-list">${[...grouped.values()].map(x=>{const g=x.group;return `<div class="v205-pds-tag"><div class="v205-pds-tag-head"><div><div class="v205-pds-tag-name">${h(g.tag||g.name||'PDS Work')}${g.tag&&g.name?` — ${h(g.name)}`:''}</div><div class="v205-pds-tag-context">${h([g.plantSection,g.plantSectionType,g.equipmentCategory,g.equipmentType].filter(Boolean).join(' • ')||'Project '+S.projectWorkspace.code)}</div></div><span class="pill">${x.units.length} PDS type${x.units.length===1?'':'s'}</span></div><div class="v205-pds-units">${x.units.map(u=>{const existing=v205PdsExistingWork(p,drawing,u),checked=selected.has(u.key);return `<label class="v205-pds-unit ${checked?'selected':''} ${existing?'assigned':''}" data-v205-pds-unit-row="${h(u.key)}"><input type="checkbox" class="v205-pds-check" value="${h(u.key)}" ${checked?'checked':''} ${existing?'disabled':''}><div><div class="name">${h(u.typeLabel)}</div><div class="sub">${v205PdsStatusHtml(u)}${u.sourceRows.length?`<span class="pill">${u.sourceRows.length} source row${u.sourceRows.length===1?'':'s'}</span>`:''}</div></div><div class="owner">${existing?`<span class="pill green">Already Assigned</span><div>${h(assignmentDisplayUser(existing))}</div>`:'<span class="pill">Yet to Assign</span>'}</div></label>`}).join('')}</div></div>`}).join('')}</div>`:`<div class="v205-pds-empty"><b>No matching PDS work items</b>Change filters or confirm All_PD_Sheet data.</div>`}${visible.length>size?`<div class="v208-pager"><div class="pages">Showing ${start+1}-${Math.min(start+size,visible.length)} of ${visible.length} filtered</div><div class="actions"><button type="button" class="btn sm" data-v208-pds-page="prev" ${d.pdsPage<=1?'disabled':''}>← Previous</button><span class="pill">Page ${d.pdsPage} / ${pages}</span><button type="button" class="btn sm" data-v208-pds-page="next" ${d.pdsPage>=pages?'disabled':''}>Next →</button></div></div>`:''}`
+};
+
+// ---------- Single-flight save buttons ----------
+async function v208SingleFlight(key,fn){if(S.runtime.writeLocks.has(key)){toast("This action is already being processed.","warn");return}S.runtime.writeLocks.add(key);try{return await fn()}finally{S.runtime.writeLocks.delete(key)}}
+const v208CreateAssignmentBase=createV18Assignment;createV18Assignment=()=>v208SingleFlight(`create:${S.projectWorkspace.code}`,()=>v208CreateAssignmentBase());
+const v208SaveDepBase=saveDependencyFromModal;saveDependencyFromModal=(direction)=>v208SingleFlight(`dependency:${S.projectWorkspace.code}`,()=>v208SaveDepBase(direction));
+const v208SaveProjectDepBase=saveProjectDependencyFromModal;saveProjectDependencyFromModal=(direction)=>v208SingleFlight(`dependency-project:${S.projectWorkspace.code}`,()=>v208SaveProjectDepBase(direction));
+const v208SaveRevisionBase=saveRevision;saveRevision=()=>v208SingleFlight(`revision-save:${idOf(S.currentRevision||currentRevision(S.current)||{})}`,()=>v208SaveRevisionBase());
+
+// ---------- Route recovery ----------
+let V208_BOOT_ROUTE=null;try{V208_BOOT_ROUTE=JSON.parse(sessionStorage.getItem("MEGA_DESIGN_ROUTE_V208")||"null")}catch(_){V208_BOOT_ROUTE=null}S.runtime.routeRestored=false;
+function v208SaveRoute(){if(!S.runtime.routeRestored)return;try{const data={at:Date.now(),view:S.view,project:S.projectWorkspace?.code||"",tab:S.projectWorkspace?.tab||"",assignment:S.current?idOf(S.current):"",detailTab:S.detailTab||"overview"};sessionStorage.setItem("MEGA_DESIGN_ROUTE_V208",JSON.stringify(data))}catch(_){}}
+async function v208RestoreRoute(){try{const r=V208_BOOT_ROUTE;if(!r||Date.now()-Number(r.at||0)>CONFIG.ROUTE_TTL_MS)return;if(r.project){await openProjectWorkspace(r.project,r.tab||'designs');if(r.assignment){const a=assignmentById(r.assignment);if(a){S.current=a;S.drawing=drawingForAssignment(a);S.detailTab=r.detailTab||'overview';S.view='detail';renderView()}}}else if(['projects','mine','home'].includes(r.view)){S.view=r.view;renderView()}}catch(e){console.warn("Route restore skipped",e)}finally{S.runtime.routeRestored=true;v208SaveRoute()}}
+const v208RenderViewBase=renderView;renderView=function(){const x=v208RenderViewBase();setTimeout(v208SaveRoute,0);return x};
+
+// ---------- Health panel additions ----------
+const v208SystemHealthHtmlBase=systemHealthHtml;
+systemHealthHtml=function(){const loaded=[...S.cache.trackingProjects],workKey=S.capabilities.workKey===false?'Legacy fallback':'Ready / unknown',impact=S.capabilities.impactFields===false?'Derived only':'Ready / unknown';return `${v208SystemHealthHtmlBase()}<div class="v208-health-tags"><span class="pill brand">Scoped Projects: ${loaded.length}</span><span class="pill">Work Key: ${h(workKey)}</span><span class="pill">Impact Fields: ${h(impact)}</span><span class="pill">Batch Ceiling: ${CONFIG.MAX_BATCH}</span></div><div class="notice good"><b>V20.8 scale mode:</b> Design_Tracking loads per Project. Lists are paged, large create operations are chunked, and employee/workflow data loads on demand.</div>`};
+
+// ---------- V20.8 event additions ----------
+function wireV208(){
+  document.addEventListener('input',e=>{if(e.target.id==='v205PdsSearch'){const d=v205PdsDraft();d.pdsPage=1}});
+  document.addEventListener('click',e=>{
+    const dp=e.target.closest('[data-v208-design-page]');if(dp){const dir=dp.dataset.v208DesignPage;S.projectWorkspace.page=Math.max(1,Number(S.projectWorkspace.page||1)+(dir==='next'?1:-1));return renderView()}
+    const sp=e.target.closest('[data-v208-scope-page]');if(sp){const d=v19EnsureDraft();d.scopePage=Math.max(1,Number(d.scopePage||1)+(sp.dataset.v208ScopePage==='next'?1:-1));return renderV18AssignModal()}
+    const pp=e.target.closest('[data-v208-pds-page]');if(pp){const d=v205PdsDraft();d.pdsPage=Math.max(1,Number(d.pdsPage||1)+(pp.dataset.v208PdsPage==='next'?1:-1));return renderV18AssignModal()}
+  });
+  document.addEventListener('change',e=>{if(e.target.id==='v18StatusFilter'||e.target.id==='v18OwnerFilter')S.projectWorkspace.page=1;if(['v205PdsTypeFilter','v205PdsStatusFilter','v205PdsName','v205PdsSection','v205PdsSectionType','v205PdsDepartment','v205PdsGroup','v205PdsCategory','v205PdsEquipmentType'].includes(e.target.id)){const d=v205PdsDraft();d.pdsPage=1}});
+}
+
+wire();wireV19();wireV20();wireV205Pds();wireV208();bootstrap();
 </script>
 </body>
 </html>
-
