@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Drawing & Document Control V18 Project Workspace + Old Logic Preserved V20.6</title>
+<title>MEGA Engineering | Drawing & Document Control V18 Project Workspace + Old Logic Preserved V20.7</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -203,6 +203,10 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 .v205-pds-info{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 13px;border:1px solid #d9e6f7;background:#f8fbff;border-radius:12px;margin-bottom:10px}.v205-pds-info .title{font-size:12px;font-weight:900;color:#253348}.v205-pds-info .copy{font-size:10px;color:var(--muted);margin-top:2px}.v205-pds-toolbar{display:grid;grid-template-columns:minmax(220px,1.25fr) minmax(150px,.75fr) minmax(150px,.75fr) auto;gap:8px;align-items:end;margin-bottom:9px}.v205-pds-toolbar .field label{font-size:10px}.v205-pds-tools{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.v205-pds-filter-panel{border:1px solid var(--line2);background:#fbfcfe;border-radius:11px;padding:11px;margin:8px 0 10px}.v205-pds-filter-grid{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:8px}.v205-pds-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 10px}.v205-pds-list{display:grid;gap:9px;max-height:430px;overflow:auto;padding-right:3px}.v205-pds-tag{border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}.v205-pds-tag-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#fafbfc;border-bottom:1px solid var(--line2)}.v205-pds-tag-name{font-size:12px;font-weight:950}.v205-pds-tag-context{font-size:9px;color:var(--muted);margin-top:2px}.v205-pds-units{display:grid;grid-template-columns:repeat(2,minmax(260px,1fr));gap:7px;padding:9px}.v205-pds-unit{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;border:1px solid var(--line2);border-radius:9px;padding:9px;background:#fff}.v205-pds-unit:hover{border-color:#dfb2c6;background:#fffafd}.v205-pds-unit.selected{border-color:var(--brand);background:var(--brand-soft)}.v205-pds-unit.assigned{background:#f8fafc;opacity:.82}.v205-pds-unit input{width:16px;height:16px;accent-color:var(--brand)}.v205-pds-unit .name{font-size:11px;font-weight:900}.v205-pds-unit .sub{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}.v205-pds-unit .owner{font-size:9px;text-align:right;color:var(--muted);max-width:145px}.v205-pds-empty{padding:28px 16px;text-align:center;border:1px dashed #d8dee7;border-radius:11px;background:#fcfcfd;color:var(--muted)}.v205-pds-empty b{display:block;color:var(--ink);margin-bottom:3px}.v205-pds-loading{padding:24px 16px;text-align:center;border:1px dashed #d7dce5;border-radius:11px;background:#fcfcfd;color:var(--muted)}
 @media(max-width:1000px){.v205-pds-toolbar{grid-template-columns:1fr 1fr}.v205-pds-filter-grid{grid-template-columns:1fr 1fr}.v205-pds-units{grid-template-columns:1fr}}
 @media(max-width:620px){.v205-pds-toolbar,.v205-pds-filter-grid{grid-template-columns:1fr}.v205-pds-tools{justify-content:flex-start}}
+
+/* ================= V20.7 RELIABILITY + PERFORMANCE LAYER ================= */
+.connection-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;border:1px solid #ffffff35;background:#ffffff16;color:#fff;font-size:9px;font-weight:900;white-space:nowrap}.connection-pill .dot{width:7px;height:7px;border-radius:50%;background:#65d58a;box-shadow:0 0 0 3px #65d58a22}.connection-pill.slow .dot{background:#f2b84b;box-shadow:0 0 0 3px #f2b84b22}.connection-pill.offline .dot{background:#ef6a73;box-shadow:0 0 0 3px #ef6a7322}.loading-box{min-width:320px;max-width:min(92vw,460px)}.loading-sub{margin-top:5px;font-size:10px;color:var(--muted);line-height:1.4}.loading-track{height:5px;border-radius:999px;background:#f1e3ea;margin-top:12px;overflow:hidden}.loading-bar{height:100%;width:34%;border-radius:999px;background:linear-gradient(90deg,var(--brand2),var(--brand));animation:loadmove 1.25s ease-in-out infinite alternate}.loading-bar.determinate{animation:none;width:0}.loading-meta{display:flex;justify-content:space-between;gap:12px;margin-top:7px;font-size:9px;color:var(--muted2)}@keyframes loadmove{from{transform:translateX(-20%)}to{transform:translateX(190%)}}.runtime-error-banner{border:1px solid #f2b8c1;background:#fff6f7;border-radius:11px;padding:10px 12px;margin-bottom:12px;color:#8b2233}.runtime-error-banner b{display:block;margin-bottom:3px}.runtime-error-banner details{margin-top:6px;color:#667085}.health-grid{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:8px;margin:10px 0}.health-card{border:1px solid var(--line2);background:#fff;border-radius:11px;padding:10px}.health-card .hk{font-size:8px;text-transform:uppercase;color:var(--muted);font-weight:900}.health-card .hv{font-size:13px;font-weight:950;margin-top:4px}.health-ok{color:#176541}.health-warn{color:#8a5c0a}.health-bad{color:#a82b3d}.health-table td,.health-table th{font-size:10px}.health-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}@media(max-width:760px){.health-grid{grid-template-columns:repeat(2,minmax(120px,1fr))}.connection-pill{display:none}}
+
 </style>
 </head>
 <body>
@@ -212,10 +216,10 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V20.6</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V20.7</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
-    <div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
+    <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
   </div>
 </header>
 <div id="notificationPanel" class="notification-panel hidden"></div>
@@ -227,7 +231,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
       <button class="navtab" data-view="mine">✓ My Work</button>
       <button class="navtab" data-view="home">⌂ Dashboard</button>
     </div>
-    <div class="nav-actions"><button id="refreshBtn" class="btn">↻ Refresh</button><button id="setupBtn" class="btn icon" title="Setup / field mapping">⚙</button></div>
+    <div class="nav-actions"><button id="refreshBtn" class="btn">↻ Refresh</button><button id="healthBtn" class="btn icon" title="System Health">●</button><button id="setupBtn" class="btn icon" title="Setup / field mapping">⚙</button></div>
   </div>
   <div id="page"></div>
 </main>
@@ -244,7 +248,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 </aside>
 
 <!-- UI SECTION: Loading overlay used during Creator API work. -->
-<div id="loading" class="loading hidden"><div class="loading-box"><div class="spinner"></div><div id="loadingText" class="strong">Loading…</div></div></div>
+<div id="loading" class="loading hidden"><div class="loading-box"><div class="spinner"></div><div id="loadingText" class="strong">Loading…</div><div id="loadingSubText" class="loading-sub">Please wait while Creator responds.</div><div class="loading-track"><div id="loadingBar" class="loading-bar"></div></div><div class="loading-meta"><span id="loadingProgressText">Working…</span><span id="loadingElapsed">0s</span></div></div></div>
 <!-- UI SECTION: Temporary success / warning / error messages. -->
 <div id="toasts" class="toasts"></div>
 <script>
@@ -316,6 +320,13 @@ const CONFIG={
   PAGE_SIZE:100,
   MAX_BATCH:250,
   ALERT_REFRESH_MS:60000,
+  READ_TIMEOUT_MS:20000,
+  WRITE_TIMEOUT_MS:45000,
+  FILE_TIMEOUT_MS:120000,
+  READ_RETRIES:2,
+  RETRY_BASE_MS:700,
+  MAX_REPORT_PAGES:100,
+  SLOW_REQUEST_MS:7000,
 
   /* ================= V17.14 ASSIGNMENT EMAIL NOTIFICATION =================
      After a successful Design_Tracking save, the widget invokes one Creator
@@ -635,7 +646,8 @@ const S={
   dependencies:[],
   dependency:{report:"",loadedProjects:new Set(),loadingProjects:new Set(),error:""},
   capabilities:{activityLog:true,scopeLevel:true,scopeLevelChoices:[],trackingFieldsLoaded:false,warnedActivity:false,warnedScope:false},
-  cache:{equipmentByProject:new Map(),equipmentProjects:new Set(),equipmentFullLoaded:false,equipmentFull:null,searchTimer:null,alertTimer:null},
+  runtime:{health:new Map(),lastGoodReports:new Map(),writeLocks:new Set(),loaderStartedAt:0,loaderTimer:null,slowRequests:0,online:navigator.onLine},
+  cache:{equipmentByProject:new Map(),equipmentProjects:new Set(),equipmentFullLoaded:false,equipmentFull:null,equipmentPromises:new Map(),searchTimer:null,alertTimer:null},
   // PDS data is loaded lazily. Summary is read from All_PD_Sheet; each detailed
   // source is loaded only after its Equipment/Nozzle/Structure/etc. card is used.
   pds:{
@@ -665,7 +677,12 @@ function toInputDate(v){const s=scalar(v).trim();if(!s)return"";if(/^\d{4}-\d{2}
 function displayDate(v){const iso=toInputDate(v);return iso?iso.split("-").reverse().join("-"):"—"}
 function displayDateTime(v){const s=scalar(v);if(!s)return"—";return s.replace(/-/g," ")}
 function toast(msg,type=""){const e=document.createElement("div");e.className=`toast ${type}`;e.textContent=msg;$("toasts").appendChild(e);setTimeout(()=>e.remove(),4800)}
-let loadDepth=0;function busy(msg="Loading…"){loadDepth++;$("loadingText").textContent=msg;$("loading").classList.remove("hidden")}function idle(){loadDepth=Math.max(0,loadDepth-1);if(!loadDepth)$("loading").classList.add("hidden")}
+let loadDepth=0;
+function resetLoaderUi(){const bar=$("loadingBar"),sub=$("loadingSubText"),meta=$("loadingProgressText"),elapsed=$("loadingElapsed");if(bar){bar.classList.remove("determinate");bar.style.width="34%"}if(sub)sub.textContent="Please wait while Creator responds.";if(meta)meta.textContent="Working…";if(elapsed)elapsed.textContent="0s"}
+function startLoaderClock(){if(S.runtime.loaderTimer)clearInterval(S.runtime.loaderTimer);S.runtime.loaderStartedAt=Date.now();S.runtime.loaderTimer=setInterval(()=>{const sec=Math.floor((Date.now()-S.runtime.loaderStartedAt)/1000),el=$("loadingElapsed"),sub=$("loadingSubText");if(el)el.textContent=`${sec}s`;if(sub&&sec>=10&&sec<25)sub.textContent="Still working — this project has more data than usual.";else if(sub&&sec>=25)sub.textContent="Large operation in progress. It will stop automatically if Creator does not respond."},1000)}
+function busy(msg="Loading…"){loadDepth++;if(loadDepth===1){resetLoaderUi();startLoaderClock()}if($("loadingText"))$("loadingText").textContent=msg;$("loading")?.classList.remove("hidden")}
+function updateBusyProgress(current,total,label="Processing"){const safeTotal=Math.max(1,Number(total)||1),pct=Math.max(0,Math.min(100,Math.round((Number(current)||0)*100/safeTotal))),bar=$("loadingBar"),meta=$("loadingProgressText"),sub=$("loadingSubText");if(label&&$("loadingText"))$("loadingText").textContent=label;if(bar){bar.classList.add("determinate");bar.style.width=`${pct}%`}if(meta)meta.textContent=`${current} / ${total} (${pct}%)`;if(sub)sub.textContent="Completed items are kept even if a later item fails."}
+function idle(){loadDepth=Math.max(0,loadDepth-1);if(!loadDepth){if(S.runtime.loaderTimer){clearInterval(S.runtime.loaderTimer);S.runtime.loaderTimer=null}$("loading")?.classList.add("hidden");resetLoaderUi()}}
 function log(action,data={}){S.logs.push({at:new Date().toISOString(),action,data});if(S.logs.length>250)S.logs.shift()}
 function dateDiffDays(iso){if(!iso)return null;const a=new Date(todayIso()+"T00:00:00"),b=new Date(iso+"T00:00:00");return Math.round((b-a)/86400000)}
 function isClosedAssignment(a){return ["Completed","Cancelled"].includes(scalar(a?.[AF.status]))}
@@ -764,6 +781,28 @@ function assertResp(r,label){
   return r;
 }
 
+/* ================= V20.7 CENTRAL RELIABILITY LAYER =================
+   Read operations may retry because they are idempotent. Write operations
+   are NEVER automatically retried because an API timeout can occur after the
+   server has already saved the record. This prevents duplicate design work.
+   ====================================================================== */
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+function reliabilityNow(){return (typeof performance!=="undefined"&&performance.now)?performance.now():Date.now()}
+function timeoutError(label,ms,write=false){const e=new Error(write?`${label} did not confirm within ${Math.round(ms/1000)} seconds. The server may still have completed it. Refresh before trying again.`:`${label} timed out after ${Math.round(ms/1000)} seconds.`);e.code="MEGA_TIMEOUT";e.isWriteTimeout=write;return e}
+async function withTimeout(factory,ms,label,{write=false}={}){let timer;try{return await Promise.race([Promise.resolve().then(factory),new Promise((_,rej)=>{timer=setTimeout(()=>rej(timeoutError(label,ms,write)),ms)})])}finally{if(timer)clearTimeout(timer)}}
+function isRetryableReadError(e){if(isNoDataError(e))return false;const t=errorText(e).toLowerCase();return e?.code==="MEGA_TIMEOUT"||/timeout|timed out|network|temporar|429|rate limit|502|503|504|service unavailable|failed to fetch|connection/i.test(t)}
+function setHealth(key,status,detail={}){if(!S.runtime?.health)return;const prev=S.runtime.health.get(key)||{};S.runtime.health.set(key,{...prev,...detail,status,key,at:new Date().toISOString()})}
+function markReportSuccess(report,rows,ms){S.runtime.lastGoodReports.set(report,rows);setHealth(`report:${report}`,"ok",{label:report,rows:rows.length,ms:Math.round(ms),error:""})}
+function markReportFailure(report,e,ms=0){setHealth(`report:${report}`,"error",{label:report,ms:Math.round(ms||0),error:errorText(e)})}
+async function creatorReadCall(factory,label,{timeout=CONFIG.READ_TIMEOUT_MS,retries=CONFIG.READ_RETRIES,healthKey=label}={}){let last;for(let attempt=0;attempt<=retries;attempt++){const started=reliabilityNow();try{const value=await withTimeout(factory,timeout,label);const ms=reliabilityNow()-started;if(ms>=CONFIG.SLOW_REQUEST_MS){S.runtime.slowRequests++;setHealth(healthKey,"slow",{label,ms:Math.round(ms),error:""})}else setHealth(healthKey,"ok",{label,ms:Math.round(ms),error:""});return value}catch(e){last=e;setHealth(healthKey,"error",{label,ms:Math.round(reliabilityNow()-started),error:errorText(e)});if(attempt>=retries||!isRetryableReadError(e))throw e;await sleep(CONFIG.RETRY_BASE_MS*Math.pow(2,attempt))}}throw last}
+async function creatorWriteCall(factory,label,{timeout=CONFIG.WRITE_TIMEOUT_MS,healthKey=label}={}){const started=reliabilityNow();try{const value=await withTimeout(factory,timeout,label,{write:true});setHealth(healthKey,"ok",{label,ms:Math.round(reliabilityNow()-started),error:""});return value}catch(e){setHealth(healthKey,"error",{label,ms:Math.round(reliabilityNow()-started),error:errorText(e)});throw e}}
+function friendlyErrorMessage(e){const raw=errorText(e);if(e?.isWriteTimeout)return"The save did not return a confirmation. Refresh the page before retrying so a duplicate is not created.";if(e?.code==="MEGA_TIMEOUT")return"Creator is taking too long to respond. Please retry.";if(/permission|not authorized|access denied/i.test(raw))return"You do not currently have access to one of the required Creator reports or forms.";if(/network|failed to fetch|connection/i.test(raw))return"The connection to Zoho Creator was interrupted. Your current page data is still available.";if(/invalid column value|invalid expression/i.test(raw))return"Creator rejected one field value. The rest of the page is still safe to use.";if(/circular dependency/i.test(raw))return"This dependency would create a circular chain, so it was not saved.";if(/already exists|duplicate/i.test(raw))return"This item already exists, so another copy was not created.";return raw.length>220?"The operation could not be completed. Open Technical Details for the Creator response.":raw}
+function showRuntimeError(e,title="Operation could not be completed"){const raw=errorText(e),friendly=friendlyErrorMessage(e);console.error(title,e);const modalOpen=!$("modalBackdrop")?.classList.contains("hidden");if(modalOpen){const body=$("modalBody");if(body){body.querySelectorAll(".runtime-error-banner").forEach(x=>x.remove());body.insertAdjacentHTML("afterbegin",`<div class="runtime-error-banner"><b>${h(friendly)}</b><div>Your current selections have been kept. Correct the issue or try again.</div><details><summary>Technical details</summary><div class="tiny" style="margin-top:5px;overflow-wrap:anywhere">${h(raw)}</div></details></div>`)}return}openModal(title,"Your current workspace is safe.",`<div class="notice warn"><b>${h(friendly)}</b><br>Please retry the operation. If this is a write timeout, refresh before trying again.</div><details style="margin-top:12px"><summary>Technical details</summary><div class="tiny" style="margin-top:8px;overflow-wrap:anywhere">${h(raw)}</div></details>`,`<button class="btn" data-modal="close">Close</button><button class="btn primary" data-runtime-refresh>Refresh Data</button>`)}
+function updateConnectionIndicator(state=navigator.onLine?"online":"offline"){S.runtime.online=state!=="offline";const pill=$("connectionPill"),text=$("connectionText");if(!pill||!text)return;pill.classList.remove("offline","slow");if(state==="offline"){pill.classList.add("offline");text.textContent="Offline"}else if(state==="slow"){pill.classList.add("slow");text.textContent="Slow connection"}else{text.textContent="Connected"}}
+function startReliabilityObservers(){updateConnectionIndicator();window.addEventListener("online",()=>{updateConnectionIndicator("online");toast("Connection restored.","good")});window.addEventListener("offline",()=>{updateConnectionIndicator("offline");toast("You are offline. Loaded data remains visible; saves are paused until the connection returns.","warn")})}
+function systemHealthHtml(){const rows=[...S.runtime.health.values()].sort((a,b)=>String(a.label||a.key).localeCompare(String(b.label||b.key)));const healthRows=rows.length?rows.map(x=>`<tr><td>${h(x.label||x.key)}</td><td><span class="pill ${x.status==="ok"?"green":x.status==="slow"?"amber":"red"}">${h(x.status)}</span></td><td>${x.rows!=null?h(x.rows):"—"}</td><td>${x.ms!=null?`${h(x.ms)} ms`:"—"}</td><td>${x.error?h(String(x.error).slice(0,140)):"—"}</td></tr>`).join(""):`<tr><td colspan="5">No health samples yet. Use the system and reopen this panel.</td></tr>`;return `<div class="health-grid"><div class="health-card"><div class="hk">Connection</div><div class="hv ${navigator.onLine?"health-ok":"health-bad"}">${navigator.onLine?"Online":"Offline"}</div></div><div class="health-card"><div class="hk">Projects</div><div class="hv">${S.projects.length}</div></div><div class="health-card"><div class="hk">Design Records</div><div class="hv">${S.records.length}</div></div><div class="health-card"><div class="hk">Equipment Cached</div><div class="hv">${S.equipment.length}</div></div></div><div class="table-wrap health-table"><table><thead><tr><th>Source / Operation</th><th>Status</th><th>Rows</th><th>Time</th><th>Last Error</th></tr></thead><tbody>${healthRows}</tbody></table></div><div class="notice good" style="margin-top:10px"><b>Reliability policy:</b> report reads can retry automatically. Create/update/delete operations are never blindly retried, which protects against duplicate records after a timeout.</div>`}
+function openSystemHealthModal(){openModal("System Health","Live Creator connectivity, source health and cache status.",systemHealthHtml(),`<button class="btn" data-runtime-health-refresh>Run Health Refresh</button><button class="btn primary" data-modal="close">Close</button>`)}
+
 /* =================== CREATOR REPORT READER HOTFIX ===================
    V20.1 restores the legacy fetchRecords() helper used throughout the old
    working widget. V20 referenced this helper but the function body was
@@ -779,46 +818,22 @@ function assertResp(r,label){
    - treats 9220/9280/no-record responses as a valid empty report
    - requests field_config=all so readable lookup/display values are retained
    ======================================================================= */
-window.__MEGA_FETCH_RECORDS__ = async function fetchRecordsImpl(report,criteria="",max=20){
+window.__MEGA_FETCH_RECORDS__ = async function fetchRecordsImpl(report,criteria="",max=CONFIG.MAX_REPORT_PAGES){
   if(!report)throw new Error("Creator report link name is missing.");
   if(S.demo)return demoFetch(report,criteria);
-
-  const out=[];
-  let cursor="";
-
-  for(let page=0;page<max;page++){
-    const request=withApp({
-      report_name:report,
-      field_config:"all",
-      max_records:1000
-    });
-    if(criteria)request.criteria=criteria;
-    if(cursor)request.record_cursor=cursor;
-
-    let raw;
-    try{
-      raw=await ZOHO.CREATOR.DATA.getRecords(request);
-    }catch(e){
-      if(isNoDataError(e))return out;
-      throw e;
+  const out=[];let cursor="";const started=reliabilityNow(),pageLimit=Math.max(1,Number(max)||CONFIG.MAX_REPORT_PAGES);
+  try{
+    for(let page=0;page<pageLimit;page++){
+      const request=withApp({report_name:report,field_config:"all",max_records:1000});
+      if(criteria)request.criteria=criteria;if(cursor)request.record_cursor=cursor;
+      let raw;try{raw=await creatorReadCall(()=>ZOHO.CREATOR.DATA.getRecords(request),`Read ${report} page ${page+1}`,{healthKey:`report:${report}`})}catch(e){if(isNoDataError(e)){markReportSuccess(report,out,reliabilityNow()-started);return out}throw e}
+      let response;try{response=assertResp(raw,`Read ${report}`)}catch(e){if(isNoDataError(e)||isNoDataError(raw)){markReportSuccess(report,out,reliabilityNow()-started);return out}throw e}
+      const rows=Array.isArray(response.data)?response.data:[];out.push(...rows);cursor=response.record_cursor||response.cursor||"";
+      if(!cursor||!rows.length)break;
+      if(page===pageLimit-1&&cursor)console.warn(`Report ${report} reached configured page safety limit (${pageLimit}).`);
     }
-
-    let response;
-    try{
-      response=assertResp(raw,`Read ${report}`);
-    }catch(e){
-      if(isNoDataError(e)||isNoDataError(raw))return out;
-      throw e;
-    }
-
-    const rows=Array.isArray(response.data)?response.data:[];
-    out.push(...rows);
-
-    cursor=response.record_cursor||response.cursor||"";
-    if(!cursor||!rows.length)break;
-  }
-
-  return out;
+    markReportSuccess(report,out,reliabilityNow()-started);return out;
+  }catch(e){markReportFailure(report,e,reliabilityNow()-started);throw e}
 }
 const fetchRecords = window.__MEGA_FETCH_RECORDS__;
 window.fetchRecords = window.__MEGA_FETCH_RECORDS__;
@@ -855,7 +870,7 @@ async function loadTrackingFieldMetadata(){
   S.capabilities.trackingFieldsLoaded=true;
   try{
     if(!ZOHO?.CREATOR?.META?.getFields)return;
-    const raw=await ZOHO.CREATOR.META.getFields(withApp({form_link_name:CONFIG.FORMS.tracking}));
+    const raw=await creatorReadCall(()=>ZOHO.CREATOR.META.getFields(withApp({form_link_name:CONFIG.FORMS.tracking})),"Read Design_Tracking field metadata",{retries:1,healthKey:"meta:tracking-fields"});
     const meta=(raw&&raw.code!=null)?assertResp(raw,"Get Design_Tracking fields"):raw;
     const fields=meta?.fields||meta?.data||[];
     const f=(Array.isArray(fields)?fields:[]).find(x=>nk(x?.link_name||x?.field_link_name||x?.api_name||"")===nk(AF.scopeLevel));
@@ -880,7 +895,7 @@ function optionalFieldFailure(raw,field){
 async function addRecord(data){
   if(S.demo)return demoAdd(data);if(!CONFIG.LIVE_WRITES)throw new Error("Live writes are disabled in CONFIG.");
   let payload={...data};
-  const attempt=async p=>assertResp(await ZOHO.CREATOR.DATA.addRecords(withApp({form_name:CONFIG.FORMS.tracking,payload:{data:prepareCreatorPayload(p)}})),"Create Design_Tracking");
+  const attempt=async p=>assertResp(await creatorWriteCall(()=>ZOHO.CREATOR.DATA.addRecords(withApp({form_name:CONFIG.FORMS.tracking,payload:{data:prepareCreatorPayload(p)}})),"Create Design_Tracking",{healthKey:"write:Design_Tracking:create"}),"Create Design_Tracking");
   for(let pass=0;pass<4;pass++){
     try{const r=await attempt(payload);return String(r?.data?.ID||r?.data?.id||"")}
     catch(e){
@@ -903,7 +918,7 @@ async function addRecord(data){
 async function updateRecord(id,data){
   if(S.demo)return demoUpdate(id,data);if(!CONFIG.LIVE_WRITES)throw new Error("Live writes are disabled in CONFIG.");
   let payload={...data};
-  const attempt=async p=>assertResp(await ZOHO.CREATOR.DATA.updateRecordById(withApp({report_name:CONFIG.REPORTS.tracking,id:String(id),payload:{data:prepareCreatorPayload(p)}})),"Update Design_Tracking");
+  const attempt=async p=>assertResp(await creatorWriteCall(()=>ZOHO.CREATOR.DATA.updateRecordById(withApp({report_name:CONFIG.REPORTS.tracking,id:String(id),payload:{data:prepareCreatorPayload(p)}})),"Update Design_Tracking",{healthKey:"write:Design_Tracking:update"}),"Update Design_Tracking");
   for(let pass=0;pass<4;pass++){
     try{await attempt(payload);return id}
     catch(e){
@@ -935,12 +950,12 @@ async function uploadFile(id,field,file){
     }
     return {filename:file.name,filepath:file.name};
   }
-  return assertResp(await ZOHO.CREATOR.FILE.uploadFile(withApp({
+  return assertResp(await creatorWriteCall(()=>ZOHO.CREATOR.FILE.uploadFile(withApp({
     report_name:CONFIG.REPORTS.tracking,
     id:String(id),
     field_name:field,
     file
-  })),`Upload ${field}`);
+  })),`Upload ${field}`,{timeout:CONFIG.FILE_TIMEOUT_MS,healthKey:`file-upload:${field}`}),`Upload ${field}`);
 }
 
 // extractCreatorFilePath(): Creator record responses for Multiple Upload fields
@@ -975,12 +990,12 @@ async function readFile(id,field,filePath=""){
   const exactFilePath=extractCreatorFilePath(filePath);
   if(!exactFilePath)throw new Error("Creator file path is missing for this file.");
   log("file-download-request",{recordId:String(id),field,filePath:exactFilePath});
-  return await ZOHO.CREATOR.FILE.readFile(withApp({
+  return await creatorReadCall(()=>ZOHO.CREATOR.FILE.readFile(withApp({
     report_name:CONFIG.REPORTS.tracking,
     id:String(id),
     field_name:field,
     file_path:exactFilePath
-  }));
+  })),`Download ${field}`,{timeout:CONFIG.FILE_TIMEOUT_MS,retries:1,healthKey:`file-read:${field}`});
 }
 
 // getTrackingRecordById(): refreshes the record after uploads so the widget gets
@@ -988,11 +1003,11 @@ async function readFile(id,field,filePath=""){
 async function getTrackingRecordById(id){
   if(!id)return null;
   if(S.demo)return S.records.find(x=>idOf(x)===String(id))||null;
-  const response=assertResp(await ZOHO.CREATOR.DATA.getRecordById(withApp({
+  const response=assertResp(await creatorReadCall(()=>ZOHO.CREATOR.DATA.getRecordById(withApp({
     report_name:CONFIG.REPORTS.tracking,
     id:String(id),
     field_config:"all"
-  })),"Read Design_Tracking record");
+  })),"Read Design_Tracking record",{healthKey:"read:Design_Tracking:record"}),"Read Design_Tracking record");
   return response?.data||null;
 }
 
@@ -1098,12 +1113,11 @@ function safeFileName(name,fallback="download"){
 async function safeSource(report,label,{required=false}={}){
   try{return await fetchRecords(report)}
   catch(e){
-    const detail=errorText(e);
-    const msg=`${label} access failed (${report}).`;
-    console.error(msg,e);
+    const detail=errorText(e),cached=S.runtime.lastGoodReports.get(report);
+    const msg=`${label} access failed (${report}).`;console.error(msg,e);
+    if(Array.isArray(cached)){toast(`${label} refresh failed. Continuing with the last successfully loaded ${cached.length} row${cached.length===1?"":"s"}.`,"warn");return cached}
     if(required)throw new Error(`${msg} ${detail}`);
-    toast(`${msg} ${detail}`,"error");
-    return[];
+    toast(`${label} is temporarily unavailable. Other parts of the workspace will continue to work.`,"warn");return[];
   }
 }
 
@@ -1119,7 +1133,7 @@ async function resolveTrackingSource(){
 
   // First use the exact report link from the old working widget.
   try{
-    const rows=await fetchRecords(CONFIG.REPORTS.tracking,"",20);
+    const rows=await fetchRecords(CONFIG.REPORTS.tracking,"",CONFIG.MAX_REPORT_PAGES);
     log("tracking-report-resolved",{report:CONFIG.REPORTS.tracking,records:rows.length});
     return {report:CONFIG.REPORTS.tracking,rows};
   }catch(firstError){
@@ -1129,7 +1143,7 @@ async function resolveTrackingSource(){
     // the logged-in user's permission allows META.getReports().
     try{
       if(ZOHO.CREATOR.META&&ZOHO.CREATOR.META.getReports){
-        const meta=assertResp(await ZOHO.CREATOR.META.getReports(withApp({})),"Get Reports");
+        const meta=assertResp(await creatorReadCall(()=>ZOHO.CREATOR.META.getReports(withApp({})),"Get Creator reports",{retries:1,healthKey:"meta:reports"}),"Get Reports");
         const reports=meta.reports||[];
         const match=reports.find(r=>{
           const ln=nk(r.link_name||"");
@@ -1137,7 +1151,7 @@ async function resolveTrackingSource(){
           return ln==="designtrackingreport"||ln.includes("designtracking")||dn.includes("designtracking");
         });
         if(match?.link_name){
-          const rows=await fetchRecords(match.link_name,"",20);
+          const rows=await fetchRecords(match.link_name,"",CONFIG.MAX_REPORT_PAGES);
           CONFIG.REPORTS.tracking=match.link_name;
           log("tracking-report-meta-resolved",{report:match.link_name,records:rows.length});
           return {report:match.link_name,rows};
@@ -1270,7 +1284,7 @@ async function invokeNotificationCustomApi(recipient,subject,html,logAction="des
   if(!ZOHO?.CREATOR?.DATA?.invokeCustomApi)throw new Error("Creator Custom API invocation is unavailable. Confirm Widget JS API v2 is loaded.");
   const cfg={api_name:CONFIG.NOTIFICATIONS.assignmentEmailApi,http_method:"POST",content_type:"application/json",payload:{to_email:recipient.email,to_name:recipient.name||recipient.email,subject_text:subject,message_html:html}};
   if(CONFIG.NOTIFICATIONS.workspaceName)cfg.workspace_name=CONFIG.NOTIFICATIONS.workspaceName;
-  const response=await ZOHO.CREATOR.DATA.invokeCustomApi(cfg);
+  const response=await creatorWriteCall(()=>ZOHO.CREATOR.DATA.invokeCustomApi(cfg),"Send design notification",{healthKey:"write:assignment-email"});
   log(logAction,{to:recipient.email,response});
   return response||{status:"sent"};
 }
@@ -1363,7 +1377,7 @@ function closeNotificationPanel(){S.notifications.open=false;const p=$("notifica
 function textMatchesQuery(values,q){const raw=String(q||"").trim().toLowerCase(),compact=nk(q);if(!raw)return true;const text=(values||[]).map(v=>scalar(v)).filter(Boolean).join(" | ").toLowerCase();return text.includes(raw)||(compact&&nk(text).includes(compact))}
 function deepRecordText(row){const values=[];for(const [,v] of Object.entries(row||{})){if(v==null)continue;if(typeof v!=="object")values.push(v);else{const sv=scalar(v);if(sv)values.push(sv)}}return values}
 async function ensureUniversalSearchSources(){
-  if(!S.cache.equipmentFullLoaded){try{const raw=await fetchRecords(CONFIG.REPORTS.equipment,"",40);S.cache.equipmentFullLoaded=true;S.cache.equipmentFull=raw;mergeEquipmentRows(raw.map(adaptEquipment))}catch(e){console.warn("Universal equipment search source failed",e);S.search.error=`Equipment search source: ${errorText(e)}`}}
+  if(!S.cache.equipmentFullLoaded){try{const raw=await fetchRecords(CONFIG.REPORTS.equipment,"",CONFIG.MAX_REPORT_PAGES);S.cache.equipmentFullLoaded=true;S.cache.equipmentFull=raw;mergeEquipmentRows(raw.map(adaptEquipment))}catch(e){console.warn("Universal equipment search source failed",e);S.search.error=`Equipment search source: ${errorText(e)}`}}
   if(!Array.isArray(S.pds.summary)){try{await ensurePdsData("all")}catch(e){console.warn("Universal PDS search source failed",e);S.search.error=[S.search.error,`PDS search source: ${errorText(e)}`].filter(Boolean).join(" | ")}}
 }
 async function openUniversalSearch(query){const q=String(query||"").trim();S.globalSearch=q;if(!q){if(S.view==="search")S.view=S.search.returnView||"home";return renderView()}if(S.view!=="search")S.search.returnView=S.view==="detail"?(S.previousView||"home"):S.view;S.view="search";S.search.loading=true;S.search.error="";renderView();try{await ensureUniversalSearchSources();S.search.lastLoadedQuery=q}finally{S.search.loading=false;renderView()}}
@@ -1484,7 +1498,7 @@ function equipmentForProject(code){return S.equipment.filter(e=>pdsSameValue(e.p
 function equipmentProjectReady(code){return S.cache.equipmentFullLoaded||S.cache.equipmentProjects.has(String(code))}
 function creatorCriteriaEscape(v){return String(v??"").replace(/\\/g,"\\\\").replace(/"/g,'\\"')}
 function mergeEquipmentRows(rows){const map=new Map(S.equipment.map(e=>[e.id||`${e.project}|${e.tag}|${e.name}`,e]));for(const e of rows||[]){const k=e.id||`${e.project}|${e.tag}|${e.name}`;if(!map.has(k))map.set(k,e)}S.equipment=[...map.values()]}
-async function ensureEquipmentForProject(code,force=false){
+async function ensureEquipmentForProjectImpl(code,force=false){
   code=String(code||"").trim();if(!code)return[];
   if(!force&&S.cache.equipmentByProject.has(code)){
     const cached=S.cache.equipmentByProject.get(code)||[];
@@ -1499,7 +1513,7 @@ async function ensureEquipmentForProject(code,force=false){
   // Fast path for installs where Project_Code is text or returns display text.
   for(const field of ["Project_Code","Project_Code1","Project"]){
     try{
-      const candidate=await fetchRecords(CONFIG.REPORTS.equipment,`(${field} == "${escaped}")`,20);
+      const candidate=await fetchRecords(CONFIG.REPORTS.equipment,`(${field} == "${escaped}")`,CONFIG.MAX_REPORT_PAGES);
       const verified=candidate.filter(r=>equipmentRowMatchesProjectCode(r,code));
       if(verified.length){matchedRaw=verified;break;}
       // If Creator itself accepted the criteria and returned rows, keep them as
@@ -1532,6 +1546,14 @@ async function ensureEquipmentForProject(code,force=false){
   S.cache.equipmentByProject.set(code,rows);S.cache.equipmentProjects.add(code);mergeEquipmentRows(rows);
   if(!rows.length)console.warn(`No equipment scope rows resolved for Project ${code}.`);
   return rows;
+}
+
+async function ensureEquipmentForProject(code,force=false){
+  code=String(code||"").trim();if(!code)return[];
+  const key=`${code}:${force?"force":"normal"}`;
+  if(!force&&S.cache.equipmentPromises.has(key))return await S.cache.equipmentPromises.get(key);
+  const task=ensureEquipmentForProjectImpl(code,force);S.cache.equipmentPromises.set(key,task);
+  try{return await task}finally{if(S.cache.equipmentPromises.get(key)===task)S.cache.equipmentPromises.delete(key)}
 }
 function normalExpectedWorkUnits(g){
   const d=groupDrawing(g),scope=drawingDefaultScope(d),project=g.projectCode,eq=equipmentForProject(project),map=new Map();
@@ -1683,7 +1705,7 @@ async function resolvePdsSource(type){
   const errors=[];
   for(const report of candidates){
     try{
-      const rows=await fetchRecords(report,"",20);
+      const rows=await fetchRecords(report,"",CONFIG.MAX_REPORT_PAGES);
       S.pds.resolved[type]=report;S.pds.probe[type]=rows;
       log("pds-report-resolved",{type,report,rows:rows.length});
       return report;
@@ -1706,7 +1728,7 @@ async function ensurePdsData(type="all",force=false){
       if(type==="all")S.pds.summary=[];else S.pds.detail[type]=[];
       return;
     }
-    const rows=Array.isArray(S.pds.probe[type])?S.pds.probe[type]:await fetchRecords(report,"",20);delete S.pds.probe[type];
+    const rows=Array.isArray(S.pds.probe[type])?S.pds.probe[type]:await fetchRecords(report,"",CONFIG.MAX_REPORT_PAGES);delete S.pds.probe[type];
     if(type==="all")S.pds.summary=rows;else S.pds.detail[type]=rows;
   }finally{
     S.pds.loading[type]=false;
@@ -2115,8 +2137,8 @@ function assertRuntimeIntegrity(){
   if(typeof fetchRecords!=="function")problems.push("fetchRecords helper missing");
   if(!S.demo && (!window.ZOHO||!ZOHO.CREATOR))problems.push("Zoho Creator Widget SDK unavailable");
   if(!S.demo && !ZOHO?.CREATOR?.DATA?.getRecords)problems.push("ZOHO.CREATOR.DATA.getRecords unavailable");
-  if(problems.length)throw new Error(`V20.5 runtime check failed: ${problems.join("; ")}`);
-  console.info("MEGA Project Design Control build V20.5 loaded", {fetchRecords:typeof fetchRecords, app:CONFIG.APP_NAME});
+  if(problems.length)throw new Error(`V20.7 runtime check failed: ${problems.join("; ")}`);
+  console.info("MEGA Project Design Control build V20.7 loaded", {fetchRecords:typeof fetchRecords, app:CONFIG.APP_NAME});
 }
 
 // bootstrap(): starts the complete widget.
@@ -2128,15 +2150,13 @@ async function bootstrap(){
       $("demoBanner").classList.remove("hidden");
     }else{
       if(!window.ZOHO||!ZOHO.CREATOR)throw new Error("Zoho Creator Widget SDK is not available in this page.");
-      const init=await Promise.race([
-        ZOHO.CREATOR.UTIL.getInitParams(),
-        new Promise((_,rej)=>setTimeout(()=>rej(new Error("Creator session timed out.")),9000))
-      ]);
+      const init=await withTimeout(()=>ZOHO.CREATOR.UTIL.getInitParams(),12000,"Connect to Zoho Creator");
       S.user=init?.loginUser||"";
       S.app=init?.appLinkName||CONFIG.APP_NAME;
     }
 
     assertRuntimeIntegrity();
+    startReliabilityObservers();
 
     // IMPORTANT: the old working widget loaded master reports independently.
     // Do that first so an empty/blocked tracking report can never blank the
@@ -2984,7 +3004,7 @@ async function saveAssignmentStatus(){const a=S.current,s=$("assignmentStatusEdi
 // openModal(): opens the reusable dialog shell.
 function openModal(title,sub,body,foot){$("modalTitle").textContent=title;$("modalSub").textContent=sub||"";$("modalBody").innerHTML=body||"";$("modalFoot").innerHTML=foot||"";$("modalBackdrop").classList.remove("hidden")}
 function closeModal(){$("modalBackdrop").classList.add("hidden")}
-function setupModal(){openModal("V17.18 One-Form + Universal Search + System Alerts","Assignment + Design Files + Revision History use your existing Design_Tracking form.",`<div class="notice good"><b>No new transaction form is used.</b> Assignment rows and Revision rows are both stored in Design_Tracking and separated by their backend identity fields.</div><div class="section-row"><div><h2>Assignment hierarchy</h2><p>Already added to your form.</p></div></div><div class="table-wrap"><table><thead><tr><th>Field</th><th>Link Name</th><th>Purpose</th></tr></thead><tbody><tr><td>Primary Assignment ID</td><td>Primary_Assignment_ID</td><td>First project-level assignment</td></tr><tr><td>Assigned From ID</td><td>Assigned_From_ID</td><td>Immediate previous responsibility</td></tr><tr><td>Assignment Level</td><td>Assignment_Level</td><td>0, 1, 2, 3… N</td></tr><tr><td>Assignment Criteria</td><td>Assignment_Criteria</td><td>Single Line</td></tr><tr><td>Responsibility</td><td>Responsibility</td><td>Readable scope</td></tr></tbody></table></div><div class="section-row"><div><h2>Design / revision identity</h2><p>Uses fields already visible in your Design_Tracking screenshots.</p></div></div><div class="table-wrap"><table><thead><tr><th>Field</th><th>Link Name</th><th>Use</th></tr></thead><tbody><tr><td>Logical Task Key</td><td>Logical_Task_Key</td><td>EXEC::AssignmentID::R0 / R1 / R2</td></tr><tr><td>Revision Key</td><td>Revision_Key</td><td>Unique revision identity</td></tr><tr><td>Parent Design ID</td><td>Parent_Design_ID</td><td>R0 → R1 → R2 chain</td></tr><tr><td>Revision</td><td>Revision</td><td>R0 / R1 / R2</td></tr><tr><td>Files</td><td>Drawing_File / Native_File / Supporting_File</td><td>Controlled document files</td></tr></tbody></table></div><div class="notice warn" style="margin-top:12px"><b>Do not use Parent_Design_ID for assignment hierarchy.</b> It is reserved only for revision history. Further_Assigned and Active are not written by the widget because this Creator app rejected Decision Box API values; children are derived from Assigned_From_ID.</div><div class="section-row"><div><h2>V17.14 Employee Email Notification</h2><p>Add one field to persist the timeline.</p></div></div><div class="table-wrap"><table><thead><tr><th>Field</th><th>Link Name</th><th>Type</th><th>Use</th></tr></thead><tbody><tr><td>Activity Log</td><td>Activity_Log</td><td>Multi Line</td><td>Assignment, revision, upload and workflow event history.</td></tr></tbody></table></div><div class="notice good" style="margin-top:10px"><b>Email source:</b> selected Employee Name is resolved against Employ_to_Create_ticket_Report and the normal <b>Email</b> is written to Assigned_To.</div><div class="notice good" style="margin-top:10px"><b>Automatic assignment email:</b> after save, the widget invokes Creator Custom API <b>send_design_assignment_email</b>. Single = one mail. Bulk = one summary mail per person.</div><div class="notice good" style="margin-top:10px"><b>Performance:</b> Project, Drawing and Employee masters load at startup. Equipment loads only for the opened Project and is cached. PDS reports remain lazy and cached after first use.</div><div class="notice good" style="margin-top:10px"><b>Universal Search:</b> typing in the top search opens a dedicated result page and searches Tag/Equipment, Project, Drawing, Design_Tracking assignments/revisions and All_PD_Sheet. Equipment and PDS are loaded lazily on first search.</div><div class="notice good" style="margin-top:10px"><b>System Alerts:</b> the new bell shows personal assignment, due/overdue and Checker/Reviewer/Approver workflow alerts. Read/unread is stored per logged-in user in this browser; no new Creator form is used.</div><div class="notice good" style="margin-top:10px"><b>PDS Workspace:</b> When the selected Drawing is PDS, the widget reads existing All_PD_Sheet plus Equipment / Nozzle / Structure / Piping / Bought Out / Consumable / E&amp;I PDS reports as read-only source data. V17.12 uses logical-work architecture and can bulk-assign Tag + PDS Type responsibilities; each assignment is a separate Design_Tracking row, while the source PDS report itself is never modified or copied.</div>`,`<button class="btn primary" data-modal="close">Close</button>`)}
+function setupModal(){openModal("V17.18 One-Form + Universal Search + System Alerts","Assignment + Design Files + Revision History use your existing Design_Tracking form.",`<div class="notice good"><b>No new transaction form is used.</b> Assignment rows and Revision rows are both stored in Design_Tracking and separated by their backend identity fields.</div><div class="section-row"><div><h2>Assignment hierarchy</h2><p>Already added to your form.</p></div></div><div class="table-wrap"><table><thead><tr><th>Field</th><th>Link Name</th><th>Purpose</th></tr></thead><tbody><tr><td>Primary Assignment ID</td><td>Primary_Assignment_ID</td><td>First project-level assignment</td></tr><tr><td>Assigned From ID</td><td>Assigned_From_ID</td><td>Immediate previous responsibility</td></tr><tr><td>Assignment Level</td><td>Assignment_Level</td><td>0, 1, 2, 3… N</td></tr><tr><td>Assignment Criteria</td><td>Assignment_Criteria</td><td>Single Line</td></tr><tr><td>Responsibility</td><td>Responsibility</td><td>Readable scope</td></tr></tbody></table></div><div class="section-row"><div><h2>Design / revision identity</h2><p>Uses fields already visible in your Design_Tracking screenshots.</p></div></div><div class="table-wrap"><table><thead><tr><th>Field</th><th>Link Name</th><th>Use</th></tr></thead><tbody><tr><td>Logical Task Key</td><td>Logical_Task_Key</td><td>EXEC::AssignmentID::R0 / R1 / R2</td></tr><tr><td>Revision Key</td><td>Revision_Key</td><td>Unique revision identity</td></tr><tr><td>Parent Design ID</td><td>Parent_Design_ID</td><td>R0 → R1 → R2 chain</td></tr><tr><td>Revision</td><td>Revision</td><td>R0 / R1 / R2</td></tr><tr><td>Files</td><td>Drawing_File / Native_File / Supporting_File</td><td>Controlled document files</td></tr></tbody></table></div><div class="notice warn" style="margin-top:12px"><b>Do not use Parent_Design_ID for assignment hierarchy.</b> It is reserved only for revision history. Further_Assigned and Active are not written by the widget because this Creator app rejected Decision Box API values; children are derived from Assigned_From_ID.</div><div class="section-row"><div><h2>V17.14 Employee Email Notification</h2><p>Add one field to persist the timeline.</p></div></div><div class="table-wrap"><table><thead><tr><th>Field</th><th>Link Name</th><th>Type</th><th>Use</th></tr></thead><tbody><tr><td>Activity Log</td><td>Activity_Log</td><td>Multi Line</td><td>Assignment, revision, upload and workflow event history.</td></tr></tbody></table></div><div class="notice good" style="margin-top:10px"><b>Email source:</b> selected Employee Name is resolved against Employ_to_Create_ticket_Report and the normal <b>Email</b> is written to Assigned_To.</div><div class="notice good" style="margin-top:10px"><b>Automatic assignment email:</b> after save, the widget invokes Creator Custom API <b>send_design_assignment_email</b>. Single = one mail. Bulk = one summary mail per person.</div><div class="notice good" style="margin-top:10px"><b>Performance:</b> Project, Drawing and Employee masters load at startup. Equipment loads only for the opened Project and is cached. PDS reports remain lazy and cached after first use.</div><div class="notice good" style="margin-top:10px"><b>Universal Search:</b> typing in the top search opens a dedicated result page and searches Tag/Equipment, Project, Drawing, Design_Tracking assignments/revisions and All_PD_Sheet. Equipment and PDS are loaded lazily on first search.</div><div class="notice good" style="margin-top:10px"><b>System Alerts:</b> the new bell shows personal assignment, due/overdue and Checker/Reviewer/Approver workflow alerts. Read/unread is stored per logged-in user in this browser; no new Creator form is used.</div><div class="notice good" style="margin-top:10px"><b>PDS Workspace:</b> When the selected Drawing is PDS, the widget reads existing All_PD_Sheet plus Equipment / Nozzle / Structure / Piping / Bought Out / Consumable / E&amp;I PDS reports as read-only source data. V17.12 uses logical-work architecture and can bulk-assign Tag + PDS Type responsibilities; each assignment is a separate Design_Tracking row, while the source PDS report itself is never modified or copied.</div><div class="notice good" style="margin-top:10px"><b>V20.7 Reliability:</b> Creator report reads have timeout + safe retry, large reports use cursor pagination, equipment requests are coalesced, writes are never blindly retried, bulk saves show progress, last-good in-memory report data can be reused after a temporary read failure, and the new System Health button shows live source status.</div>`,`<button class="btn primary" data-modal="close">Close</button>`)}
 
 async function handleAction(act){if(act==="create-primary")return createPrimary();if(act==="edit-assignment")return editAssignmentModal();if(act==="start-r0")return startR0();if(act==="save-revision")return saveRevision();if(act==="new-revision")return openNewRevisionModal();if(act==="select-next-10"){const rows=S.targetRows.filter(r=>!existingChildForTarget(S.current,r)&&!S.selectedTargets.has(targetKey(r))).slice(0,10);rows.forEach(r=>S.selectedTargets.add(targetKey(r)));return renderView()}if(act==="select-all-targets"){S.targetRows.filter(r=>!existingChildForTarget(S.current,r)).forEach(r=>S.selectedTargets.add(targetKey(r)));return renderView()}if(act==="clear-targets"){S.selectedTargets.clear();return renderView()}if(act==="review-bulk")return reviewBulk()}
 async function handleModal(act,el){if(act==="close")return closeModal();if(act==="confirm-bulk")return confirmBulk();if(act==="confirm-pds-bulk")return confirmPdsBulk();if(act==="save-assignment-status")return saveAssignmentStatus();if(act==="confirm-return")return confirmReturn();if(act==="confirm-new-revision")return confirmNewRevision(el.dataset.nextRev)}
@@ -2992,11 +3012,13 @@ function toggleExpand(id){S.expanded.has(id)?S.expanded.delete(id):S.expanded.ad
 // wire(): connects all buttons, tabs, tree nodes, workflow buttons and inputs to their handlers.
 function legacyWire(){
   document.querySelectorAll(".navtab").forEach(b=>b.onclick=()=>setView(b.dataset.view));
-  $("refreshBtn").onclick=()=>guarded(refreshData);$("setupBtn").onclick=setupModal;$("modalClose").onclick=closeModal;$("modalBackdrop").addEventListener("click",e=>{if(e.target===$("modalBackdrop"))closeModal()});$("drawerBackdrop").addEventListener("click",closeDetailDrawer);
+  $("refreshBtn").onclick=()=>guarded(refreshData);$("healthBtn").onclick=openSystemHealthModal;$("setupBtn").onclick=setupModal;$("modalClose").onclick=closeModal;$("modalBackdrop").addEventListener("click",e=>{if(e.target===$("modalBackdrop"))closeModal()});$("drawerBackdrop").addEventListener("click",closeDetailDrawer);
   $("notificationBell").onclick=e=>{e.stopPropagation();toggleNotificationPanel()};
   $("globalSearch").addEventListener("input",e=>{const q=e.target.value;S.globalSearch=q;clearTimeout(S.cache.searchTimer);if(!String(q).trim()){if(S.view==="search")S.view=S.search.returnView||"home";return renderView()}S.cache.searchTimer=setTimeout(()=>guarded(()=>openUniversalSearch(q)),320)});
   $("globalSearch").addEventListener("keydown",e=>{if(e.key==="Escape"){e.target.value="";S.globalSearch="";if(S.view==="search")S.view=S.search.returnView||"home";renderView()}});
   document.addEventListener("click",e=>{
+    const runtimeRefresh=e.target.closest("[data-runtime-refresh]");if(runtimeRefresh){closeModal();return guarded(refreshData)}
+    const healthRefresh=e.target.closest("[data-runtime-health-refresh]");if(healthRefresh)return guarded(async()=>{busy("Checking Creator sources…");try{await Promise.all([safeSource(CONFIG.REPORTS.projects,"Project master"),safeSource(CONFIG.REPORTS.drawings,"Drawing master"),safeSource(CONFIG.REPORTS.employees,"Employee master")]);closeModal();openSystemHealthModal()}finally{idle()}})
     const nread=e.target.closest("[data-notification-read-all]");if(nread){e.stopPropagation();return markAllNotificationsRead()}
     const nitem=e.target.closest("[data-notification-id]");if(nitem){e.stopPropagation();markNotificationRead(nitem.dataset.notificationId);const aid=nitem.dataset.notificationAssignment;closeNotificationPanel();if(aid)return guarded(()=>openAssignment(aid));return}
     if(!e.target.closest("#notificationPanel")&&!e.target.closest("#notificationBell"))closeNotificationPanel();
@@ -3053,7 +3075,7 @@ function legacyWire(){
   });
   document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;if(!$("modalBackdrop").classList.contains("hidden"))closeModal();else if(S.drawer.open)closeDetailDrawer()});
 }
-async function guarded(fn){try{return await fn()}catch(e){console.error(e);toast(e.message||String(e),"error")}finally{while(loadDepth>0)idle()}}
+async function guarded(fn){try{return await fn()}catch(e){const raw=errorText(e);console.error(e);if(/select |required|cannot be before|maximum |only after|must be different/i.test(raw)&&!e?.code)toast(raw,"warn");else showRuntimeError(e)}finally{while(loadDepth>0)idle()}}
 
 /* ============================== DEMO DATA ============================== */
 const DEMO={
@@ -3707,8 +3729,9 @@ async function createV18Assignment(){
   if(units.length>CONFIG.MAX_BATCH)throw new Error(`Maximum ${CONFIG.MAX_BATCH} work items can be created in one batch.`);
   busy(`Creating ${units.length} design work item${units.length===1?'':'s'}…`);
   try{
-    const created=[],failures=[];let skipped=0;
+    const created=[],failures=[];let skipped=0,processed=0;
     for(const u of units){
+      processed++;updateBusyProgress(processed,units.length,`Creating ${units.length} design work item${units.length===1?'':'s'}…`);
       if(v19ExistingWork(p,drawing,draft.mode,u)){skipped++;continue;}
       try{
         const data=v19ReadablePayload(p,drawing,recipient,draft,draft.mode==='Project Wise'?null:u),id=await addRecord(data),rec={ID:id,...data};
@@ -3842,7 +3865,7 @@ async function loadDependenciesForProject(code,force=false){
   try{
     const report=await resolveDependencyReport();
     if(!report)return[];
-    const rows=await fetchRecords(report,`${DF.projectCode} == "${zcCriteriaText(code)}"`,20);
+    const rows=await fetchRecords(report,`${DF.projectCode} == "${zcCriteriaText(code)}"`,CONFIG.MAX_REPORT_PAGES);
     S.dependencies=S.dependencies.filter(r=>scalar(r[DF.projectCode])!==code).concat(rows);
     S.dependency.loadedProjects.add(code);S.dependency.error="";
     return rows;
@@ -3851,14 +3874,14 @@ async function loadDependenciesForProject(code,force=false){
 }
 async function addDependencyRecord(data){
   if(S.demo){const rec={ID:`DEP-DEMO-${Date.now()}`,...data};S.dependencies.push(rec);return idOf(rec)}
-  const r=assertResp(await ZOHO.CREATOR.DATA.addRecords(withApp({form_name:CONFIG.FORMS.dependencies,payload:{data}})),"Create Design_Dependency");
+  const r=assertResp(await creatorWriteCall(()=>ZOHO.CREATOR.DATA.addRecords(withApp({form_name:CONFIG.FORMS.dependencies,payload:{data}})),"Create Design_Dependency",{healthKey:"write:Design_Dependency:create"}),"Create Design_Dependency");
   return String(r?.data?.ID||r?.data?.id||"")
 }
 async function deleteDependencyRecord(id){
   if(S.demo){S.dependencies=S.dependencies.filter(r=>idOf(r)!==String(id));return}
   const report=await resolveDependencyReport();if(!report)throw new Error("Design Dependency report is not configured.");
   if(!ZOHO?.CREATOR?.DATA?.deleteRecordById)throw new Error("Creator deleteRecordById is unavailable in this widget SDK session.");
-  const raw=await ZOHO.CREATOR.DATA.deleteRecordById(withApp({report_name:report,id:String(id)}));
+  const raw=await creatorWriteCall(()=>ZOHO.CREATOR.DATA.deleteRecordById(withApp({report_name:report,id:String(id)})),"Delete Design_Dependency",{healthKey:"write:Design_Dependency:delete"});
   if(raw&&raw.code!=null)assertResp(raw,"Delete Design_Dependency");
   S.dependencies=S.dependencies.filter(r=>idOf(r)!==String(id));
 }
@@ -4171,7 +4194,15 @@ async function v205CreatePdsDesignWork(draft,p,drawing){
   if(!draft.user)throw new Error('Select Assigned To.');if(!draft.start||!draft.target)throw new Error('Start Date and Target / Forecast Date are required.');if(draft.target<draft.start)throw new Error('Target / Forecast Date cannot be before Start Date.');if(draft.end&&draft.end<draft.start)throw new Error('Planned End Date cannot be before Start Date.');
   const recipient=requireAssignmentRecipient(draft.user),units=v205PdsSelectedUnits(draft);if(!units.length)throw new Error('Select at least one Tag + PDS Type work item.');if(units.length>CONFIG.MAX_BATCH)throw new Error(`Maximum ${CONFIG.MAX_BATCH} PDS work items can be created in one batch.`);
   busy(`Creating ${units.length} PDS work item${units.length===1?'':'s'}…`);
-  try{const created=[],failures=[];let skipped=0;for(const unit of units){if(v205PdsExistingWork(p,drawing,unit)){skipped++;continue;}try{const data=v205PdsReadablePayload(p,drawing,recipient,draft,unit),id=await addRecord(data),rec={ID:id,...data};S.records.push(rec);S.assignments.push(rec);created.push(rec)}catch(err){failures.push({unit,error:err});console.error('V20.5 PDS work creation failed',unit,err)}}if(created.length)await notifyCreatedAssignments(created);if(!created.length&&failures.length)throw new Error(`No PDS work items were created. ${failures[0].error?.message||'Creator save failed.'}`);closeModal();const parts=[`${created.length} PDS work item${created.length===1?'':'s'} created for ${recipient.name}`];if(skipped)parts.push(`${skipped} already existed`);if(failures.length)parts.push(`${failures.length} failed`);toast(parts.join(' • '),failures.length?'warn':'good');S.projectWorkspace.tab='designs';renderView()}finally{idle()}
+  try{
+    const created=[],failures=[];let skipped=0,processed=0;
+    for(const unit of units){
+      processed++;updateBusyProgress(processed,units.length,`Creating ${units.length} PDS work item${units.length===1?'':'s'}…`);
+      if(v205PdsExistingWork(p,drawing,unit)){skipped++;continue;}
+      try{const data=v205PdsReadablePayload(p,drawing,recipient,draft,unit),id=await addRecord(data),rec={ID:id,...data};S.records.push(rec);S.assignments.push(rec);created.push(rec)}catch(err){failures.push({unit,error:err});console.error('V20.7 PDS work creation failed',unit,err)}
+    }
+    if(created.length)await notifyCreatedAssignments(created);if(!created.length&&failures.length)throw new Error(`No PDS work items were created. ${failures[0].error?.message||'Creator save failed.'}`);closeModal();const parts=[`${created.length} PDS work item${created.length===1?'':'s'} created for ${recipient.name}`];if(skipped)parts.push(`${skipped} already existed`);if(failures.length)parts.push(`${failures.length} failed`);toast(parts.join(' • '),failures.length?'warn':'good');S.projectWorkspace.tab='designs';renderView()
+  }finally{idle()}
 }
 function v205PdsSelectionCount(d=v205PdsDraft()){return (d.pdsSelectedUnits||[]).length}
 function v205PdsSyncSelection(){
@@ -4203,3 +4234,4 @@ wire();wireV19();wireV20();wireV205Pds();bootstrap();
 </script>
 </body>
 </html>
+
