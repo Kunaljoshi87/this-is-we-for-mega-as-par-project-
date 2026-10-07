@@ -5394,6 +5394,67 @@ function wireV213(){
 })();
 
 
+
+
+/* ======================================================================
+   V20.14 - CLEAN MAIN DESIGN ROW + ASSIGNMENTS BUTTON
+   ----------------------------------------------------------------------
+   Presentation-only change requested by user.
+   - Removes the separate Assignments / Updates summary column/card.
+   - Keeps only Main Design, Scope, Owner, Status, Target, Progress, Actions.
+   - Adds one compact Assignments (N) button AFTER + Subtask.
+   - Clicking Assignments opens the existing V20.13 assignment/update list.
+   - No Creator data model, hierarchy, PDS, revision, dependency, workflow,
+     email, notification or backend logic is changed.
+   ====================================================================== */
+
+(function(){
+  const b=document.getElementById('buildBadge');if(b)b.textContent='V20.14';
+  document.title='MEGA Engineering | Project Design Control V20.14';
+})();
+
+function v214RootDesignRow(root,drawing,index){
+  const descendants=v212AllDescendants(root),mode=v211ScopeModeForDrawing(drawing),status=scalar(root[AF.status]),target=displayDate(root[AF.targetDate]),progress=num(root[AF.progress]);
+  const scopeAction=v205IsPdsDrawingMaster(drawing)?'Open PDS':mode==='Project Wise'?'Project Design':'Assign Scope';
+  const scopeAttr=v205IsPdsDrawingMaster(drawing)?`data-open-assignment="${h(idOf(root))}" data-v212-open-pds="1"`:`data-v211-assign-further="${h(idOf(root))}"`;
+  return `<tr class="v212-main-design-row v214-main-design-row" data-v212-design-id="${h(idOf(root))}">
+    <td><div class="v211-task-cell"><span class="v211-seq">${index+1}</span><div><div class="v211-task-name">${h(drawing.short?`${drawing.short} — ${drawing.name}`:drawing.name)}</div><div class="v211-task-sub">Main Design${descendants.length?` • ${descendants.length} assigned task${descendants.length===1?'':'s'}`:''}</div></div></div></td>
+    <td>${v211ScopeBadge(drawing)}</td>
+    <td class="v19-human"><div class="v212-owner-main">${h(assignmentDisplayUser(root))}</div><div class="v211-task-sub">Design Owner</div></td>
+    <td>${statusPill(status)}</td>
+    <td>${h(target)}</td>
+    <td><div class="v211-progress"><span>${progress}%</span>${progressBar(progress)}</div></td>
+    <td><div class="v211-row-actions v214-row-actions"><button class="btn sm" data-v211-open-node="${h(idOf(root))}">Open</button><button class="btn sm soft" ${scopeAttr}>${h(scopeAction)}</button><button class="btn sm" data-v211-add-subtask="${h(idOf(root))}">+ Subtask</button><button class="btn sm v214-assignments-btn" data-v213-view-assignments="${h(idOf(root))}">Assignments${descendants.length?` (${descendants.length})`:''}</button></div></td>
+  </tr>`;
+}
+
+renderProjectDesignsV18=function(){
+  const all=v211ProjectDrawingRows();
+  let rows=all;
+  if(S.projectWorkspace.status!=='All')rows=rows.filter(x=>x.root&&scalar(x.root[AF.status])===S.projectWorkspace.status);
+  if(S.projectWorkspace.owner!=='All')rows=rows.filter(x=>x.root&&assignmentDisplayUser(x.root)===S.projectWorkspace.owner);
+  const owners=[...new Set(all.map(x=>x.root?assignmentDisplayUser(x.root):'').filter(Boolean))].sort();
+  const statuses=[...new Set(all.map(x=>x.root?scalar(x.root[AF.status]):'').filter(Boolean))].sort();
+  const assigned=all.filter(x=>x.root).length,unassigned=all.length-assigned;
+  if(S.projectWorkspace.viewMode!=='list'){
+    const roots=all.map(x=>x.root).filter(Boolean);
+    return `<div class="project-toolbar"><div class="project-filters"><span class="pill brand">${assigned} main designs</span><span class="pill">${unassigned} yet to assign</span></div><div class="view-switch"><button data-v18-view="list">List</button><button data-v18-view="kanban" class="${S.projectWorkspace.viewMode==='kanban'?'active':''}">Kanban</button><button data-v18-view="gantt" class="${S.projectWorkspace.viewMode==='gantt'?'active':''}">Gantt</button></div></div><div style="margin-top:10px">${S.projectWorkspace.viewMode==='kanban'?renderProjectKanbanV18(roots):renderProjectGanttV18(roots)}</div>`;
+  }
+  return `<div class="v211-core-note v212-main-note"><div><b>Main Designs</b><span>Only the Main Design is shown here. Use <b>Assignments</b> after + Subtask to see all assigned scope work, subtasks, people and updates for that Design.</span></div><div class="v211-core-stats"><span class="pill brand">${all.length} Designs</span><span class="pill green">${assigned} Owned</span><span class="pill">${unassigned} Yet to Assign</span></div></div>
+  <div class="project-toolbar"><div class="project-filters"><select id="v18StatusFilter"><option>All</option>${statuses.map(x=>`<option ${x===S.projectWorkspace.status?'selected':''}>${h(x)}</option>`).join('')}</select><select id="v18OwnerFilter"><option>All</option>${owners.map(x=>`<option ${x===S.projectWorkspace.owner?'selected':''}>${h(x)}</option>`).join('')}</select></div><div class="view-switch"><button data-v18-view="list" class="active">List</button><button data-v18-view="kanban">Kanban</button><button data-v18-view="gantt">Gantt</button></div></div>
+  <div class="task-list-panel v211-task-panel"><table class="task-table v211-task-table v212-main-table v214-main-table"><thead><tr><th>Main Design</th><th>Automatic Scope</th><th>Design Owner</th><th>Status</th><th>Target</th><th>Progress</th><th>Action</th></tr></thead><tbody>${rows.length?rows.map(({drawing,root,index})=>{
+    if(root)return v214RootDesignRow(root,drawing,index);
+    return `<tr class="v211-unassigned"><td><div class="v211-task-cell"><span class="v211-seq">${index+1}</span><div><div class="v211-task-name">${h(drawing.short?`${drawing.short} — ${drawing.name}`:drawing.name)}</div><div class="v211-task-sub">Main Design • Owner not assigned</div></div></div></td><td>${v211ScopeBadge(drawing)}</td><td><span class="pill">Unassigned</span></td><td><span class="pill">Not Started</span></td><td>—</td><td>0%</td><td><button class="btn primary sm" data-v211-assign-owner="${h(drawing.id)}">Assign Design Owner</button></td></tr>`
+  }).join(''):`<tr><td colspan="7"><div class="empty compact"><strong>No Design Master rows found</strong>All_Drawing_Types will appear here.</div></td></tr>`}</tbody></table></div>`;
+};
+
+(function(){
+  const css=`
+  .v214-main-table th:nth-child(1){min-width:340px}.v214-main-table th:nth-child(2){min-width:150px}.v214-main-table th:nth-child(3){min-width:145px}.v214-main-table th:nth-child(4){min-width:105px}.v214-main-table th:nth-child(5){min-width:105px}.v214-main-table th:nth-child(6){min-width:120px}.v214-main-table th:last-child,.v214-main-table td:last-child{min-width:400px}.v214-row-actions{align-items:center;white-space:nowrap}.v214-assignments-btn{border-color:#e6a5c2;background:#fff7fb;color:#9b1c5a;font-weight:900}.v214-assignments-btn:hover{background:#fce8f1;border-color:#d66b9c}@media(max-width:1050px){.v214-main-table th:last-child,.v214-main-table td:last-child{min-width:330px}.v214-row-actions{white-space:normal}}
+  `;
+  const old=document.getElementById('v214AssignmentButtonStyles');if(old)old.remove();const st=document.createElement('style');st.id='v214AssignmentButtonStyles';st.textContent=css;document.head.appendChild(st);
+})();
+
 wire();wireV19();wireV20();wireV205Pds();wireV208();wireV209();wireV210();wireV211();wireV213();bootstrap();
 </script>
 </body>
