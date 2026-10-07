@@ -5198,6 +5198,114 @@ function wireV211(){
 })();
 
 
+
+/* ======================================================================
+   V20.12 - MAIN DESIGN LIST ONLY + DASHBOARD ASSIGNMENT DIRECTORY
+   ----------------------------------------------------------------------
+   Presentation-only enhancement requested by user.
+   - Project > Designs shows only the main Level-0 Design task (one row/design).
+   - Child scope assignments and subtasks are NOT expanded in the main list.
+   - Main row shows a compact assignee summary/count for visibility.
+   - Project Dashboard contains a clear "Who is assigned to what" directory.
+   - Existing hierarchy, PDS, revisions, dependencies, files, workflow,
+     notifications, emails and Creator storage are unchanged.
+   ====================================================================== */
+
+(function(){
+  const b=document.getElementById('buildBadge');if(b)b.textContent='V20.12';
+  document.title='MEGA Engineering | Project Design Control V20.12';
+})();
+
+function v212AllDescendants(root){
+  const out=[];
+  const walk=n=>{for(const c of v211Children(n)){out.push(c);walk(c)}};
+  if(root)walk(root);
+  return out;
+}
+function v212UniqueAssignees(root){
+  const seen=new Set(),rows=[];
+  for(const a of v212AllDescendants(root)){
+    const name=assignmentDisplayUser(a)||'Unassigned';
+    const key=nk(name);
+    if(!seen.has(key)){seen.add(key);rows.push(name)}
+  }
+  return rows;
+}
+function v212TeamSummary(root){
+  const descendants=v212AllDescendants(root),names=v212UniqueAssignees(root);
+  if(!descendants.length)return `<div class="v212-team-empty"><span class="pill">0 further assignments</span><span>No scope/subtask assigned yet</span></div>`;
+  const shown=names.slice(0,3);
+  return `<div class="v212-team-summary"><div class="v212-team-count"><span class="pill brand">${descendants.length} assignment${descendants.length===1?'':'s'}</span><span class="pill">${names.length} person${names.length===1?'':'s'}</span></div><div class="v212-name-chips">${shown.map(n=>`<span class="v212-name-chip" title="${h(n)}">${h(n)}</span>`).join('')}${names.length>3?`<span class="v212-name-chip more">+${names.length-3}</span>`:''}</div></div>`;
+}
+function v212RootDesignRow(root,drawing,index){
+  const descendants=v212AllDescendants(root),mode=v211ScopeModeForDrawing(drawing),status=scalar(root[AF.status]),target=displayDate(root[AF.targetDate]),progress=num(root[AF.progress]);
+  const scopeAction=v205IsPdsDrawingMaster(drawing)?'Open PDS':mode==='Project Wise'?'Project Design':'Assign Scope';
+  const scopeAttr=v205IsPdsDrawingMaster(drawing)?`data-open-assignment="${h(idOf(root))}" data-v212-open-pds="1"`:`data-v211-assign-further="${h(idOf(root))}"`;
+  return `<tr class="v212-main-design-row" data-v212-design-id="${h(idOf(root))}">
+    <td><div class="v211-task-cell"><span class="v211-seq">${index+1}</span><div><div class="v211-task-name">${h(drawing.short?`${drawing.short} — ${drawing.name}`:drawing.name)}</div><div class="v211-task-sub">Main Design • ${descendants.length} downstream assignment${descendants.length===1?'':'s'}</div></div></div></td>
+    <td>${v211ScopeBadge(drawing)}</td>
+    <td class="v19-human"><div class="v212-owner-main">${h(assignmentDisplayUser(root))}</div><div class="v211-task-sub">Design Owner</div></td>
+    <td>${v212TeamSummary(root)}</td>
+    <td>${statusPill(status)}</td>
+    <td>${h(target)}</td>
+    <td><div class="v211-progress"><span>${progress}%</span>${progressBar(progress)}</div></td>
+    <td><div class="v211-row-actions"><button class="btn sm" data-v211-open-node="${h(idOf(root))}">Open</button><button class="btn sm soft" ${scopeAttr}>${h(scopeAction)}</button><button class="btn sm" data-v211-add-subtask="${h(idOf(root))}">+ Subtask</button></div></td>
+  </tr>`;
+}
+
+// MAIN DESIGNS VIEW: one row per Drawing Master only. Children stay inside
+// the Design detail breakdown and the Dashboard assignment directory.
+renderProjectDesignsV18=function(){
+  const all=v211ProjectDrawingRows();
+  let rows=all;
+  if(S.projectWorkspace.status!=='All')rows=rows.filter(x=>x.root&&scalar(x.root[AF.status])===S.projectWorkspace.status);
+  if(S.projectWorkspace.owner!=='All')rows=rows.filter(x=>x.root&&assignmentDisplayUser(x.root)===S.projectWorkspace.owner);
+  const owners=[...new Set(all.map(x=>x.root?assignmentDisplayUser(x.root):'').filter(Boolean))].sort();
+  const statuses=[...new Set(all.map(x=>x.root?scalar(x.root[AF.status]):'').filter(Boolean))].sort();
+  const assigned=all.filter(x=>x.root).length,unassigned=all.length-assigned;
+  if(S.projectWorkspace.viewMode!=='list'){
+    const roots=all.map(x=>x.root).filter(Boolean);
+    return `<div class="project-toolbar"><div class="project-filters"><span class="pill brand">${assigned} main designs</span><span class="pill">${unassigned} yet to assign</span></div><div class="view-switch"><button data-v18-view="list">List</button><button data-v18-view="kanban" class="${S.projectWorkspace.viewMode==='kanban'?'active':''}">Kanban</button><button data-v18-view="gantt" class="${S.projectWorkspace.viewMode==='gantt'?'active':''}">Gantt</button></div></div><div style="margin-top:10px">${S.projectWorkspace.viewMode==='kanban'?renderProjectKanbanV18(roots):renderProjectGanttV18(roots)}</div>`;
+  }
+  return `<div class="v211-core-note v212-main-note"><div><b>Main Designs</b><span>Only the Level-0 Design is shown here. Scope assignments and subtasks stay inside the Design and are summarized by person. The complete assignment directory is available on Dashboard.</span></div><div class="v211-core-stats"><span class="pill brand">${all.length} Designs</span><span class="pill green">${assigned} Owned</span><span class="pill">${unassigned} Yet to Assign</span></div></div>
+  <div class="project-toolbar"><div class="project-filters"><select id="v18StatusFilter"><option>All</option>${statuses.map(x=>`<option ${x===S.projectWorkspace.status?'selected':''}>${h(x)}</option>`).join('')}</select><select id="v18OwnerFilter"><option>All</option>${owners.map(x=>`<option ${x===S.projectWorkspace.owner?'selected':''}>${h(x)}</option>`).join('')}</select></div><div class="view-switch"><button data-v18-view="list" class="active">List</button><button data-v18-view="kanban">Kanban</button><button data-v18-view="gantt">Gantt</button></div></div>
+  <div class="task-list-panel v211-task-panel"><table class="task-table v211-task-table v212-main-table"><thead><tr><th>Main Design</th><th>Automatic Scope</th><th>Design Owner</th><th>Assigned Team / Work</th><th>Status</th><th>Target</th><th>Progress</th><th>Action</th></tr></thead><tbody>${rows.length?rows.map(({drawing,root,index})=>{
+    if(root)return v212RootDesignRow(root,drawing,index);
+    return `<tr class="v211-unassigned"><td><div class="v211-task-cell"><span class="v211-seq">${index+1}</span><div><div class="v211-task-name">${h(drawing.short?`${drawing.short} — ${drawing.name}`:drawing.name)}</div><div class="v211-task-sub">Main Design • Owner not assigned</div></div></div></td><td>${v211ScopeBadge(drawing)}</td><td><span class="pill">Unassigned</span></td><td><span class="v211-task-sub">Assign the Design Owner first</span></td><td><span class="pill">Not Started</span></td><td>—</td><td>0%</td><td><button class="btn primary sm" data-v211-assign-owner="${h(drawing.id)}">Assign Design Owner</button></td></tr>`
+  }).join(''):`<tr><td colspan="8"><div class="empty compact"><strong>No Design Master rows found</strong>All_Drawing_Types will appear here.</div></td></tr>`}</tbody></table></div>`;
+};
+
+function v212AssignmentDirectory(){
+  const code=S.projectWorkspace.code,groups=v211ProjectDrawingRows().filter(x=>x.root);
+  const html=[];
+  for(const g of groups){
+    const root=g.root,d=g.drawing,children=v212AllDescendants(root);
+    if(!children.length)continue;
+    html.push(`<div class="v212-dir-group"><div class="v212-dir-head"><div><div class="v212-dir-title">${h(d.short?`${d.short} — ${d.name}`:d.name)}</div><div class="v211-task-sub">Design Owner: ${h(assignmentDisplayUser(root))} • ${children.length} further assignment${children.length===1?'':'s'}</div></div><button class="btn sm" data-v211-open-node="${h(idOf(root))}">Open Design</button></div><div class="v212-dir-table-wrap"><table class="v212-dir-table"><thead><tr><th>Assignment / Task</th><th>Assigned To</th><th>Level</th><th>Status</th><th>Target</th></tr></thead><tbody>${children.map(c=>`<tr data-v211-open-node="${h(idOf(c))}"><td><div class="v212-dir-task">${h(v211NodeLabel(c))}</div><div class="v211-task-sub">${h(scopeSummary(c)||scalar(c[AF.responsibility])||'Subtask')}</div></td><td class="v19-human">${h(assignmentDisplayUser(c))}</td><td><span class="pill">L${num(c[AF.assignmentLevel])}</span></td><td>${statusPill(scalar(c[AF.status]))}</td><td>${h(displayDate(c[AF.targetDate]))}</td></tr>`).join('')}</tbody></table></div></div>`);
+  }
+  const legacy=(S.assignments||[]).filter(a=>scalar(a[AF.projectCode])===String(code||'')&&!scalar(a[AF.assignedFrom])&&!v211IsDesignOwnerRoot(a));
+  if(legacy.length){
+    html.push(`<div class="v212-dir-group legacy"><div class="v212-dir-head"><div><div class="v212-dir-title">Existing Direct Assignments</div><div class="v211-task-sub">Previous-model work is preserved here and not mixed into the Main Design list.</div></div><span class="pill amber">${legacy.length}</span></div><div class="v212-dir-table-wrap"><table class="v212-dir-table"><thead><tr><th>Design / Responsibility</th><th>Assigned To</th><th>Scope</th><th>Status</th><th>Target</th></tr></thead><tbody>${legacy.map(c=>`<tr data-v211-open-node="${h(idOf(c))}"><td><div class="v212-dir-task">${h(drawingForAssignment(c).name||scalar(c[AF.drawingDocument])||'Design')}</div><div class="v211-task-sub">${h(scopeSummary(c)||scalar(c[AF.responsibility])||'Direct assignment')}</div></td><td class="v19-human">${h(assignmentDisplayUser(c))}</td><td>${h(scopeSummary(c)||'—')}</td><td>${statusPill(scalar(c[AF.status]))}</td><td>${h(displayDate(c[AF.targetDate]))}</td></tr>`).join('')}</tbody></table></div></div>`);
+  }
+  return html.length?html.join(''):`<div class="empty compact"><strong>No further assignments yet</strong>Assign Scope or create Subtasks from a Main Design. Who is assigned to what will appear here.</div>`;
+}
+
+const v212DashboardBase=renderProjectDashboardV18;
+renderProjectDashboardV18=function(){
+  const base=v212DashboardBase();
+  const roots=v211ProjectDrawingRows().map(x=>x.root).filter(Boolean),childCount=roots.reduce((n,r)=>n+v212AllDescendants(r).length,0),people=new Set();
+  roots.forEach(r=>v212AllDescendants(r).forEach(c=>people.add(nk(assignmentDisplayUser(c)))));
+  return `${base}<div class="panel v212-directory-panel" style="margin-top:12px"><div class="panel-head"><div><h2>Assignment Directory</h2><p>Who is assigned to what. Main Designs stay on the Designs tab; all scope work and subtasks are listed here.</p></div><div class="v212-dir-stats"><span class="pill brand">${childCount} assignments</span><span class="pill">${[...people].filter(Boolean).length} people</span></div></div><div class="panel-body v212-directory-body">${v212AssignmentDirectory()}</div></div>`;
+};
+
+(function(){
+  const css=`
+  .v212-main-table th:nth-child(4),.v212-main-table td:nth-child(4){min-width:260px}.v212-main-table th:last-child,.v212-main-table td:last-child{min-width:255px}.v212-owner-main{font-weight:900;color:#172033}.v212-team-summary{display:grid;gap:6px}.v212-team-count,.v212-name-chips{display:flex;gap:5px;align-items:center;flex-wrap:wrap}.v212-name-chip{display:inline-flex;align-items:center;max-width:150px;padding:4px 7px;border-radius:999px;background:#f7edf2;border:1px solid #edd5df;color:#7f1747;font-size:9px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v212-name-chip.more{background:#f2f4f7;border-color:#e4e7ec;color:#475467}.v212-team-empty{display:grid;gap:3px;color:#667085;font-size:9px}.v212-directory-panel .panel-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.v212-dir-stats{display:flex;gap:6px;flex-wrap:wrap}.v212-directory-body{display:grid;gap:12px}.v212-dir-group{border:1px solid #e4e7ec;border-radius:14px;overflow:hidden;background:#fff}.v212-dir-group.legacy{border-color:#f1d6a8}.v212-dir-head{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:11px 13px;background:#fcfcfd;border-bottom:1px solid #eaecf0}.v212-dir-title{font-weight:900;color:#172033}.v212-dir-table-wrap{overflow:auto}.v212-dir-table{width:100%;border-collapse:collapse}.v212-dir-table th{padding:9px 11px;text-align:left;font-size:9px;color:#667085;background:#fafafa;border-bottom:1px solid #eaecf0;white-space:nowrap}.v212-dir-table td{padding:10px 11px;border-bottom:1px solid #f0f2f5;font-size:10px;vertical-align:top}.v212-dir-table tbody tr{cursor:pointer}.v212-dir-table tbody tr:hover{background:#fff7fb}.v212-dir-table tbody tr:last-child td{border-bottom:0}.v212-dir-task{font-weight:900;color:#172033}.v212-main-note span{max-width:880px}@media(max-width:900px){.v212-main-table th:nth-child(4),.v212-main-table td:nth-child(4){min-width:220px}.v212-directory-panel .panel-head{align-items:flex-start;flex-direction:column}}
+  `;
+  const old=document.getElementById('v212MainOnlyStyles');if(old)old.remove();const st=document.createElement('style');st.id='v212MainOnlyStyles';st.textContent=css;document.head.appendChild(st);
+})();
+
+
 wire();wireV19();wireV20();wireV205Pds();wireV208();wireV209();wireV210();wireV211();bootstrap();
 </script>
 </body>
