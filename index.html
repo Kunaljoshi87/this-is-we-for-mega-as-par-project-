@@ -5306,7 +5306,95 @@ renderProjectDashboardV18=function(){
 })();
 
 
-wire();wireV19();wireV20();wireV205Pds();wireV208();wireV209();wireV210();wireV211();bootstrap();
+/* ======================================================================
+   V20.13 - MAIN DESIGN ASSIGNMENT VIEW + UPDATES
+   ----------------------------------------------------------------------
+   Presentation-only change requested by user.
+   - Dashboard no longer renders the large Assignment Directory.
+   - Project > Designs still shows ONLY the Main Design row.
+   - Assigned Team / Work becomes a compact summary with a dedicated
+     "View Assignments" action.
+   - The popup shows who assigned what to whom, status, target, progress
+     and the latest recorded update for every child task/subtask.
+   - Existing Creator hierarchy/storage/workflow/PDS/revision/dependency/
+     email logic is unchanged.
+   ====================================================================== */
+
+(function(){
+  const b=document.getElementById('buildBadge');if(b)b.textContent='V20.13';
+  document.title='MEGA Engineering | Project Design Control V20.13';
+})();
+
+// Keep Dashboard clean: use the dashboard that existed before V20.12 added
+// the full Assignment Directory panel.
+if(typeof v212DashboardBase==='function'){
+  renderProjectDashboardV18=v212DashboardBase;
+}
+
+function v213LatestUpdate(a){
+  const rows=assignmentActivityTimeline(a)||[];
+  const x=rows[0]||null;
+  if(!x)return {action:'No update recorded',time:'',detail:''};
+  return {action:x.action||'Activity',time:x.time||'',detail:x.detail||''};
+}
+function v213AssignedByName(a){
+  const raw=scalar(a?.[AF.assignedBy])||'';
+  return personDisplay(raw)||raw||'—';
+}
+function v213TeamSummary(root){
+  const descendants=v212AllDescendants(root),names=v212UniqueAssignees(root),rid=idOf(root);
+  if(!descendants.length){
+    return `<div class="v213-team-summary empty"><div><span class="pill">0 assignments</span></div><div class="v211-task-sub">No scope work or subtasks yet</div><button class="btn sm" data-v213-view-assignments="${h(rid)}">View</button></div>`;
+  }
+  const shown=names.slice(0,2);
+  return `<div class="v213-team-summary"><div class="v213-team-top"><span class="pill brand">${descendants.length} assignment${descendants.length===1?'':'s'}</span><span class="pill">${names.length} person${names.length===1?'':'s'}</span></div><div class="v213-name-line">${shown.map(n=>`<span class="v212-name-chip" title="${h(n)}">${h(n)}</span>`).join('')}${names.length>2?`<span class="v212-name-chip more">+${names.length-2}</span>`:''}</div><button class="btn sm soft v213-view-btn" data-v213-view-assignments="${h(rid)}">View Assignments & Updates</button></div>`;
+}
+// V20.12 main row calls v212TeamSummary dynamically; replace only that summary.
+v212TeamSummary=v213TeamSummary;
+
+const v213DesignsBase=renderProjectDesignsV18;
+renderProjectDesignsV18=function(){
+  let html=v213DesignsBase();
+  html=html.replace('The complete assignment directory is available on Dashboard.','Use View Assignments & Updates to see who is assigned to what without expanding the Main Design list.');
+  html=html.replace('Assigned Team / Work','Assignments / Updates');
+  return html;
+};
+
+function v213AssignmentRows(root){
+  return v212AllDescendants(root).slice().sort((a,b)=>{
+    const la=num(a[AF.assignmentLevel]),lb=num(b[AF.assignmentLevel]);
+    if(la!==lb)return la-lb;
+    return String(v211NodeLabel(a)).localeCompare(String(v211NodeLabel(b)));
+  });
+}
+function v213AssignmentModal(rootId){
+  const root=assignmentById(rootId);if(!root)return toast('This Design assignment is no longer available. Refresh the Project and try again.','warn');
+  const drawing=drawingForAssignment(root),rows=v213AssignmentRows(root),people=v212UniqueAssignees(root),latestRoot=v213LatestUpdate(root);
+  const body=rows.length?`<div class="v213-assignment-table-wrap"><table class="v213-assignment-table"><thead><tr><th>Assignment / Task</th><th>Assigned To</th><th>Assigned By</th><th>Status</th><th>Target</th><th>Progress</th><th>Latest Update</th><th></th></tr></thead><tbody>${rows.map(a=>{const level=Math.max(1,num(a[AF.assignmentLevel])),u=v213LatestUpdate(a),indent=Math.min(level-1,6)*18;return `<tr><td><div class="v213-task-title" style="padding-left:${indent}px">${level>1?'<span class="v213-branch">↳</span>':''}${h(v211NodeLabel(a))}</div><div class="v211-task-sub" style="padding-left:${indent+(level>1?14:0)}px">Level ${level} • ${h(scopeSummary(a)||scalar(a[AF.responsibility])||'Subtask')}</div></td><td class="v19-human">${h(assignmentDisplayUser(a))}</td><td>${h(v213AssignedByName(a))}</td><td>${statusPill(scalar(a[AF.status]))}</td><td>${h(displayDate(a[AF.targetDate]))}</td><td><div class="v213-mini-progress"><span>${num(a[AF.progress])}%</span>${progressBar(num(a[AF.progress]))}</div></td><td><div class="v213-update-action">${h(u.action)}</div><div class="v211-task-sub">${u.time?h(displayDateTime(u.time)):'No timestamp'}</div>${u.detail?`<div class="v213-update-detail" title="${h(u.detail)}">${h(u.detail)}</div>`:''}</td><td><button class="btn sm" data-v211-open-node="${h(idOf(a))}">Open</button></td></tr>`}).join('')}</tbody></table></div>`:`<div class="empty compact"><strong>No further assignments yet</strong>Use Assign Scope or + Subtask from this Main Design. The Design Owner remains visible here.</div>`;
+  const title=drawing.short?`${drawing.short} — ${drawing.name}`:(drawing.name||scalar(root[AF.drawingDocument])||'Design');
+  openModal('Assignments & Updates',`${title} • Project ${S.projectWorkspace.code}`,
+  `<div class="v213-overview"><div class="v213-overview-card"><span>Design Owner</span><b>${h(assignmentDisplayUser(root))}</b></div><div class="v213-overview-card"><span>Assignments</span><b>${rows.length}</b></div><div class="v213-overview-card"><span>People</span><b>${people.length}</b></div><div class="v213-overview-card"><span>Main Design Status</span><b>${h(scalar(root[AF.status])||'Not Started')}</b></div></div>
+   <div class="v213-main-update"><div><span class="v213-kicker">MAIN DESIGN LATEST UPDATE</span><b>${h(latestRoot.action)}</b>${latestRoot.detail?`<p>${h(latestRoot.detail)}</p>`:''}</div><div class="v213-update-time">${latestRoot.time?h(displayDateTime(latestRoot.time)):'No update recorded yet'}</div></div>
+   <div class="section-row"><div><h2>Who is assigned to what</h2><p>All scope assignments and subtasks for this Main Design. Open any row for full files, workflow, revisions, dependencies and activity.</p></div></div>${body}`,
+  `<button class="btn" data-modal="close">Close</button><button class="btn soft" data-v211-open-node="${h(idOf(root))}">Open Main Design</button>`);
+}
+
+function wireV213(){
+  document.addEventListener('click',e=>{
+    const v=e.target.closest('[data-v213-view-assignments]');
+    if(v){e.preventDefault();e.stopImmediatePropagation();return v213AssignmentModal(v.dataset.v213ViewAssignments)}
+  },true);
+}
+
+(function(){
+  const css=`
+  .v213-team-summary{display:grid;gap:6px;align-items:start}.v213-team-summary.empty{grid-template-columns:1fr auto;align-items:center}.v213-team-summary.empty .v211-task-sub{grid-column:1/2}.v213-team-top,.v213-name-line{display:flex;gap:5px;align-items:center;flex-wrap:wrap}.v213-view-btn{justify-self:start}.v213-overview{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:9px;margin-bottom:12px}.v213-overview-card{border:1px solid #e4e7ec;border-radius:12px;padding:10px 12px;background:#fcfcfd;display:grid;gap:3px}.v213-overview-card span{font-size:9px;color:#667085;font-weight:800;text-transform:uppercase;letter-spacing:.03em}.v213-overview-card b{font-size:12px;color:#172033}.v213-main-update{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;border:1px solid #ead6df;background:#fff8fb;border-radius:12px;padding:11px 13px;margin-bottom:12px}.v213-main-update>div:first-child{display:grid;gap:3px}.v213-main-update p{margin:0;color:#667085;font-size:10px}.v213-kicker{font-size:8px;color:#9b1c5a;font-weight:900;letter-spacing:.06em}.v213-update-time{font-size:9px;color:#667085;white-space:nowrap}.v213-assignment-table-wrap{overflow:auto;max-height:55vh;border:1px solid #eaecf0;border-radius:13px}.v213-assignment-table{width:100%;border-collapse:collapse;min-width:1120px}.v213-assignment-table th{position:sticky;top:0;z-index:1;text-align:left;background:#fafafa;color:#667085;font-size:9px;padding:9px 10px;border-bottom:1px solid #eaecf0;white-space:nowrap}.v213-assignment-table td{padding:10px;border-bottom:1px solid #f0f2f5;vertical-align:top;font-size:10px}.v213-assignment-table tr:last-child td{border-bottom:0}.v213-task-title{font-weight:900;color:#172033;min-width:210px}.v213-branch{color:#c42770;margin-right:5px}.v213-mini-progress{display:grid;grid-template-columns:auto 75px;gap:5px;align-items:center}.v213-update-action{font-weight:800;color:#344054;max-width:180px}.v213-update-detail{font-size:9px;color:#667085;max-width:210px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}@media(max-width:900px){.v213-overview{grid-template-columns:repeat(2,1fr)}.v213-main-update{flex-direction:column}.v213-update-time{white-space:normal}}
+  `;
+  const old=document.getElementById('v213AssignmentViewStyles');if(old)old.remove();const st=document.createElement('style');st.id='v213AssignmentViewStyles';st.textContent=css;document.head.appendChild(st);
+})();
+
+
+wire();wireV19();wireV20();wireV205Pds();wireV208();wireV209();wireV210();wireV211();wireV213();bootstrap();
 </script>
 </body>
 </html>
