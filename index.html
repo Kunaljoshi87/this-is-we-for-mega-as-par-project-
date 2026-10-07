@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Drawing & Document Control V18 Project Workspace + Old Logic Preserved V20.8</title>
+<title>MEGA Engineering | Drawing & Document Control V18 Project Workspace + Old Logic Preserved V20.9</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -208,8 +208,18 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 .connection-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;border:1px solid #ffffff35;background:#ffffff16;color:#fff;font-size:9px;font-weight:900;white-space:nowrap}.connection-pill .dot{width:7px;height:7px;border-radius:50%;background:#65d58a;box-shadow:0 0 0 3px #65d58a22}.connection-pill.slow .dot{background:#f2b84b;box-shadow:0 0 0 3px #f2b84b22}.connection-pill.offline .dot{background:#ef6a73;box-shadow:0 0 0 3px #ef6a7322}.loading-box{min-width:320px;max-width:min(92vw,460px)}.loading-sub{margin-top:5px;font-size:10px;color:var(--muted);line-height:1.4}.loading-track{height:5px;border-radius:999px;background:#f1e3ea;margin-top:12px;overflow:hidden}.loading-bar{height:100%;width:34%;border-radius:999px;background:linear-gradient(90deg,var(--brand2),var(--brand));animation:loadmove 1.25s ease-in-out infinite alternate}.loading-bar.determinate{animation:none;width:0}.loading-meta{display:flex;justify-content:space-between;gap:12px;margin-top:7px;font-size:9px;color:var(--muted2)}@keyframes loadmove{from{transform:translateX(-20%)}to{transform:translateX(190%)}}.runtime-error-banner{border:1px solid #f2b8c1;background:#fff6f7;border-radius:11px;padding:10px 12px;margin-bottom:12px;color:#8b2233}.runtime-error-banner b{display:block;margin-bottom:3px}.runtime-error-banner details{margin-top:6px;color:#667085}.health-grid{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:8px;margin:10px 0}.health-card{border:1px solid var(--line2);background:#fff;border-radius:11px;padding:10px}.health-card .hk{font-size:8px;text-transform:uppercase;color:var(--muted);font-weight:900}.health-card .hv{font-size:13px;font-weight:950;margin-top:4px}.health-ok{color:#176541}.health-warn{color:#8a5c0a}.health-bad{color:#a82b3d}.health-table td,.health-table th{font-size:10px}.health-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}@media(max-width:760px){.health-grid{grid-template-columns:repeat(2,minmax(120px,1fr))}.connection-pill{display:none}}
 
 
-/* ================= V20.8 PRODUCTION SCALE + DATA INTEGRITY ================= */
+/* ================= V20.9 PRODUCTION SCALE + DATA INTEGRITY ================= */
 .v208-demand{display:inline-flex;align-items:center;gap:6px;color:#667085;font-size:10px}.v208-demand .mini-spinner{width:12px;height:12px;border:2px solid #ead7e2;border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite}.v208-pager{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line2);background:#fbfafb}.v208-pager .pages{font-size:10px;color:var(--muted);font-weight:800}.v208-scale-note{display:flex;gap:8px;align-items:flex-start;border:1px solid #eadde4;background:#fffafd;border-radius:10px;padding:9px 11px;margin:8px 0;font-size:10px;color:#5d5962}.v208-impact{border:1px solid #f1c66d;background:#fff9e9;border-radius:10px;padding:9px 11px;color:#76520b;font-size:10px}.v208-impact strong{display:block;margin-bottom:2px}.v208-health-tags{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.v208-loading-skeleton{display:grid;gap:10px}.v208-sk{height:58px;border-radius:11px;background:linear-gradient(90deg,#f3edf0 20%,#fff 40%,#f3edf0 60%);background-size:220% 100%;animation:v208shimmer 1.25s linear infinite}@keyframes v208shimmer{to{background-position:-220% 0}}.v208-conflict{border:1px solid #f0b7c0;background:#fff5f7;color:#8b2233;border-radius:10px;padding:10px}.v208-page-size{min-width:92px}.v208-load-state{font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.03em}.v208-load-state.loaded{color:#176541}.v208-load-state.ondemand{color:#7b6572}
+
+
+/* ================= V20.9 RESILIENT PROJECT LOAD UX ================= */
+.v209-project-state{margin:0 0 12px;border:1px solid #dbe4ef;background:#fff;border-radius:14px;padding:12px 14px;display:flex;align-items:flex-start;gap:12px;box-shadow:0 5px 18px rgba(15,23,42,.04)}
+.v209-project-state.loading{border-color:#d9e8ff;background:#f7fbff}.v209-project-state.warn{border-color:#f5d690;background:#fffaf0}.v209-project-state.good{border-color:#b8e8d2;background:#f3fff9}
+.v209-state-icon{width:34px;height:34px;border-radius:11px;background:#eef5ff;display:grid;place-items:center;font-weight:900;flex:0 0 auto}.v209-project-state.warn .v209-state-icon{background:#fff0ca}.v209-project-state.good .v209-state-icon{background:#dff8ec}
+.v209-state-main{min-width:0;flex:1}.v209-state-title{font-weight:900;color:#172033;margin-bottom:3px}.v209-state-copy{font-size:12px;color:#667085;line-height:1.45}.v209-state-meta{display:flex;gap:7px;flex-wrap:wrap;margin-top:7px}.v209-state-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.v209-inline-recovery{border:1px dashed #e5b85f;background:#fffaf0;border-radius:14px;padding:16px}.v209-inline-recovery b{display:block;color:#7a5200;margin-bottom:5px}.v209-inline-recovery p{margin:0 0 10px;color:#6b7280;font-size:12px;line-height:1.45}
+.v209-mini-spinner{width:18px;height:18px;border:3px solid #d9e8ff;border-top-color:#c42770;border-radius:50%;animation:v209spin .75s linear infinite}@keyframes v209spin{to{transform:rotate(360deg)}}
+.v209-health-optional{background:#fff2cc;color:#8a5a00}.v209-health-row-slow td:first-child:after{content:'  SLOW';font-size:9px;font-weight:900;color:#9a6700;margin-left:5px}
 
 </style>
 </head>
@@ -220,7 +230,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V20.8</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V20.9</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -2149,8 +2159,8 @@ function assertRuntimeIntegrity(){
   if(typeof fetchRecords!=="function")problems.push("fetchRecords helper missing");
   if(!S.demo && (!window.ZOHO||!ZOHO.CREATOR))problems.push("Zoho Creator Widget SDK unavailable");
   if(!S.demo && !ZOHO?.CREATOR?.DATA?.getRecords)problems.push("ZOHO.CREATOR.DATA.getRecords unavailable");
-  if(problems.length)throw new Error(`V20.8 runtime check failed: ${problems.join("; ")}`);
-  console.info("MEGA Project Design Control build V20.8 loaded", {fetchRecords:typeof fetchRecords, app:CONFIG.APP_NAME});
+  if(problems.length)throw new Error(`V20.9 runtime check failed: ${problems.join("; ")}`);
+  console.info("MEGA Project Design Control build V20.9 loaded", {fetchRecords:typeof fetchRecords, app:CONFIG.APP_NAME});
 }
 
 // bootstrap(): starts the complete widget.
@@ -3016,7 +3026,7 @@ async function saveAssignmentStatus(){const a=S.current,s=$("assignmentStatusEdi
 // openModal(): opens the reusable dialog shell.
 function openModal(title,sub,body,foot){$("modalTitle").textContent=title;$("modalSub").textContent=sub||"";$("modalBody").innerHTML=body||"";$("modalFoot").innerHTML=foot||"";$("modalBackdrop").classList.remove("hidden")}
 function closeModal(){$("modalBackdrop").classList.add("hidden")}
-function setupModal(){openModal("V17.18 One-Form + Universal Search + System Alerts","Assignment + Design Files + Revision History use your existing Design_Tracking form.",`<div class="notice good"><b>No new transaction form is used.</b> Assignment rows and Revision rows are both stored in Design_Tracking and separated by their backend identity fields.</div><div class="section-row"><div><h2>Assignment hierarchy</h2><p>Already added to your form.</p></div></div><div class="table-wrap"><table><thead><tr><th>Field</th><th>Link Name</th><th>Purpose</th></tr></thead><tbody><tr><td>Primary Assignment ID</td><td>Primary_Assignment_ID</td><td>First project-level assignment</td></tr><tr><td>Assigned From ID</td><td>Assigned_From_ID</td><td>Immediate previous responsibility</td></tr><tr><td>Assignment Level</td><td>Assignment_Level</td><td>0, 1, 2, 3… N</td></tr><tr><td>Assignment Criteria</td><td>Assignment_Criteria</td><td>Single Line</td></tr><tr><td>Responsibility</td><td>Responsibility</td><td>Readable scope</td></tr></tbody></table></div><div class="section-row"><div><h2>Design / revision identity</h2><p>Uses fields already visible in your Design_Tracking screenshots.</p></div></div><div class="table-wrap"><table><thead><tr><th>Field</th><th>Link Name</th><th>Use</th></tr></thead><tbody><tr><td>Logical Task Key</td><td>Logical_Task_Key</td><td>EXEC::AssignmentID::R0 / R1 / R2</td></tr><tr><td>Revision Key</td><td>Revision_Key</td><td>Unique revision identity</td></tr><tr><td>Parent Design ID</td><td>Parent_Design_ID</td><td>R0 → R1 → R2 chain</td></tr><tr><td>Revision</td><td>Revision</td><td>R0 / R1 / R2</td></tr><tr><td>Files</td><td>Drawing_File / Native_File / Supporting_File</td><td>Controlled document files</td></tr></tbody></table></div><div class="notice warn" style="margin-top:12px"><b>Do not use Parent_Design_ID for assignment hierarchy.</b> It is reserved only for revision history. Further_Assigned and Active are not written by the widget because this Creator app rejected Decision Box API values; children are derived from Assigned_From_ID.</div><div class="section-row"><div><h2>V17.14 Employee Email Notification</h2><p>Add one field to persist the timeline.</p></div></div><div class="table-wrap"><table><thead><tr><th>Field</th><th>Link Name</th><th>Type</th><th>Use</th></tr></thead><tbody><tr><td>Activity Log</td><td>Activity_Log</td><td>Multi Line</td><td>Assignment, revision, upload and workflow event history.</td></tr></tbody></table></div><div class="notice good" style="margin-top:10px"><b>Email source:</b> selected Employee Name is resolved against Employ_to_Create_ticket_Report and the normal <b>Email</b> is written to Assigned_To.</div><div class="notice good" style="margin-top:10px"><b>Automatic assignment email:</b> after save, the widget invokes Creator Custom API <b>send_design_assignment_email</b>. Single = one mail. Bulk = one summary mail per person.</div><div class="notice good" style="margin-top:10px"><b>Performance:</b> Project, Drawing and Employee masters load at startup. Equipment loads only for the opened Project and is cached. PDS reports remain lazy and cached after first use.</div><div class="notice good" style="margin-top:10px"><b>Universal Search:</b> typing in the top search opens a dedicated result page and searches Tag/Equipment, Project, Drawing, Design_Tracking assignments/revisions and All_PD_Sheet. Equipment and PDS are loaded lazily on first search.</div><div class="notice good" style="margin-top:10px"><b>System Alerts:</b> the new bell shows personal assignment, due/overdue and Checker/Reviewer/Approver workflow alerts. Read/unread is stored per logged-in user in this browser; no new Creator form is used.</div><div class="notice good" style="margin-top:10px"><b>PDS Workspace:</b> When the selected Drawing is PDS, the widget reads existing All_PD_Sheet plus Equipment / Nozzle / Structure / Piping / Bought Out / Consumable / E&amp;I PDS reports as read-only source data. V17.12 uses logical-work architecture and can bulk-assign Tag + PDS Type responsibilities; each assignment is a separate Design_Tracking row, while the source PDS report itself is never modified or copied.</div><div class="notice good" style="margin-top:10px"><b>V20.8 Production Scale:</b> Creator report reads have timeout + safe retry, large reports use cursor pagination, equipment requests are coalesced, writes are never blindly retried, bulk saves show progress, last-good in-memory report data can be reused after a temporary read failure, and the new System Health button shows live source status.</div>`,`<button class="btn primary" data-modal="close">Close</button>`)}
+function setupModal(){openModal("V17.18 One-Form + Universal Search + System Alerts","Assignment + Design Files + Revision History use your existing Design_Tracking form.",`<div class="notice good"><b>No new transaction form is used.</b> Assignment rows and Revision rows are both stored in Design_Tracking and separated by their backend identity fields.</div><div class="section-row"><div><h2>Assignment hierarchy</h2><p>Already added to your form.</p></div></div><div class="table-wrap"><table><thead><tr><th>Field</th><th>Link Name</th><th>Purpose</th></tr></thead><tbody><tr><td>Primary Assignment ID</td><td>Primary_Assignment_ID</td><td>First project-level assignment</td></tr><tr><td>Assigned From ID</td><td>Assigned_From_ID</td><td>Immediate previous responsibility</td></tr><tr><td>Assignment Level</td><td>Assignment_Level</td><td>0, 1, 2, 3… N</td></tr><tr><td>Assignment Criteria</td><td>Assignment_Criteria</td><td>Single Line</td></tr><tr><td>Responsibility</td><td>Responsibility</td><td>Readable scope</td></tr></tbody></table></div><div class="section-row"><div><h2>Design / revision identity</h2><p>Uses fields already visible in your Design_Tracking screenshots.</p></div></div><div class="table-wrap"><table><thead><tr><th>Field</th><th>Link Name</th><th>Use</th></tr></thead><tbody><tr><td>Logical Task Key</td><td>Logical_Task_Key</td><td>EXEC::AssignmentID::R0 / R1 / R2</td></tr><tr><td>Revision Key</td><td>Revision_Key</td><td>Unique revision identity</td></tr><tr><td>Parent Design ID</td><td>Parent_Design_ID</td><td>R0 → R1 → R2 chain</td></tr><tr><td>Revision</td><td>Revision</td><td>R0 / R1 / R2</td></tr><tr><td>Files</td><td>Drawing_File / Native_File / Supporting_File</td><td>Controlled document files</td></tr></tbody></table></div><div class="notice warn" style="margin-top:12px"><b>Do not use Parent_Design_ID for assignment hierarchy.</b> It is reserved only for revision history. Further_Assigned and Active are not written by the widget because this Creator app rejected Decision Box API values; children are derived from Assigned_From_ID.</div><div class="section-row"><div><h2>V17.14 Employee Email Notification</h2><p>Add one field to persist the timeline.</p></div></div><div class="table-wrap"><table><thead><tr><th>Field</th><th>Link Name</th><th>Type</th><th>Use</th></tr></thead><tbody><tr><td>Activity Log</td><td>Activity_Log</td><td>Multi Line</td><td>Assignment, revision, upload and workflow event history.</td></tr></tbody></table></div><div class="notice good" style="margin-top:10px"><b>Email source:</b> selected Employee Name is resolved against Employ_to_Create_ticket_Report and the normal <b>Email</b> is written to Assigned_To.</div><div class="notice good" style="margin-top:10px"><b>Automatic assignment email:</b> after save, the widget invokes Creator Custom API <b>send_design_assignment_email</b>. Single = one mail. Bulk = one summary mail per person.</div><div class="notice good" style="margin-top:10px"><b>Performance:</b> Project, Drawing and Employee masters load at startup. Equipment loads only for the opened Project and is cached. PDS reports remain lazy and cached after first use.</div><div class="notice good" style="margin-top:10px"><b>Universal Search:</b> typing in the top search opens a dedicated result page and searches Tag/Equipment, Project, Drawing, Design_Tracking assignments/revisions and All_PD_Sheet. Equipment and PDS are loaded lazily on first search.</div><div class="notice good" style="margin-top:10px"><b>System Alerts:</b> the new bell shows personal assignment, due/overdue and Checker/Reviewer/Approver workflow alerts. Read/unread is stored per logged-in user in this browser; no new Creator form is used.</div><div class="notice good" style="margin-top:10px"><b>PDS Workspace:</b> When the selected Drawing is PDS, the widget reads existing All_PD_Sheet plus Equipment / Nozzle / Structure / Piping / Bought Out / Consumable / E&amp;I PDS reports as read-only source data. V17.12 uses logical-work architecture and can bulk-assign Tag + PDS Type responsibilities; each assignment is a separate Design_Tracking row, while the source PDS report itself is never modified or copied.</div><div class="notice good" style="margin-top:10px"><b>V20.9 Resilient Production Scale:</b> Creator report reads have timeout + safe retry, large reports use cursor pagination, equipment requests are coalesced, writes are never blindly retried, bulk saves show progress, last-good in-memory report data can be reused after a temporary read failure, and the new System Health button shows live source status.</div>`,`<button class="btn primary" data-modal="close">Close</button>`)}
 
 async function handleAction(act){if(act==="create-primary")return createPrimary();if(act==="edit-assignment")return editAssignmentModal();if(act==="start-r0")return startR0();if(act==="save-revision")return saveRevision();if(act==="new-revision")return openNewRevisionModal();if(act==="select-next-10"){const rows=S.targetRows.filter(r=>!existingChildForTarget(S.current,r)&&!S.selectedTargets.has(targetKey(r))).slice(0,10);rows.forEach(r=>S.selectedTargets.add(targetKey(r)));return renderView()}if(act==="select-all-targets"){S.targetRows.filter(r=>!existingChildForTarget(S.current,r)).forEach(r=>S.selectedTargets.add(targetKey(r)));return renderView()}if(act==="clear-targets"){S.selectedTargets.clear();return renderView()}if(act==="review-bulk")return reviewBulk()}
 async function handleModal(act,el){if(act==="close")return closeModal();if(act==="confirm-bulk")return confirmBulk();if(act==="confirm-pds-bulk")return confirmPdsBulk();if(act==="save-assignment-status")return saveAssignmentStatus();if(act==="confirm-return")return confirmReturn();if(act==="confirm-new-revision")return confirmNewRevision(el.dataset.nextRev)}
@@ -3748,7 +3758,7 @@ async function createV18Assignment(){
       try{
         const data=v19ReadablePayload(p,drawing,recipient,draft,draft.mode==='Project Wise'?null:u),id=await addRecord(data),rec={ID:id,...data};
         S.records.push(rec);S.assignments.push(rec);created.push(rec);
-      }catch(err){if(typeof v208IsDuplicateError==='function'&&v208IsDuplicateError(err))skipped++;else{failures.push({unit:u,error:err});console.error('V20.8 design work creation failed',u,err)}}
+      }catch(err){if(typeof v208IsDuplicateError==='function'&&v208IsDuplicateError(err))skipped++;else{failures.push({unit:u,error:err});console.error('V20.9 design work creation failed',u,err)}}
       if(processed%CONFIG.CLIENT_BATCH_CHUNK===0)await sleep(20)
     }
     if(created.length)await notifyCreatedAssignments(created);
@@ -4212,7 +4222,7 @@ async function v205CreatePdsDesignWork(draft,p,drawing){
     for(const unit of units){
       processed++;updateBusyProgress(processed,units.length,`Creating ${units.length} PDS work item${units.length===1?'':'s'}…`);
       if(v205PdsExistingWork(p,drawing,unit)){skipped++;continue;}
-      try{const data=v205PdsReadablePayload(p,drawing,recipient,draft,unit),id=await addRecord(data),rec={ID:id,...data};S.records.push(rec);S.assignments.push(rec);created.push(rec)}catch(err){if(typeof v208IsDuplicateError==='function'&&v208IsDuplicateError(err))skipped++;else{failures.push({unit,error:err});console.error('V20.8 PDS work creation failed',unit,err)}}
+      try{const data=v205PdsReadablePayload(p,drawing,recipient,draft,unit),id=await addRecord(data),rec={ID:id,...data};S.records.push(rec);S.assignments.push(rec);created.push(rec)}catch(err){if(typeof v208IsDuplicateError==='function'&&v208IsDuplicateError(err))skipped++;else{failures.push({unit,error:err});console.error('V20.9 PDS work creation failed',unit,err)}}
       if(processed%CONFIG.CLIENT_BATCH_CHUNK===0)await sleep(20)
     }
     if(created.length)await notifyCreatedAssignments(created);if(!created.length&&failures.length)throw new Error(`No PDS work items were created. ${failures[0].error?.message||'Creator save failed.'}`);closeModal();const parts=[`${created.length} PDS work item${created.length===1?'':'s'} created for ${recipient.name}`];if(skipped)parts.push(`${skipped} already existed`);if(failures.length)parts.push(`${failures.length} failed`);toast(parts.join(' • '),failures.length?'warn':'good');S.projectWorkspace.tab='designs';renderView()
@@ -4247,7 +4257,7 @@ function wireV205Pds(){
 
 
 /* ======================================================================
-   V20.8 PRODUCTION SCALE / INTEGRITY LAYER
+   V20.9 PRODUCTION SCALE / INTEGRITY LAYER
    ----------------------------------------------------------------------
    This layer intentionally leaves the engineering business flow unchanged.
    It adds project-scoped Design_Tracking reads, cache TTLs, work-key support,
@@ -4292,7 +4302,7 @@ loadTrackingFieldMetadata=async function(){
       S.capabilities.workKey=v208FieldConfigured(AF.workKey);
       S.capabilities.impactFields=[AF.impactReviewStatus,AF.impactSourceDesignId,AF.impactSourceRevision,AF.impactReviewOn].every(v208FieldConfigured);
     }
-  }catch(e){console.warn("V20.8 field-capability metadata unavailable",e)}
+  }catch(e){console.warn("V20.9 field-capability metadata unavailable",e)}
 };
 
 const v208PrepareCreatorPayloadBase=prepareCreatorPayload;
@@ -4353,7 +4363,7 @@ friendlyErrorMessage=function(e){if(e?.code==="MEGA_CONFLICT")return"Someone els
 async function v208PersistSystemLog({module="Widget",operation="",error,status="ERROR",project=""}={}){
   const cfg=CONFIG.SYSTEM_LOG||{};if(!cfg.enabled||S.demo||S.runtime.systemLogDisabled||!ZOHO?.CREATOR?.DATA?.addRecords)return;
   const raw=errorText(error||"");
-  const data={Occurred_On:toCreatorDateTime(),Module:String(module).slice(0,100),Project_Code:String(project||S.projectWorkspace?.code||scalar(S.current?.[AF.projectCode])||"").slice(0,100),Operation:String(operation||"").slice(0,150),User_Name:personDisplay(S.user)||String(S.user||""),Status:status,Error_Message:friendlyErrorMessage(error||raw).slice(0,500),Technical_Detail:raw.slice(0,5000),Widget_Build:"V20.8"};
+  const data={Occurred_On:toCreatorDateTime(),Module:String(module).slice(0,100),Project_Code:String(project||S.projectWorkspace?.code||scalar(S.current?.[AF.projectCode])||"").slice(0,100),Operation:String(operation||"").slice(0,150),User_Name:personDisplay(S.user)||String(S.user||""),Status:status,Error_Message:friendlyErrorMessage(error||raw).slice(0,500),Technical_Detail:raw.slice(0,5000),Widget_Build:"V20.9"};
   try{await withTimeout(()=>ZOHO.CREATOR.DATA.addRecords(withApp({form_name:cfg.form,payload:{data}})),8000,"System log",{write:true})}catch(e){S.runtime.systemLogDisabled=true;console.warn("Design_System_Log unavailable; persistent error logging disabled for this session.",e)}
 }
 const v208ShowRuntimeErrorBase=showRuntimeError;
@@ -4538,9 +4548,9 @@ const v208RenderViewBase=renderView;renderView=function(){const x=v208RenderView
 
 // ---------- Health panel additions ----------
 const v208SystemHealthHtmlBase=systemHealthHtml;
-systemHealthHtml=function(){const loaded=[...S.cache.trackingProjects],workKey=S.capabilities.workKey===false?'Legacy fallback':'Ready / unknown',impact=S.capabilities.impactFields===false?'Derived only':'Ready / unknown';return `${v208SystemHealthHtmlBase()}<div class="v208-health-tags"><span class="pill brand">Scoped Projects: ${loaded.length}</span><span class="pill">Work Key: ${h(workKey)}</span><span class="pill">Impact Fields: ${h(impact)}</span><span class="pill">Batch Ceiling: ${CONFIG.MAX_BATCH}</span></div><div class="notice good"><b>V20.8 scale mode:</b> Design_Tracking loads per Project. Lists are paged, large create operations are chunked, and employee/workflow data loads on demand.</div>`};
+systemHealthHtml=function(){const loaded=[...S.cache.trackingProjects],workKey=S.capabilities.workKey===false?'Legacy fallback':'Ready / unknown',impact=S.capabilities.impactFields===false?'Derived only':'Ready / unknown';return `${v208SystemHealthHtmlBase()}<div class="v208-health-tags"><span class="pill brand">Scoped Projects: ${loaded.length}</span><span class="pill">Work Key: ${h(workKey)}</span><span class="pill">Impact Fields: ${h(impact)}</span><span class="pill">Batch Ceiling: ${CONFIG.MAX_BATCH}</span></div><div class="notice good"><b>V20.9 resilient scale mode:</b> Design_Tracking loads per Project. Lists are paged, large create operations are chunked, and employee/workflow data loads on demand.</div>`};
 
-// ---------- V20.8 event additions ----------
+// ---------- V20.9 event additions ----------
 function wireV208(){
   document.addEventListener('input',e=>{if(e.target.id==='v205PdsSearch'){const d=v205PdsDraft();d.pdsPage=1}});
   document.addEventListener('click',e=>{
@@ -4551,7 +4561,178 @@ function wireV208(){
   document.addEventListener('change',e=>{if(e.target.id==='v18StatusFilter'||e.target.id==='v18OwnerFilter')S.projectWorkspace.page=1;if(['v205PdsTypeFilter','v205PdsStatusFilter','v205PdsName','v205PdsSection','v205PdsSectionType','v205PdsDepartment','v205PdsGroup','v205PdsCategory','v205PdsEquipmentType'].includes(e.target.id)){const d=v205PdsDraft();d.pdsPage=1}});
 }
 
-wire();wireV19();wireV20();wireV205Pds();wireV208();bootstrap();
+
+
+/* ======================================================================
+   V20.9 RESILIENT PROJECT LOAD / FAIL-OPEN FINAL LAYER
+   ----------------------------------------------------------------------
+   Purpose: opening a Project is a READ operation and must never take the
+   entire workspace down because one optional/scoped source is slow or
+   temporarily unavailable. Project shell opens first, Equipment and
+   Design_Tracking load independently, last-good data is retained, and a
+   local Retry action is shown instead of a blocking global error modal.
+
+   Existing engineering business logic is intentionally unchanged.
+   ====================================================================== */
+S.runtime.projectLoadState=S.runtime.projectLoadState||new Map();
+function v209ProjectState(code){
+  code=String(code||'').trim();
+  if(!S.runtime.projectLoadState.has(code))S.runtime.projectLoadState.set(code,{equipment:'idle',tracking:'idle',equipmentError:'',trackingError:'',equipmentRows:null,trackingRows:null,updatedAt:0});
+  return S.runtime.projectLoadState.get(code);
+}
+function v209SetProjectState(code,patch){const s=v209ProjectState(code);Object.assign(s,patch,{updatedAt:Date.now()});return s}
+function v209HasUsableEquipment(code){return equipmentForProject(code).length>0||S.cache.equipmentProjects.has(String(code))}
+function v209HasUsableTracking(code){return Array.isArray(S.cache.trackingByProject.get(String(code)))||v208ProjectLoaded(code)}
+
+// Equipment Project field is confirmed as lookup link name Project_Code.
+// Never probe invented fields such as Project / Project_Code1. Fast path tries
+// the lookup display field, then direct Project_Code display comparison. The
+// proven legacy visible-code full-cache match remains the safe fallback.
+const v209EnsureEquipmentLegacyFallback=ensureEquipmentForProjectImpl;
+ensureEquipmentForProjectImpl=async function(code,force=false){
+  code=String(code||'').trim();if(!code)return[];
+  if(!force&&S.cache.equipmentByProject.has(code)){
+    const cached=S.cache.equipmentByProject.get(code)||[];
+    if(cached.length||S.cache.equipmentProjects.has(code))return cached;
+  }
+  if(S.demo){
+    const rows=DEMO.equipment.map(adaptEquipment).filter(e=>pdsSameValue(e.project,code));
+    S.cache.equipmentByProject.set(code,rows);S.cache.equipmentProjects.add(code);mergeEquipmentRows(rows);return rows;
+  }
+  const started=reliabilityNow(),escaped=creatorCriteriaEscape(code),criteria=[
+    `(Project_Code.Project_Code == "${escaped}")`,
+    `(Project_Code == "${escaped}")`
+  ];
+  let matchedRaw=[],method='';
+  for(const c of criteria){
+    try{
+      const candidate=await fetchRecords(CONFIG.REPORTS.equipment,c,Math.min(CONFIG.MAX_REPORT_PAGES,10));
+      const verified=candidate.filter(r=>equipmentRowMatchesProjectCode(r,code));
+      if(verified.length){matchedRaw=verified;method=c.includes('.Project_Code')?'server lookup display':'server Project_Code';break}
+      // An accepted empty result is not an error; continue to the safe visible-code fallback.
+    }catch(e){console.warn('Project_Code equipment fast criteria unavailable; safe fallback will be used.',c,e)}
+  }
+  if(!matchedRaw.length){
+    try{
+      if(!S.cache.equipmentFullLoaded||force){
+        const full=await safeSource(CONFIG.REPORTS.equipment,'Equipment master');
+        S.cache.equipmentFullLoaded=true;S.cache.equipmentFull=full;
+      }
+      matchedRaw=(S.cache.equipmentFull||[]).filter(r=>equipmentRowMatchesProjectCode(r,code));method='cached visible Project_Code';
+    }catch(e){
+      const previous=S.cache.equipmentByProject.get(code);
+      if(Array.isArray(previous)){
+        setHealth(`equipment-project:${code}`,'slow',{label:`Equipment — Project ${code}`,rows:previous.length,ms:Math.round(reliabilityNow()-started),error:'Refresh failed; using last-good project equipment cache.',method:'last-good cache'});
+        return previous;
+      }
+      setHealth(`equipment-project:${code}`,'error',{label:`Equipment — Project ${code}`,ms:Math.round(reliabilityNow()-started),error:errorText(e),method:'Project_Code'});
+      throw e;
+    }
+  }
+  const unique=new Map();
+  for(const raw of matchedRaw){const e=adaptEquipment(raw);if(!e.tag&&!e.name)continue;const key=e.id||`${code}|${e.tag}|${e.name}|${e.plantSection}|${e.plantSectionType}`;if(!unique.has(key))unique.set(key,e)}
+  const rows=[...unique.values()].sort((a,b)=>String(a.tag||a.name).localeCompare(String(b.tag||b.name),undefined,{numeric:true}));
+  S.cache.equipmentByProject.set(code,rows);S.cache.equipmentProjects.add(code);mergeEquipmentRows(rows);
+  const ms=Math.round(reliabilityNow()-started);setHealth(`equipment-project:${code}`,ms>=CONFIG.SLOW_REQUEST_MS?'slow':'ok',{label:`Equipment — Project ${code}`,rows:rows.length,ms,error:'',method});
+  return rows;
+};
+
+// Optional Creator META calls are diagnostics only. They must never make a
+// healthy project look failed when normal Design_Tracking CRUD is working.
+const v209LoadTrackingMetadataBase=loadTrackingFieldMetadata;
+loadTrackingFieldMetadata=async function(){
+  try{await v209LoadTrackingMetadataBase()}finally{
+    for(const key of ['meta:tracking-fields','meta:tracking-hardening']){
+      const x=S.runtime.health.get(key);if(x&&x.status==='error')S.runtime.health.set(key,{...x,status:'optional',error:'Optional Creator metadata inspection unavailable; normal Design Tracking read/write remains active.'});
+    }
+  }
+};
+
+async function v209LoadProjectData(code,force=false){
+  code=String(code||'').trim();if(!code)return {equipment:[],tracking:[]};
+  v209SetProjectState(code,{equipment:'loading',tracking:'loading',equipmentError:'',trackingError:''});
+  if(S.projectWorkspace.code===code)renderView();
+  const [eq,tr]=await Promise.allSettled([ensureEquipmentForProject(code,force),ensureTrackingForProject(code,force)]);
+  const patch={};
+  if(eq.status==='fulfilled'){patch.equipment='ready';patch.equipmentRows=eq.value.length;patch.equipmentError=''}
+  else{patch.equipment=v209HasUsableEquipment(code)?'cached':'error';patch.equipmentRows=equipmentForProject(code).length;patch.equipmentError=errorText(eq.reason)}
+  if(tr.status==='fulfilled'){patch.tracking='ready';patch.trackingRows=tr.value.length;patch.trackingError=''}
+  else{patch.tracking=v209HasUsableTracking(code)?'cached':'error';patch.trackingRows=(S.cache.trackingByProject.get(code)||[]).length;patch.trackingError=errorText(tr.reason)}
+  v209SetProjectState(code,patch);
+  if(eq.status==='rejected')v208PersistSystemLog({module:'Project Load',operation:'Equipment read',error:eq.reason,project:code});
+  if(tr.status==='rejected')v208PersistSystemLog({module:'Project Load',operation:'Design Tracking read',error:tr.reason,project:code});
+  if(S.projectWorkspace.code===code)renderView();
+  return {equipment:eq.status==='fulfilled'?eq.value:equipmentForProject(code),tracking:tr.status==='fulfilled'?tr.value:(S.cache.trackingByProject.get(code)||[])};
+}
+
+openProjectWorkspace=async function(code,tab='designs'){
+  code=String(code||'').trim();if(!code)return;
+  // Open the shell first. A temporary read issue must not throw the user back
+  // to the Project list or display a global blocking error modal.
+  S.projectWorkspace.code=code;S.projectWorkspace.tab=tab;S.projectWorkspace.status='All';S.projectWorkspace.owner='All';S.projectWorkspace.page=1;S.view='project';S.previousView='projects';
+  v209SetProjectState(code,{equipment:'loading',tracking:'loading',equipmentError:'',trackingError:''});
+  renderView();
+  try{await v209LoadProjectData(code,false)}catch(e){console.warn('Project opened in resilient limited mode',e)}
+};
+
+const v209RenderProjectBodyBase=renderProjectWorkspaceBody;
+function v209ProjectLoadBanner(code){
+  const s=v209ProjectState(code),loading=s.equipment==='loading'||s.tracking==='loading',failed=s.equipment==='error'||s.tracking==='error',cached=s.equipment==='cached'||s.tracking==='cached';
+  if(!loading&&!failed&&!cached)return'';
+  if(loading)return `<div class="v209-project-state loading"><div class="v209-state-icon"><span class="v209-mini-spinner"></span></div><div class="v209-state-main"><div class="v209-state-title">Loading Project ${h(code)} data</div><div class="v209-state-copy">The workspace is already open. Equipment scope and Design Tracking are loading independently, so one slow source cannot block the complete Project.</div><div class="v209-state-meta"><span class="pill">Equipment: ${h(s.equipment)}</span><span class="pill">Designs: ${h(s.tracking)}</span></div></div></div>`;
+  const issues=[];if(s.equipment==='error')issues.push(`Equipment scope unavailable`);if(s.tracking==='error')issues.push(`Design work unavailable`);if(cached)issues.push(`Last-good cached data is being used`);
+  return `<div class="v209-project-state warn"><div class="v209-state-icon">!</div><div class="v209-state-main"><div class="v209-state-title">Project opened in safe mode</div><div class="v209-state-copy">${h(issues.join(' • '))}. Available project data remains usable. Retry only the failed read; no design record is changed by this action.</div><div class="v209-state-meta"><span class="pill">Equipment: ${h(s.equipment)}${s.equipmentRows!=null?` (${h(s.equipmentRows)})`:''}</span><span class="pill">Designs: ${h(s.tracking)}${s.trackingRows!=null?` (${h(s.trackingRows)})`:''}</span></div></div><div class="v209-state-actions"><button class="btn sm" data-v209-retry-project="${h(code)}">Retry Project Data</button></div></div>`;
+}
+renderProjectWorkspaceBody=function(){return v209ProjectLoadBanner(S.projectWorkspace.code)+v209RenderProjectBodyBase()};
+
+// Assign Design must also fail-open. Project-level drawings do not require the
+// Equipment source, so an equipment outage must not prevent their assignment.
+openV18AssignModal=async function(){
+  if(!S.projectWorkspace.code){S.view='projects';renderView();return toast('Open a Project first.','warn')}
+  const code=S.projectWorkspace.code;
+  try{await ensureEquipmentForProject(code)}catch(e){v209SetProjectState(code,{equipment:'error',equipmentError:errorText(e)});console.warn('Assign Design opened without refreshed Equipment scope',e)}
+  S.projectWorkspace.assignDraft={drawingId:'',mode:'',selectedSections:[],selectedSectionTypes:[],selectedTags:[],user:'',priority:'Medium',start:todayIso(),target:'',end:'',remark:''};
+  renderV18AssignModal();
+};
+
+const v209ScopePickerBase=v19ScopePickerHtml;
+v19ScopePickerHtml=function(d){
+  const drawing=S.drawings.find(x=>String(x.id)===String(d.drawingId));
+  if(drawing&&d.mode&&d.mode!=='Project Wise'&&!v205IsPdsDrawingMaster(drawing)){
+    const units=v19Units(d.mode),state=v209ProjectState(S.projectWorkspace.code);
+    if(!units.length&&state.equipment==='error')return `<div class="v209-inline-recovery"><b>Equipment scope could not be refreshed for Project ${h(S.projectWorkspace.code)}.</b><p>The rest of the widget is still available. Retry the Project equipment read; your current Drawing selection will remain open.</p><button type="button" class="btn primary sm" data-v209-retry-equipment="${h(S.projectWorkspace.code)}">Retry Equipment Data</button></div>`;
+  }
+  return v209ScopePickerBase(d);
+};
+
+// Project refresh is also fail-open. It refreshes the two scoped sources
+// independently and never converts a temporary READ problem into a blocker.
+const v209RefreshDataBase=refreshData;
+refreshData=async function(){
+  const code=String(S.projectWorkspace?.code||'');
+  if(!code)return await v209RefreshDataBase();
+  busy(`Refreshing Project ${code}…`);
+  try{await v209LoadProjectData(code,true);if(S.dependency.loadedProjects.has(code)){try{S.dependency.loadedProjects.delete(code);await loadDependenciesForProject(code,true)}catch(e){console.warn('Dependency refresh failed open',e)}}S.view='project';renderView();toast('Project refresh completed. Available data is shown.','good')}
+  finally{idle()}
+};
+
+// Health panel: optional metadata is amber/OPTIONAL, slow sources are amber,
+// and project-scoped Equipment diagnostics show the resolved row count.
+systemHealthHtml=function(){
+  const rows=[...S.runtime.health.values()].sort((a,b)=>String(a.label||a.key).localeCompare(String(b.label||b.key)));
+  const healthRows=rows.length?rows.map(x=>{const optional=x.status==='optional',slow=x.status==='slow',klass=x.status==='ok'?'green':(slow||optional)?'amber':'red',label=optional?'optional':x.status;return `<tr ${slow?'class="v209-health-row-slow"':''}><td>${h(x.label||x.key)}</td><td><span class="pill ${klass}">${h(label)}</span></td><td>${x.rows!=null?h(x.rows):'—'}</td><td>${x.ms!=null?`${h(x.ms)} ms`:'—'}</td><td>${x.error?h(String(x.error).slice(0,180)):'—'}</td></tr>`}).join(''):`<tr><td colspan="5">No health samples yet. Use the system and reopen this panel.</td></tr>`;
+  const loaded=[...S.cache.trackingProjects],workKey=S.capabilities.workKey===false?'Legacy fallback':'Ready / unknown',impact=S.capabilities.impactFields===false?'Derived only':'Ready / unknown';
+  return `<div class="health-grid"><div class="health-card"><div class="hk">Connection</div><div class="hv ${navigator.onLine?'health-ok':'health-bad'}">${navigator.onLine?'Online':'Offline'}</div></div><div class="health-card"><div class="hk">Projects</div><div class="hv">${S.projects.length}</div></div><div class="health-card"><div class="hk">Design Records Loaded</div><div class="hv">${S.records.length}</div></div><div class="health-card"><div class="hk">Equipment Cached</div><div class="hv">${S.equipment.length}</div></div></div><div class="table-wrap health-table"><table><thead><tr><th>Source / Operation</th><th>Status</th><th>Rows</th><th>Time</th><th>Last Message</th></tr></thead><tbody>${healthRows}</tbody></table></div><div class="notice good" style="margin-top:10px"><b>Reliability policy:</b> Project reads fail open and keep last-good data. Create/update/delete operations are never blindly retried, protecting against duplicate records after an uncertain timeout.</div><div class="v208-health-tags"><span class="pill brand">Scoped Projects: ${loaded.length}</span><span class="pill">Work Key: ${h(workKey)}</span><span class="pill">Impact Fields: ${h(impact)}</span><span class="pill">Batch Ceiling: ${CONFIG.MAX_BATCH}</span></div><div class="notice good"><b>V20.9 resilient scale mode:</b> a temporary Equipment, Design Tracking, PDS, Dependency or metadata read cannot close the Project workspace. The affected module shows a local Retry state while available data remains usable.</div>`;
+};
+
+function wireV209(){
+  document.addEventListener('click',e=>{
+    const rp=e.target.closest('[data-v209-retry-project]');if(rp)return guarded(async()=>{await v209LoadProjectData(rp.dataset.v209RetryProject,true)});
+    const re=e.target.closest('[data-v209-retry-equipment]');if(re)return guarded(async()=>{const code=re.dataset.v209RetryEquipment;v209SetProjectState(code,{equipment:'loading',equipmentError:''});try{const rows=await ensureEquipmentForProject(code,true);v209SetProjectState(code,{equipment:'ready',equipmentRows:rows.length,equipmentError:''});renderV18AssignModal()}catch(err){v209SetProjectState(code,{equipment:'error',equipmentError:errorText(err)});renderV18AssignModal();toast('Equipment data is temporarily unavailable. Project-level work can still be assigned.','warn')}});
+  });
+}
+
+wire();wireV19();wireV20();wireV205Pds();wireV208();wireV209();bootstrap();
 </script>
 </body>
 </html>
