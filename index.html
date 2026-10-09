@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V20.17</title>
+<title>MEGA Engineering | Project Design Control V20.18</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -230,7 +230,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V20.17</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V20.18</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -5963,7 +5963,7 @@ patch("systemHealthHtml",()=>systemHealthHtml,f=>{systemHealthHtml=f},base=>safe
 
 /* ---------- 10. Errors never crash the widget ---------- */
 let lastBtn=null;
-try{window.addEventListener('click',e=>{try{const b=e.target&&e.target.closest?e.target.closest('button'):null;lastBtn=b&&!b.closest('#modalClose')?b:null}catch(_){lastBtn=null}},true)}catch(_){}
+try{window.addEventListener('click',e=>{try{const b=e.target&&e.target.closest?e.target.closest('button'):null;lastBtn=b&&!b.closest('#modalClose,.v218-ms,.v218-ms-pop,.v218-rs')?b:null}catch(_){lastBtn=null}},true)}catch(_){}
 patch("guarded",()=>guarded,f=>{guarded=f},base=>async function(fn){
   // one click = one action: the clicked button stays locked until its work ends
   const b=lastBtn;lastBtn=null;
@@ -6011,6 +6011,9 @@ patch("bootstrap",()=>bootstrap,f=>{bootstrap=f},base=>async function(){
   }
 });
 
+/* ---------- 11b. Shared rules for later layers (V20.18) ---------- */
+try{window.MEGA_V217={canManage:a=>canManage(a),isManager:()=>isManager(),isAdmin:()=>isAdmin(),assertChildDates:(p,s,t,e)=>assertChildDates(p,s,t,e),deny:w=>deny(w),isActive:e=>isActive(e),actor:()=>V.actor}}catch(_){}
+
 /* ---------- 12. Buttons ---------- */
 try{
   document.addEventListener('click',e=>{
@@ -6035,7 +6038,719 @@ try{
 try{const bd=el('buildBadge');if(bd)bd.textContent=BUILD;document.title=`MEGA Engineering | Project Design Control ${BUILD}`}catch(_){}
 console.info(`[${BUILD}] loaded`);
 })()}catch(e){try{console.error("[V20.17] could not load",e)}catch(_){}}
+</script>
+<script id="megaV218">
+/* ======================================================================
+   V20.18 LAYER - ZOHO-STYLE FILTERS, MULTI-SELECT, TASK TREE, SEARCH
+   - No new Creator fields, forms or Deluge scripts are needed.
+   - 1. Every lookup filter is multi-select (pick 2, 3 or more values).
+   - 2. Assigned To is multi-select: one task is created per person.
+   - 3. Main Designs list has Zoho-Projects-style [+] / [-] expand rows
+        with all tasks and subtasks, and actions on every row.
+   - 4. Zoho-Creator-report-style Search panel (field checkbox, operator,
+        value) in Assign Scope / Tag / PDS work and in Advanced Search.
+   - 5. Dependent lookups: choose a Plant Section and only its Section
+        Types (then Categories, Types, Subtypes ...) are offered.
+   - Every part is protected: if one part fails it is skipped and logged
+     in the browser console as [V20.18]; the widget keeps working.
+   ====================================================================== */
+try{(function V218(){
+"use strict";
+const BUILD="V20.18";
 
+/* ---------- 0. Safety helpers ---------- */
+const log=(...a)=>{try{console.warn("[V20.18]",...a)}catch(_){}};
+if(typeof S!=="object"||!S)return log("widget state S not found");
+const X=()=>(window.MEGA_V217&&typeof window.MEGA_V217==="object")?window.MEGA_V217:{};
+const say=(m,t="warn")=>{try{if(typeof toast==="function")toast(m,t);else console.log(m)}catch(_){}};
+const sc=v=>{try{return typeof scalar==="function"?String(scalar(v)??""):(v==null?"":String(v))}catch(_){return v==null?"":String(v)}};
+const esc=s=>{try{return h(s)}catch(_){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}};
+const N=v=>{try{return nk(v)}catch(_){return String(v??"").toLowerCase().replace(/[^a-z0-9]/g,"")}};
+const low=v=>sc(v).trim().toLowerCase();
+const num0=v=>{const x=parseFloat(sc(v));return isFinite(x)?x:0};
+const el=id=>{try{return document.getElementById(id)}catch(_){return null}};
+const arr=v=>Array.isArray(v)?v.map(sc).map(x=>x.trim()).filter(Boolean):(sc(v).trim()?[sc(v).trim()]:[]);
+function uniq(list){const m=new Map();for(const v of list||[]){const s=String(v??"").trim();if(s&&!m.has(N(s)))m.set(N(s),s)}return [...m.values()].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}))}
+function rule(msg){const e=new Error(msg);e.code="MEGA_RULE";return e}
+function patch(label,get,set,make){
+  try{const base=get();if(typeof base!=="function")return log(`skipped ${label}: not found`);set(make(base))}
+  catch(e){log(`skipped ${label}:`,e)}
+}
+const safeDraw=(label,base,impl)=>function(...a){
+  try{return impl.call(this,base,...a)}
+  catch(e){if(e&&e.code==="MEGA_RULE")throw e;log(label,e);return base.apply(this,a)}
+};
+const iso=v=>{try{return typeof toInputDate==="function"?toInputDate(v):String(v||"").slice(0,10)}catch(_){return""}};
+const run=fn=>{try{return typeof guarded==="function"?guarded(fn):fn()}catch(e){log(e)}};
+
+const V=S.v218={ms:{},msOpen:"",rs:{},expanded:new Set(),pf:{status:[],people:[]},assign:null,sub:null,adv:{ds:"work",q:"",show:200,panel:true}};
+
+/* ---------- 1. Multi-select lookup (Zoho style) ---------- */
+const MS={
+  html(id,{options=[],value=[],placeholder="Select…",onChange=null,max=0}={}){
+    const opts=(options||[]).map(o=>typeof o==="object"&&o?{v:String(o.v),l:String(o.l??o.v),sub:o.sub?String(o.sub):""}:{v:String(o),l:String(o),sub:""}).filter(o=>o.v!=="");
+    const val=new Set((value||[]).map(String));
+    V.ms[id]={opts,val,onChange,placeholder,max,orig:[...val].sort().join("\u0001")};
+    return `<div class="v218-ms" data-v218-ms="${esc(id)}"><button type="button" class="v218-ms-btn" data-v218-ms-btn="${esc(id)}">${MS.face(id)}</button></div>`;
+  },
+  face(id){
+    const st=V.ms[id];if(!st)return"";
+    const chosen=st.opts.filter(o=>st.val.has(o.v)),extra=[...st.val].filter(v=>!st.opts.some(o=>o.v===v)).map(v=>({v,l:v}));
+    const all=[...chosen,...extra];
+    if(!all.length)return `<span class="v218-ms-ph">${esc(st.placeholder)}</span><span class="v218-ms-caret">▾</span>`;
+    return `<span class="v218-ms-chips">${all.slice(0,3).map(o=>`<span class="v218-chip" title="${esc(o.l)}">${esc(o.l)}<i data-v218-ms-x="${esc(id)}" data-v="${esc(o.v)}">×</i></span>`).join("")}${all.length>3?`<span class="v218-chip more">+${all.length-3}</span>`:""}</span><span class="v218-ms-caret">▾</span>`;
+  },
+  get(id){const st=V.ms[id];return st?[...st.val]:[]},
+  refresh(id){document.querySelectorAll(`[data-v218-ms-btn="${CSS.escape(id)}"]`).forEach(b=>{b.innerHTML=MS.face(id)})},
+  open(id,btn){
+    MS.close(true);const st=V.ms[id];if(!st)return;
+    const pop=document.createElement("div");pop.className="v218-ms-pop";pop.dataset.v218Pop=id;
+    pop.innerHTML=`<input class="v218-ms-q" placeholder="Search…" autocomplete="off"><div class="v218-ms-acts"><button type="button" data-v218-ms-all>Select all shown</button><button type="button" data-v218-ms-none>Clear</button><button type="button" class="ok" data-v218-ms-done>Done</button></div><div class="v218-ms-list">${st.opts.length?st.opts.map(o=>`<label class="v218-ms-opt" data-q="${esc(N(o.l+" "+o.sub))}"><input type="checkbox" value="${esc(o.v)}" ${st.val.has(o.v)?"checked":""}><span>${esc(o.l)}${o.sub?`<small>${esc(o.sub)}</small>`:""}</span></label>`).join(""):`<div class="v218-ms-empty">No values available</div>`}</div>`;
+    document.body.appendChild(pop);V.msOpen=id;V.msBtn=btn;MS.place();
+    setTimeout(()=>{try{pop.querySelector(".v218-ms-q").focus()}catch(_){}},0);
+  },
+  place(){
+    const pop=document.querySelector(".v218-ms-pop"),btn=V.msBtn;if(!pop||!btn||!btn.isConnected)return;
+    const r=btn.getBoundingClientRect(),w=Math.max(r.width,260),vh=window.innerHeight||800,below=vh-r.bottom;
+    pop.style.width=w+"px";pop.style.left=Math.max(8,Math.min(r.left,(window.innerWidth||1200)-w-8))+"px";
+    if(below<280&&r.top>below){pop.style.top="";pop.style.bottom=(vh-r.top+4)+"px";pop.style.maxHeight=Math.min(340,r.top-12)+"px"}
+    else{pop.style.bottom="";pop.style.top=(r.bottom+4)+"px";pop.style.maxHeight=Math.min(340,below-12)+"px"}
+  },
+  close(fire=true){
+    const id=V.msOpen;document.querySelectorAll(".v218-ms-pop").forEach(p=>p.remove());V.msOpen="";V.msBtn=null;
+    if(!id||!fire)return;const st=V.ms[id];if(!st)return;
+    const now=[...st.val].sort().join("\u0001");
+    if(now!==st.orig){st.orig=now;if(typeof st.onChange==="function"){const vals=[...st.val];setTimeout(()=>{try{st.onChange(vals)}catch(e){log("multi-select change",e)}},0)}}
+  },
+  toggleValue(id,v,on){const st=V.ms[id];if(!st)return;if(on){if(st.max&&st.val.size>=st.max){say(`Maximum ${st.max} values.`);return false}st.val.add(v)}else st.val.delete(v);MS.refresh(id);return true}
+};
+try{
+  document.addEventListener("click",e=>{
+    const t=e.target;if(!t||!t.closest)return;
+    const x=t.closest("[data-v218-ms-x]");
+    if(x){e.preventDefault();e.stopPropagation();const id=x.dataset.v218MsX,st=V.ms[id];if(st){st.val.delete(x.dataset.v);MS.refresh(id);if(V.msOpen===id){const cb=[...document.querySelectorAll(".v218-ms-pop input[type=checkbox]")].find(c=>c.value===x.dataset.v);if(cb)cb.checked=false}else{st.orig="\u0002";MS.close(false);V.msOpen=id;MS.close(true)}}return}
+    const b=t.closest("[data-v218-ms-btn]");
+    if(b){e.preventDefault();e.stopPropagation();const id=b.dataset.v218MsBtn;if(V.msOpen===id)return MS.close(true);return MS.open(id,b)}
+    const pop=t.closest(".v218-ms-pop");
+    if(pop){
+      const id=pop.dataset.v218Pop,st=V.ms[id];if(!st)return;
+      if(t.closest("[data-v218-ms-all]")){pop.querySelectorAll(".v218-ms-opt").forEach(l=>{if(l.style.display==="none")return;const c=l.querySelector("input");if(!c.checked&&MS.toggleValue(id,c.value,true))c.checked=true})}
+      else if(t.closest("[data-v218-ms-none]")){pop.querySelectorAll(".v218-ms-opt input").forEach(c=>{c.checked=false});st.val.clear();MS.refresh(id)}
+      else if(t.closest("[data-v218-ms-done]"))MS.close(true);
+      return;
+    }
+    if(V.msOpen)MS.close(true);
+  },true);
+  document.addEventListener("change",e=>{
+    const t=e.target;if(!t||!t.closest)return;const pop=t.closest(".v218-ms-pop");if(!pop||t.type!=="checkbox")return;
+    if(!MS.toggleValue(pop.dataset.v218Pop,t.value,t.checked))t.checked=false;
+  },true);
+  document.addEventListener("input",e=>{
+    const t=e.target;if(!t||!t.classList||!t.classList.contains("v218-ms-q"))return;
+    const q=N(t.value);t.closest(".v218-ms-pop").querySelectorAll(".v218-ms-opt").forEach(l=>{l.style.display=!q||String(l.dataset.q||"").includes(q)?"":"none"});
+  },true);
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&V.msOpen){e.stopPropagation();MS.close(true)}},true);
+  window.addEventListener("resize",()=>{if(V.msOpen)MS.place()});
+  document.addEventListener("scroll",e=>{if(V.msOpen&&!(e.target&&e.target.closest&&e.target.closest(".v218-ms-pop")))MS.place()},true);
+}catch(e){log("multi-select events",e)}
+
+/* ---------- 2. Report-style search panel (Zoho Creator style) ---------- */
+const OPS={
+  text:["Contains","Doesn't Contain","Is","Isn't","Starts With","Ends With","Is Empty","Is Not Empty"],
+  lookup:["Is","Isn't","Is Empty","Is Not Empty"],
+  date:["Is","Before","After","Between","Is Empty","Is Not Empty"],
+  number:["=","<",">","Between","Is Empty"]
+};
+const NOVAL=["Is Empty","Is Not Empty"];
+const RS={
+  st(id){return V.rs[id]||(V.rs[id]={on:{},op:{},v:{},v2:{},m:{},redraw:null})},
+  vals(f,row){try{return arr(f.get(row))}catch(_){return[]}},
+  pass(id,f,row){
+    const s=RS.st(id);if(!s.on[f.k])return true;
+    const t=f.t||"text",op=s.op[f.k]||OPS[t][0],vals=RS.vals(f,row);
+    if(op==="Is Empty")return !vals.length;
+    if(op==="Is Not Empty")return vals.length>0;
+    if(t==="lookup"){const m=s.m[f.k]||[];if(!m.length)return true;const hit=vals.some(v=>m.some(x=>N(x)===N(v)));return op==="Isn't"?!hit:hit}
+    if(t==="date"){
+      const a=s.v[f.k]||"",b=s.v2[f.k]||"";if(!a&&!(op==="Between"&&b))return true;const ds=vals.map(iso).filter(Boolean);
+      if(op==="Is")return ds.some(d=>d===a);if(op==="Before")return ds.some(d=>d<a);if(op==="After")return ds.some(d=>d>a);
+      if(op==="Between")return ds.some(d=>(!a||d>=a)&&(!b||d<=b));return true;
+    }
+    if(t==="number"){
+      const a=parseFloat(s.v[f.k]),b=parseFloat(s.v2[f.k]);if(!isFinite(a)&&!(op==="Between"&&isFinite(b)))return true;const ns=vals.map(parseFloat).filter(isFinite);
+      if(op==="=")return ns.some(n=>n===a);if(op==="<")return ns.some(n=>n<a);if(op===">")return ns.some(n=>n>a);
+      if(op==="Between")return ns.some(n=>(!isFinite(a)||n>=a)&&(!isFinite(b)||n<=b));return true;
+    }
+    const q=low(s.v[f.k]);if(!q)return true;const L=vals.map(v=>v.toLowerCase());
+    if(op==="Contains")return L.some(v=>v.includes(q));if(op==="Doesn't Contain")return !L.some(v=>v.includes(q));
+    if(op==="Is")return L.some(v=>v===q||N(v)===N(q));if(op==="Isn't")return !L.some(v=>v===q||N(v)===N(q));
+    if(op==="Starts With")return L.some(v=>v.startsWith(q));if(op==="Ends With")return L.some(v=>v.endsWith(q));
+    return true;
+  },
+  filter(id,fields,rows){const on=fields.filter(f=>RS.st(id).on[f.k]);if(!on.length)return rows;return rows.filter(r=>on.every(f=>RS.pass(id,f,r)))},
+  count(id,fields){const s=RS.st(id);return fields.filter(f=>s.on[f.k]).length},
+  // dependent lookups: values come only from rows that pass the fields above
+  options(id,fields,rows,f){
+    if(typeof f.opts==="function"){try{return uniq(f.opts())}catch(_){return[]}}
+    const idx=fields.indexOf(f),pre=fields.slice(0,idx).filter(x=>RS.st(id).on[x.k]);
+    const src=pre.length?rows.filter(r=>pre.every(x=>RS.pass(id,x,r))):rows;
+    const out=[];for(const r of src)for(const v of RS.vals(f,r))out.push(v);return uniq(out);
+  },
+  html(id,fields,rows,{title="Search",note="",close=false}={}){
+    const s=RS.st(id);
+    const body=fields.map(f=>{
+      const t=f.t||"text",on=!!s.on[f.k],op=s.op[f.k]||OPS[t][0];
+      let inner="";
+      if(on){
+        const opSel=`<select class="v218-rs-op" data-v218-rs-op="${esc(id)}|${esc(f.k)}">${OPS[t].map(o=>`<option ${o===op?"selected":""}>${esc(o)}</option>`).join("")}</select>`;
+        let val="";
+        if(!NOVAL.includes(op)){
+          if(t==="lookup"){
+            const opts=RS.options(id,fields,rows,f);
+            const keep=(s.m[f.k]||[]).filter(v=>opts.some(o=>N(o)===N(v)));if(keep.length!==(s.m[f.k]||[]).length)s.m[f.k]=keep;
+            val=MS.html(`rs:${id}:${f.k}`,{options:opts,value:s.m[f.k]||[],placeholder:`Select ${f.l}…`,onChange:v=>{RS.st(id).m[f.k]=v;RS.redraw(id)}});
+          }else if(t==="date"){
+            val=`<input type="date" class="input" data-v218-rs-v="${esc(id)}|${esc(f.k)}" value="${esc(s.v[f.k]||"")}">${op==="Between"?`<input type="date" class="input" data-v218-rs-v2="${esc(id)}|${esc(f.k)}" value="${esc(s.v2[f.k]||"")}">`:""}`;
+          }else if(t==="number"){
+            val=`<input type="number" class="input" data-v218-rs-v="${esc(id)}|${esc(f.k)}" value="${esc(s.v[f.k]||"")}">${op==="Between"?`<input type="number" class="input" data-v218-rs-v2="${esc(id)}|${esc(f.k)}" value="${esc(s.v2[f.k]||"")}">`:""}`;
+          }else{
+            val=`<input class="input" data-v218-rs-v="${esc(id)}|${esc(f.k)}" value="${esc(s.v[f.k]||"")}" placeholder="Type and press Enter">`;
+          }
+        }
+        inner=`<div class="v218-rs-body">${opSel}${val}</div>`;
+      }
+      return `<div class="v218-rs-f ${on?"on":""}"><label class="v218-rs-head"><input type="checkbox" data-v218-rs-on="${esc(id)}|${esc(f.k)}" ${on?"checked":""}><span>${esc(f.l)}</span></label>${inner}</div>`;
+    }).join("");
+    const n=RS.count(id,fields);
+    return `<div class="v218-rs" data-v218-rs="${esc(id)}"><div class="v218-rs-top"><b>${esc(title)}</b>${n?`<span class="pill brand">${n} active</span>`:""}${close?`<button type="button" class="v218-rs-x" data-v218-rs-close="${esc(id)}" title="Close">×</button>`:""}</div>${note?`<div class="v218-rs-note">${note}</div>`:""}<div class="v218-rs-list">${body}</div><div class="v218-rs-foot"><button type="button" class="btn sm" data-v218-rs-reset="${esc(id)}">Reset</button><button type="button" class="btn primary sm" data-v218-rs-apply="${esc(id)}">Search</button></div></div>`;
+  },
+  redraw(id){const s=RS.st(id);if(typeof s.redraw==="function"){try{s.redraw()}catch(e){log("search redraw",e)}}}
+};
+try{
+  const split=v=>{const i=String(v).indexOf("|");return [String(v).slice(0,i),String(v).slice(i+1)]};
+  document.addEventListener("change",e=>{
+    const t=e.target;if(!t||!t.dataset)return;
+    if(t.dataset.v218RsOn){const [id,k]=split(t.dataset.v218RsOn),s=RS.st(id);s.on[k]=t.checked;if(!t.checked){delete s.m[k];delete s.v[k];delete s.v2[k];delete s.op[k]}return RS.redraw(id)}
+    if(t.dataset.v218RsOp){const [id,k]=split(t.dataset.v218RsOp);RS.st(id).op[k]=t.value;return RS.redraw(id)}
+    if(t.dataset.v218RsV){const [id,k]=split(t.dataset.v218RsV);RS.st(id).v[k]=t.value;return RS.redraw(id)}
+    if(t.dataset.v218RsV2){const [id,k]=split(t.dataset.v218RsV2);RS.st(id).v2[k]=t.value;return RS.redraw(id)}
+  });
+  document.addEventListener("keydown",e=>{const t=e.target;if(e.key==="Enter"&&t&&t.dataset&&(t.dataset.v218RsV||t.dataset.v218RsV2)){e.preventDefault();t.blur()}});
+  document.addEventListener("click",e=>{
+    const t=e.target;if(!t||!t.closest)return;
+    const r=t.closest("[data-v218-rs-reset]");if(r){e.preventDefault();const id=r.dataset.v218RsReset,old=RS.st(id);V.rs[id]={on:{},op:{},v:{},v2:{},m:{},redraw:old.redraw};return RS.redraw(id)}
+    const a=t.closest("[data-v218-rs-apply]");if(a){e.preventDefault();const id=a.dataset.v218RsApply;if(id==="adv"&&window.innerWidth<1000)V.adv.panel=false;return RS.redraw(id)}
+    const c=t.closest("[data-v218-rs-close]");if(c){e.preventDefault();if(c.dataset.v218RsClose==="adv"){V.adv.panel=false;return renderAdv()}if(V.assign){V.assign.panel=false;return drawAssign()}}
+  });
+}catch(e){log("search panel events",e)}
+
+/* ---------- 3. Field definitions (Project Code ... Equipment Subtype) ---------- */
+function raw(e,aliases,tokens){
+  if(!e)return"";const r=e.raw||e;let v="";
+  try{v=pick(r,aliases||[],"")}catch(_){}
+  if(!v&&tokens&&r&&typeof r==="object"){try{for(const k of Object.keys(r)){const n=N(k);if(tokens.every(t=>n.includes(t))){const x=sc(r[k]);if(x){v=x;break}}}}catch(_){}}
+  return sc(v);
+}
+const EQX={
+  date:e=>raw(e,["Date","Date_field","Entry_Date","Equipment_Date"]),
+  pdsName:e=>raw(e,["PDS_Name","PDS_Name1","PDS_Name_Lookup","PDS"],["pdsname"]),
+  pdsRelated:e=>raw(e,["PDS_Related_To","PDS_Related","Related_To"],["pdsrelated"]),
+  subtype:e=>raw(e,["Equipment_Subtype","Equipment_Sub_Type","Equipment_SubType","Sub_Type","Subtype"],["subtype"]),
+  sectionRef:e=>raw(e,["Section_Ref","Section_Reference","Section_Ref_No"],["sectionref"]),
+  status:e=>raw(e,["Status","Equipment_Status"])
+};
+const prop=(e,k)=>sc(e?.[k]);
+function eqFields(get){ // get(row) -> equipment-like object + overrides
+  return [
+    {k:"date",l:"Date",t:"date",get:r=>EQX.date(get(r).eq)},
+    {k:"project",l:"Project Code",t:"lookup",get:r=>get(r).project},
+    {k:"pdsName",l:"PDS Name",t:"lookup",get:r=>get(r).pdsName},
+    {k:"pdsRelated",l:"PDS Related To",t:"lookup",get:r=>get(r).pdsRelated},
+    {k:"section",l:"Plant Section Name",t:"lookup",get:r=>get(r).section},
+    {k:"sectionType",l:"Plant Section Type",t:"lookup",get:r=>get(r).type},
+    {k:"tag",l:"Tag Number",t:"text",get:r=>get(r).tag},
+    {k:"name",l:"Equipment Name",t:"text",get:r=>get(r).name},
+    {k:"group",l:"Group Code",t:"lookup",get:r=>get(r).group},
+    {k:"dept",l:"Department Code",t:"lookup",get:r=>get(r).dept},
+    {k:"category",l:"Equipment Category",t:"lookup",get:r=>get(r).category},
+    {k:"etype",l:"Equipment Type",t:"lookup",get:r=>get(r).etype},
+    {k:"subtype",l:"Equipment Subtype",t:"lookup",get:r=>get(r).subtype}
+  ];
+}
+function eqView(eq,over={}){
+  return {eq,project:over.project??prop(eq,"project"),pdsName:over.pdsName??EQX.pdsName(eq),pdsRelated:over.pdsRelated??EQX.pdsRelated(eq),
+    section:over.section??prop(eq,"plantSection"),type:over.type??prop(eq,"plantSectionType"),tag:over.tag??prop(eq,"tag"),name:over.name??prop(eq,"name"),
+    group:over.group??prop(eq,"groupCode"),dept:over.dept??prop(eq,"department"),category:over.category??prop(eq,"equipmentCategory"),etype:over.etype??prop(eq,"equipmentType"),subtype:over.subtype??EQX.subtype(eq),status:over.status||[]};
+}
+
+/* ---------- 4. People ---------- */
+function activeEmployees(){
+  const x=X(),list=Array.isArray(S.employees)?S.employees.filter(Boolean):[];
+  return typeof x.isActive==="function"?list.filter(e=>{try{return x.isActive(e)}catch(_){return true}}):list;
+}
+function empValue(e){
+  const em=low(e.email),dup=em?(S.employees||[]).filter(z=>low(z.email)===em).length:0;
+  return em&&dup===1?String(e.email):String(e.name||e.id||"");
+}
+function peopleOptions(){return activeEmployees().map(e=>({v:empValue(e),l:String(e.name||e.email||"Employee"),sub:String(e.department||e.designation||"")})).sort((a,b)=>a.l.localeCompare(b.l))}
+function recipients(values){
+  const out=[],seen=new Set();
+  for(const v of values||[]){const r=requireAssignmentRecipient(v);const k=N(r.backendValue||r.name);if(!k||seen.has(k))continue;seen.add(k);out.push(r)}
+  return out;
+}
+const samePerson=(rec,r)=>{const n=N(sc(rec?.[AF.assignedEmployeeName])),t=N(sc(rec?.[AF.assignedTo]));return (!!n&&n===N(r.name))||(!!t&&(t===N(r.backendValue)||t===N(r.email)))};
+function checkManage(parent,start,target,end,what){
+  const x=X();
+  if(typeof x.canManage==="function"&&parent&&!x.canManage(parent))throw (typeof x.deny==="function"?x.deny(what):rule(`You do not have permission to ${what}.`));
+  if(typeof x.assertChildDates==="function"&&parent)x.assertChildDates(parent,start,target,end);
+}
+function validDates(d){
+  if(!d.start||!d.target)throw rule("Start Date and Target Date are required.");
+  if(d.target<d.start)throw rule("Target Date cannot be before Start Date.");
+  if(d.end&&d.end<d.start)throw rule("Planned End Date cannot be before Start Date.");
+}
+const suffix=r=>`::${N(r.email||r.backendValue||r.name)}`.slice(0,60);
+function wide(on){try{document.querySelector("#modalBackdrop .modal")?.classList.toggle("v218-wide",!!on)}catch(_){}}
+patch("openModal",()=>openModal,f=>{openModal=f},base=>function(){wide(false);MS.close(false);return base.apply(this,arguments)});
+patch("closeModal",()=>closeModal,f=>{closeModal=f},base=>function(){MS.close(false);return base.apply(this,arguments)});
+function keepScroll(fn){const b=el("modalBody"),top=b?b.scrollTop:0,lst=document.querySelector(".v218-units"),lt=lst?lst.scrollTop:0;fn();const b2=el("modalBody");if(b2)b2.scrollTop=top;const l2=document.querySelector(".v218-units");if(l2)l2.scrollTop=lt}
+function refocus(id){const i=el(id);if(i){i.focus();try{const n=i.value.length;i.setSelectionRange(n,n)}catch(_){}}}
+
+/* ---------- 5. Assign Scope / Tag / PDS work (multi-select + search) ---------- */
+const MODE_PDS="PDS";
+function unitsFor(a){
+  if(a.mode===MODE_PDS){try{return v205PdsAllUnits(a.code)}catch(e){log("pds units",e);return[]}}
+  try{return v211ScopeUnits(a.mode)||[]}catch(e){log("scope units",e);return[]}
+}
+function unitView(a,u){
+  if(a.mode===MODE_PDS){
+    const g=u.group||{},eq=g.eq||null;let names=[];try{names=v205PdsNamesForUnit(u)}catch(_){}
+    let sub=eq?EQX.subtype(eq):"";if(!sub)for(const r of u.sourceRows||[]){sub=EQX.subtype(r);if(sub)break}
+    return eqView(eq,{project:a.code,pdsName:names.length?names:(eq?EQX.pdsName(eq):""),pdsRelated:u.typeLabel||"",subtype:sub,section:g.plantSection||"",type:g.plantSectionType||"",tag:g.tag||"",name:g.name||"",group:g.groupCode||"",dept:g.department||"",category:g.equipmentCategory||"",etype:g.equipmentType||"",status:u.statuses||[]});
+  }
+  if(a.mode==="Tag Wise")return eqView(u.eq||null,{project:a.code,section:u.section||"",type:u.type||"",tag:u.tag||"",name:u.name||"",category:u.category||"",etype:u.equipmentType||""});
+  return {eq:null,project:a.code,section:u.section||"",type:u.type||"",tag:"",name:"",pdsName:"",pdsRelated:"",group:"",dept:"",category:"",etype:"",subtype:"",status:[]};
+}
+function assignFields(a){
+  const get=u=>{a._vc=a._vc||new Map();if(!a._vc.has(u.key))a._vc.set(u.key,unitView(a,u));return a._vc.get(u.key)};
+  if(a.mode==="Section Wise")return [{k:"section",l:"Plant Section Name",t:"lookup",get:u=>get(u).section}];
+  if(a.mode==="Section Type Wise")return [{k:"section",l:"Plant Section Name",t:"lookup",get:u=>get(u).section},{k:"sectionType",l:"Plant Section Type",t:"lookup",get:u=>get(u).type}];
+  const f=eqFields(get);
+  if(a.mode===MODE_PDS)f.push({k:"pdsStatus",l:"PDS Status",t:"lookup",get:u=>get(u).status});
+  return f;
+}
+function unitLabel(a,u){
+  if(a.mode===MODE_PDS){const g=u.group||{};return `${g.tag||g.name||"PDS Work"}${g.tag&&g.name?` — ${g.name}`:""} • ${u.typeLabel||""}`}
+  try{return v211ScopeUnitLabel(a.mode,u)}catch(_){return u.key}
+}
+function unitMeta(a,u){
+  const v=(a._vc&&a._vc.get(u.key))||unitView(a,u);
+  if(a.mode==="Section Wise")return `${(u.types||[]).length} section types • ${u.tagCount||0} tags`;
+  if(a.mode==="Section Type Wise")return `${u.tagCount||0} tags`;
+  return [v.section,v.type,v.category,v.etype,v.subtype,v.group,v.dept].map(sc).filter(Boolean).join(" • ");
+}
+function matchScope(a,ch,u){
+  const c=N(sc(ch[AF.criteria]));
+  if(a.mode==="Section Wise")return sc(ch[AF.plantSection])===u.section&&c==="plantsection";
+  if(a.mode==="Section Type Wise")return sc(ch[AF.plantSection])===u.section&&sc(ch[AF.plantSectionType])===u.type&&c==="plantsectiontype";
+  if(a.mode==="Tag Wise")return sc(ch[AF.tagNo])===u.tag&&(!u.eq?.id||sc(ch[AF.equipmentRecordId])===String(u.eq.id));
+  if(a.mode===MODE_PDS){
+    let t="";try{t=pdsAssignmentTypeKey(ch)}catch(_){}
+    if(t!==u.type)return false;const g=u.group||{};
+    if(g.tag)return pdsSameValue(sc(ch[AF.tagNo]),g.tag);
+    return !sc(ch[AF.tagNo])&&!!g.name&&pdsSameValue(sc(ch[AF.equipmentName]),g.name);
+  }
+  return false;
+}
+function existingFor(a,u){
+  const parent=assignmentById(a.parentId);if(!parent)return[];
+  const out=assignmentChildren(idOf(parent)).filter(ch=>sc(ch[AF.status])!=="Cancelled"&&matchScope(a,ch,u));
+  try{
+    const p=v18ProjectForCode(a.code),d=drawingForAssignment(parent);let legacy=null;
+    if(a.mode===MODE_PDS)legacy=v205PdsExistingWork(p,d,u);else if(typeof v19ExistingWork==="function")legacy=v19ExistingWork(p,d,a.mode,u);
+    if(legacy&&!out.includes(legacy))out.push(legacy);
+  }catch(_){}
+  return out;
+}
+function visibleUnits(a){
+  const fields=assignFields(a);let rows=RS.filter("assign",fields,unitsFor(a));
+  const q=N(a.q);
+  if(q)rows=rows.filter(u=>{const v=a._vc?.get(u.key)||unitView(a,u);return N([unitLabel(a,u),v.section,v.type,v.tag,v.name,v.category,v.etype,v.subtype,v.group,v.dept,...arr(v.pdsName)].join(" ")).includes(q)});
+  return rows;
+}
+async function openAssign(parentId){
+  const parent=assignmentById(parentId);if(!parent)return say("Design task not found. Refresh the Project.");
+  const drawing=drawingForAssignment(parent),code=sc(parent[AF.projectCode])||S.projectWorkspace.code;
+  if(num0(parent[AF.assignmentLevel])>0)return v211OpenSubtaskModal(parentId);
+  let pds=false;try{pds=isPdsDrawing(parent)||v205IsPdsDrawingMaster(drawing)}catch(_){}
+  const mode=pds?MODE_PDS:v211ScopeModeForDrawing(drawing);
+  if(!pds&&!["Section Wise","Section Type Wise","Tag Wise"].includes(mode)){if(mode!=="Project Wise")say("Drawing Type scope is not configured for this design. A normal subtask is used.");return v211OpenSubtaskModal(parentId)}
+  checkManage(parent,"","","","assign work under this design");
+  busy(pds?"Loading Tag + PDS data…":`Loading ${v19ScopeLabel(mode)}…`);
+  try{
+    await ensureEquipmentForProject(code);
+    if(pds&&!Array.isArray(S.pds?.summary))await ensurePdsData("all");
+  }finally{idle()}
+  const fresh=!V.assign||V.assign.parentId!==String(parentId);
+  if(fresh){
+    V.rs.assign={on:{},op:{},v:{},v2:{},m:{},redraw:null};
+    if(mode==="Tag Wise"||pds){V.rs.assign.on.section=true;V.rs.assign.on.sectionType=true}
+    if(mode==="Section Type Wise")V.rs.assign.on.section=true;
+    V.assign={parentId:String(parentId),code,mode,q:"",sel:new Set(),users:[],priority:sc(parent[AF.priority])||"Medium",start:iso(parent[AF.startDate])>todayIso()?iso(parent[AF.startDate]):todayIso(),target:iso(parent[AF.targetDate])||"",end:"",remark:"",show:300,panel:true};
+  }
+  V.assign._vc=null;
+  drawAssign();
+}
+function syncAssign(){
+  const a=V.assign;if(!a)return null;
+  for(const [id,k] of [["v218Priority","priority"],["v218Start","start"],["v218Target","target"],["v218End","end"],["v218Remark","remark"],["v218Q","q"]]){const x=el(id);if(x)a[k]=x.value}
+  if(V.ms.v218Users)a.users=MS.get("v218Users");
+  return a;
+}
+function drawAssign(){
+  const a=V.assign;if(!a)return;
+  try{
+    const parent=assignmentById(a.parentId);if(!parent){closeModal();return say("Design task not found. Refresh the Project.")}
+    const drawing=drawingForAssignment(parent),fields=assignFields(a),all=unitsFor(a),rows=visibleUnits(a),shown=rows.slice(0,a.show);
+    for(const k of [...a.sel])if(!all.some(u=>u.key===k))a.sel.delete(k);
+    const people=a.users.length,items=a.sel.size,label=a.mode===MODE_PDS?"Tag + PDS Type":v19ScopeLabel(a.mode);
+    const list=shown.length?shown.map(u=>{
+      const ex=existingFor(a,u),on=a.sel.has(u.key),names=uniq(ex.map(x=>assignmentDisplayUser(x)));
+      return `<label class="v218-unit ${on?"selected":""} ${ex.length?"assigned":""}"><input type="checkbox" class="v218-unit-check" value="${esc(u.key)}" ${on?"checked":""}><div class="v218-unit-main"><b>${esc(unitLabel(a,u))}</b><span>${esc(unitMeta(a,u))}</span></div><div class="v218-unit-side">${a.mode===MODE_PDS&&(u.statuses||[]).length?`<span class="pill">${esc(u.statuses.join(", "))}</span>`:""}${ex.length?`<span class="pill green" title="${esc(names.join(", "))}">Assigned: ${esc(names.slice(0,2).join(", "))}${names.length>2?` +${names.length-2}`:""}</span>`:`<span class="pill">New</span>`}</div></label>`;
+    }).join("")+(rows.length>shown.length?`<button type="button" class="btn sm v218-more" data-v218-more>Show ${Math.min(300,rows.length-shown.length)} more (${rows.length-shown.length} hidden)</button>`:""):`<div class="empty compact"><strong>No matching ${esc(label)}</strong>Change the Search conditions on the right, or check the Equipment Master data.</div>`;
+    const panel=RS.html("assign",fields,all,{title:"Search",note:`Tick a field, choose the condition and value. Lookups depend on the fields above them (Plant Section → Section Type → …).`,close:true});
+    V.rs.assign.redraw=()=>keepScroll(()=>{syncAssign();drawAssign()});
+    openModal(a.mode===MODE_PDS?"Assign Tag + PDS Work":`Assign ${label}`,`${drawing.short?drawing.short+" — ":""}${drawing.name||""} • Project ${a.code}`,
+    `<div class="v218-assign"><div class="notice good"><b>${esc(assignmentDisplayUser(parent))}</b> owns this Design. Select the ${esc(label)} work, then choose one or more people. One task is created for every person and every selected item.</div>
+     <div class="v218-assign-grid ${a.panel?"":"no-panel"}">
+      <div class="v218-assign-left">
+        <div class="v218-tools"><input id="v218Q" class="input" placeholder="Quick search: tag, equipment, section…" value="${esc(a.q)}"><button type="button" class="btn sm" data-v218-sel-all>Select all ${rows.length} results</button><button type="button" class="btn sm" data-v218-sel-none>Clear</button>${a.panel?"":`<button type="button" class="btn sm soft" data-v218-panel>⚲ Search${RS.count("assign",fields)?` (${RS.count("assign",fields)})`:""}</button>`}</div>
+        <div class="v218-meta"><span class="pill brand" id="v218SelCount">${items} selected</span><span>${rows.length} shown • ${all.length} available</span></div>
+        <div class="v218-units">${list}</div>
+      </div>
+      ${a.panel?`<aside class="v218-assign-side">${panel}</aside>`:""}
+     </div>
+     <div class="v181-form-section"><div class="v181-form-section-head"><div><b>Assign selected work</b><span> • you can choose 2, 3 or more people</span></div></div><div class="v181-form-section-body"><div class="v18-assign-grid">
+      <div class="field v218-span2"><label>Assigned To * <span class="tiny muted">(multi-select)</span></label>${MS.html("v218Users",{options:peopleOptions(),value:a.users,placeholder:"Select one or more employees…",onChange:v=>{a.users=v;updateAssignSummary()}})}</div>
+      <div class="field"><label>Priority</label><select id="v218Priority">${PRIORITIES.map(x=>`<option ${x===a.priority?"selected":""}>${esc(x)}</option>`).join("")}</select></div>
+      <div class="field"><label>Start Date *</label><input id="v218Start" type="date" value="${esc(a.start)}"></div>
+      <div class="field"><label>Target Date *</label><input id="v218Target" type="date" value="${esc(a.target)}"></div>
+      <div class="field"><label>Planned End</label><input id="v218End" type="date" value="${esc(a.end)}"></div>
+      <div class="field v218-span2"><label>Remark / Instruction</label><input id="v218Remark" value="${esc(a.remark)}" placeholder="Optional instruction"></div>
+     </div></div></div>
+     <div class="v218-summary" id="v218Summary">${summaryText(items,people)}</div></div>`,
+    `<button class="btn" data-modal="close">Cancel</button><button class="btn primary" data-v218-create ${items&&people?"":"disabled"} id="v218CreateBtn">Create ${items*people||""} Task${items*people===1?"":"s"}</button>`);
+    wide(true);
+  }catch(e){log("assign modal",e);say("The assign screen could not be drawn. The old screen is used.");try{V.assign=null;return v211OpenAssignScopeBase&&v211OpenAssignScopeBase(a.parentId)}catch(_){}}
+}
+function summaryText(items,people){return `<b>${items}</b> item${items===1?"":"s"} × <b>${people}</b> person${people===1?"":"s"} = <b>${items*people}</b> task${items*people===1?"":"s"} will be created${people>1?" (one for each person)":""}. Items already assigned to the same person are skipped.`}
+function updateAssignSummary(){
+  const a=V.assign;if(!a)return;const items=a.sel.size,people=(a.users||[]).length,b=el("v218CreateBtn"),s=el("v218Summary"),c=el("v218SelCount");
+  if(c)c.textContent=`${items} selected`;if(s)s.innerHTML=summaryText(items,people);
+  if(b){b.disabled=!(items&&people);b.textContent=`Create ${items*people||""} Task${items*people===1?"":"s"}`}
+  document.querySelectorAll(".v218-unit").forEach(l=>{const cb=l.querySelector("input");if(cb)l.classList.toggle("selected",cb.checked)});
+}
+async function createAssign(){
+  const a=syncAssign();if(!a)throw rule("Nothing to assign.");
+  const parent=assignmentById(a.parentId);if(!parent)throw rule("Parent Design task is not available. Refresh the Project.");
+  if(!a.sel.size)throw rule("Select at least one item.");
+  const people=recipients(a.users);if(!people.length)throw rule("Select at least one person in Assigned To.");
+  validDates(a);checkManage(parent,a.start,a.target,a.end,"assign work under this design");
+  const drawing=drawingForAssignment(parent),p=v18ProjectForCode(a.code),units=unitsFor(a).filter(u=>a.sel.has(u.key));
+  const pairs=[];let skipped=0;
+  for(const u of units){
+    const ex=existingFor(a,u);let first=!ex.length;
+    for(const r of people){if(ex.some(x=>samePerson(x,r))){skipped++;continue}pairs.push({u,r,plain:first});first=false}
+  }
+  if(!pairs.length)throw rule("All selected items are already assigned to the selected people.");
+  const max=Number(CONFIG.MAX_BATCH)||5000;if(pairs.length>max)throw rule(`Maximum ${max} tasks can be created at once. Select fewer items.`);
+  const draft={mode:a.mode===MODE_PDS?"Tag Wise":a.mode,start:a.start,target:a.target,end:a.end,priority:a.priority||"Medium",remark:a.remark||"",user:people[0].backendValue};
+  const rootId=sc(parent[AF.primaryAssignment])||idOf(parent),created=[],failed=[];
+  busy(`Creating ${pairs.length} task${pairs.length===1?"":"s"}…`);
+  try{
+    for(let i=0;i<pairs.length;i++){
+      const {u,r,plain}=pairs[i];try{updateBusyProgress(i,pairs.length,"Creating tasks")}catch(_){}
+      try{
+        let data;
+        if(a.mode===MODE_PDS){
+          data=v205PdsReadablePayload(p&&p.code?p:{code:a.code,id:""},drawing,r,draft,u);
+          data[AF.assignedFrom]=idOf(parent);data[AF.primaryAssignment]=rootId;data[AF.assignmentLevel]=num0(parent[AF.assignmentLevel])+1;
+          data[AF.logicalTaskKey]=`${sc(data[AF.logicalTaskKey])}::${N(idOf(parent))}`;
+        }else data=v211ScopeChildData(parent,drawing,r,draft,u);
+        if(!plain)data[AF.logicalTaskKey]=`${sc(data[AF.logicalTaskKey])}${suffix(r)}`;
+        if(AF.workKey)data[AF.workKey]=sc(data[AF.logicalTaskKey]).slice(0,240);
+        const id=await addRecord(data);if(!id)throw new Error("Creator did not return the new record ID.");
+        const rec={ID:id,...data};S.records.push(rec);S.assignments.push(rec);created.push(rec);
+      }catch(e){if(e&&e.code==="MEGA_RULE")throw e;if(typeof v208IsDuplicateError==="function"&&v208IsDuplicateError(e))skipped++;else{failed.push({u,r,e});log("create task",e)}}
+      if(i%20===19)await sleep(20);
+    }
+    try{updateBusyProgress(pairs.length,pairs.length,"Creating tasks")}catch(_){}
+    if(created.length){try{await notifyCreatedAssignments(created)}catch(e){log("email",e)}}
+  }finally{idle()}
+  if(!created.length&&failed.length)throw new Error(`No task was created. ${failed[0].e?.message||"Creator save failed."}`);
+  V.expanded.add(String(idOf(parent)));V.assign=null;closeModal();
+  const names=uniq(created.map(x=>sc(x[AF.assignedEmployeeName])));
+  say(`${created.length} task${created.length===1?"":"s"} created for ${names.join(", ")}${skipped?` • ${skipped} already existed`:""}${failed.length?` • ${failed.length} failed (see console)`:""}.`,failed.length?"warn":"good");
+  try{renderView()}catch(_){}
+}
+try{
+  document.addEventListener("change",e=>{
+    const t=e.target;if(!t||!t.classList)return;
+    if(t.classList.contains("v218-unit-check")&&V.assign){if(t.checked)V.assign.sel.add(t.value);else V.assign.sel.delete(t.value);updateAssignSummary()}
+  });
+  let qt=null;
+  document.addEventListener("input",e=>{const t=e.target;if(t&&t.id==="v218Q"&&V.assign){clearTimeout(qt);qt=setTimeout(()=>{keepScroll(()=>{syncAssign();V.assign.show=300;drawAssign()});refocus("v218Q")},300)}});
+  document.addEventListener("click",e=>{
+    const t=e.target;if(!t||!t.closest||!V.assign)return;
+    if(t.closest("[data-v218-sel-all]")){e.preventDefault();syncAssign();const a=V.assign;for(const u of visibleUnits(a)){if(!existingFor(a,u).length)a.sel.add(u.key)}return keepScroll(drawAssign)}
+    if(t.closest("[data-v218-sel-none]")){e.preventDefault();syncAssign();V.assign.sel.clear();return keepScroll(drawAssign)}
+    if(t.closest("[data-v218-more]")){e.preventDefault();syncAssign();V.assign.show+=300;return keepScroll(drawAssign)}
+    if(t.closest("[data-v218-panel]")){e.preventDefault();syncAssign();V.assign.panel=true;return drawAssign()}
+    if(t.closest("[data-v218-create]")){e.preventDefault();e.stopImmediatePropagation();const k=`v218assign:${V.assign.parentId}`;return run(()=>typeof v208SingleFlight==="function"?v208SingleFlight(k,createAssign):createAssign())}
+  },true);
+}catch(e){log("assign events",e)}
+let v211OpenAssignScopeBase=null;
+patch("v211OpenAssignScope",()=>v211OpenAssignScope,f=>{v211OpenAssignScope=f},base=>{v211OpenAssignScopeBase=base;return async function(parentId){
+  try{return await openAssign(parentId)}
+  catch(e){if(e&&e.code==="MEGA_RULE")throw e;log("assign scope",e);return base.apply(this,arguments)}
+}});
+
+/* ---------- 6. Subtask with several people ---------- */
+patch("v211OpenSubtaskModal",()=>v211OpenSubtaskModal,f=>{v211OpenSubtaskModal=f},base=>function(parentId){
+  try{
+    const parent=assignmentById(parentId);if(!parent)return say("Parent task not found.");
+    const x=X();if(typeof x.canManage==="function"&&!x.canManage(parent))return say("You do not have permission to add a subtask here.");
+    const d=V.sub=S.v211.subtaskDraft={parentId:String(parentId),name:"",user:"",users:[],priority:sc(parent[AF.priority])||"Medium",start:todayIso()<iso(parent[AF.startDate])?iso(parent[AF.startDate]):todayIso(),target:iso(parent[AF.targetDate])||"",end:"",remark:""};
+    openModal("Add Subtask",`${drawingForAssignment(parent).name||""} • under ${v211NodeLabel(parent)}`,
+    `<div class="v211-subtask-shell"><div class="notice good"><b>Zoho-style subtask:</b> choose one or more people. Each person gets their own copy of this subtask with their own status and progress.</div><div class="field"><label>Subtask Name *</label><input id="v211SubtaskName" class="input" placeholder="e.g. Prepare Nozzle Orientation"></div><div class="v18-assign-grid"><div class="field v218-span2"><label>Assigned To * <span class="tiny muted">(multi-select)</span></label>${MS.html("v218SubUsers",{options:peopleOptions(),value:[],placeholder:"Select one or more employees…"})}</div><div class="field"><label>Priority</label><select id="v211SubtaskPriority">${PRIORITIES.map(p=>`<option ${p===d.priority?"selected":""}>${esc(p)}</option>`).join("")}</select></div><div class="field"><label>Start Date *</label><input id="v211SubtaskStart" type="date" value="${esc(d.start)}"></div><div class="field"><label>Target Date *</label><input id="v211SubtaskTarget" type="date" value="${esc(d.target)}"></div><div class="field"><label>Planned End</label><input id="v211SubtaskEnd" type="date"></div><div class="field v218-span2"><label>Remark / Instruction</label><textarea id="v211SubtaskRemark" rows="2"></textarea></div></div></div>`,
+    `<button class="btn" data-modal="close">Cancel</button><button class="btn primary" data-v211-create-subtask>Create Subtask</button>`);
+  }catch(e){log("subtask modal",e);return base.apply(this,arguments)}
+});
+patch("v211CreateSubtask",()=>v211CreateSubtask,f=>{v211CreateSubtask=f},base=>async function(){
+  if(!document.querySelector('[data-v218-ms="v218SubUsers"]')||!el("v211SubtaskName"))return base.apply(this,arguments);
+  const d=S.v211.subtaskDraft||V.sub||{},parent=assignmentById(d.parentId);if(!parent)throw rule("Parent task not found.");
+  d.name=(el("v211SubtaskName")?.value||"").trim();d.priority=el("v211SubtaskPriority")?.value||"Medium";d.start=el("v211SubtaskStart")?.value||"";d.target=el("v211SubtaskTarget")?.value||"";d.end=el("v211SubtaskEnd")?.value||"";d.remark=(el("v211SubtaskRemark")?.value||"").trim();
+  const people=recipients(MS.get("v218SubUsers"));
+  if(!d.name)throw rule("Subtask Name is required.");if(!people.length)throw rule("Select at least one person in Assigned To.");
+  validDates(d);checkManage(parent,d.start,d.target,d.end,"add a subtask here");
+  const drawing=drawingForAssignment(parent),rootId=sc(parent[AF.primaryAssignment])||idOf(parent),baseKey=`SUBTASK::${N(rootId)}::${N(idOf(parent))}::${N(d.name)}`;
+  const taken=new Set((S.assignments||[]).map(x=>sc(x[AF.logicalTaskKey])));
+  const created=[];
+  busy(`Creating subtask for ${people.length} person${people.length===1?"":"s"}…`);
+  try{
+    for(let i=0;i<people.length;i++){
+      const r=people[i];
+      if(assignmentChildren(idOf(parent)).some(c=>N(sc(c[AF.designTitle]))===N(d.name)&&samePerson(c,r)&&sc(c[AF.status])!=="Cancelled")){say(`${r.name} already has subtask "${d.name}". Skipped.`);continue}
+      const data={
+        [AF.projectCode]:sc(parent[AF.projectCode]),[AF.projectRecordId]:sc(parent[AF.projectRecordId]),[AF.drawingDocument]:drawing.name,[AF.drawingMasterId]:drawing.id,[AF.shortName]:drawing.short||"",
+        [AF.primaryAssignment]:rootId,[AF.assignedFrom]:idOf(parent),[AF.assignmentLevel]:num0(parent[AF.assignmentLevel])+1,[AF.assignedBy]:S.user||(typeof v19CurrentUserReadable==="function"?v19CurrentUserReadable():""),[AF.assignedTo]:r.backendValue,[AF.assignedEmployeeName]:r.name,
+        [AF.criteria]:"Subtask",[AF.responsibility]:`${scopeSummary(parent)||v211NodeLabel(parent)} › ${d.name}`,[AF.designType]:"Subtask",[AF.designTitle]:d.name,[AF.startDate]:toCreatorDate(d.start),[AF.targetDate]:toCreatorDate(d.target),[AF.endDate]:toCreatorDate(d.end),[AF.priority]:d.priority,[AF.status]:"Not Started",[AF.progress]:0,[AF.remark]:d.remark
+      };
+      for(const fld of [AF.plantSection,AF.plantSectionType,AF.tagNo,AF.equipmentName,AF.equipmentCategory,AF.equipmentType,AF.equipmentRecordId,AF.groupCode,AF.department,AF.pdsRecordId]){if(fld&&sc(parent[fld]))data[fld]=sc(parent[fld])}
+      let key=baseKey;if(taken.has(key))key=`${baseKey}${suffix(r)}`;taken.add(key);
+      data[AF.logicalTaskKey]=key;if(AF.workKey)data[AF.workKey]=key.slice(0,240);
+      data[AF.activityLog]=initialActivity("Subtask Assigned",`${r.name} received subtask: ${d.name}.`,{kind:"subtask",assignedTo:r.email,parent:idOf(parent)});
+      const id=await addRecord(data);if(!id)throw new Error("Creator did not return the new record ID.");
+      const rec={ID:id,...data};S.records.push(rec);S.assignments.push(rec);created.push(rec);
+    }
+    if(created.length){try{await notifyCreatedAssignments(created)}catch(e){log("email",e)}}
+  }finally{idle()}
+  V.expanded.add(String(idOf(parent)));let g=parent,n=0;while(g&&n++<20){V.expanded.add(String(idOf(g)));const pid=sc(g[AF.assignedFrom]);g=pid?assignmentById(pid):null}
+  closeModal();try{renderView()}catch(_){}
+  if(created.length)say(`Subtask "${d.name}" assigned to ${created.map(x=>sc(x[AF.assignedEmployeeName])).join(", ")}.`,"good");
+});
+
+/* ---------- 7. Main Designs: Zoho-Projects-style [+] tree + multi filters ---------- */
+function kids(a){try{return v211Children(a)}catch(_){return assignmentChildren(idOf(a))}}
+function allDesc(a){const out=[];const walk=(n,g)=>{if(g>20)return;for(const c of kids(n)){out.push(c);walk(c,g+1)}};walk(a,0);return out}
+const filtersOn=()=>V.pf.status.length>0||V.pf.people.length>0;
+function nodeMatch(a){
+  if(V.pf.status.length&&!V.pf.status.some(s=>N(s)===N(sc(a[AF.status])||"Not Started")))return false;
+  if(V.pf.people.length&&!V.pf.people.some(p=>N(p)===N(assignmentDisplayUser(a))))return false;
+  return true;
+}
+function nodeVisible(a,g=0){if(nodeMatch(a))return true;if(g>20)return false;return kids(a).some(c=>nodeVisible(c,g+1))}
+function nodeRow(a,depth,drawing,index){
+  const id=String(idOf(a)),isRoot=depth===0,children=kids(a).filter(c=>!filtersOn()||nodeVisible(c)),open=filtersOn()||V.expanded.has(id),desc=isRoot?allDesc(a).length:0;
+  const x=X(),can=typeof x.canManage==="function"?(()=>{try{return x.canManage(a)}catch(_){return true}})():true;
+  const level=num0(a[AF.assignmentLevel]),dim=filtersOn()&&!nodeMatch(a);
+  let scopeBtn="";
+  if(isRoot){
+    let pds=false;try{pds=v205IsPdsDrawingMaster(drawing)}catch(_){}
+    const mode=v211ScopeModeForDrawing(drawing);
+    scopeBtn=mode==="Project Wise"&&!pds?"":`<button class="btn sm soft" data-v211-assign-further="${esc(id)}">${pds?"Assign PDS":"Assign Scope"}</button>`;
+  }
+  const label=isRoot?(drawing.short?`${drawing.short} — ${drawing.name}`:drawing.name):shortLabel(a,drawing);
+  const where=[sc(a[AF.plantSection]),sc(a[AF.plantSectionType])].filter(Boolean).join(" › ");
+  const sub=isRoot?`Main Design${desc?` • ${desc} task${desc===1?"":"s"}`:""}`:`L${level}${where?` • ${esc(where)}`:""}${kids(a).length?` • ${kids(a).length} subtask${kids(a).length===1?"":"s"}`:""}`;
+  const row=`<tr class="v218-tr ${isRoot?"v218-root":"v218-child"} ${dim?"v218-dim":""}" data-v218-node="${esc(id)}">
+    <td><div class="v218-cell" style="--d:${Math.min(depth,10)}">${children.length?`<button type="button" class="v218-tog" data-v218-toggle="${esc(id)}" title="${open?"Collapse":"Expand"}">${open?"−":"+"}</button>`:`<span class="v218-tog-sp"></span>`}${isRoot?`<span class="v211-seq">${index+1}</span>`:""}<div class="v218-name-wrap"><div class="v211-task-name v218-link" data-v211-open-node="${esc(id)}" title="Open">${esc(label)}</div><div class="v211-task-sub">${isRoot?esc(sub):sub}</div></div>${can?`<button type="button" class="v218-add" data-v211-add-subtask="${esc(id)}" title="Add subtask under this task">＋</button>`:""}</div></td>
+    <td>${isRoot?v211ScopeBadge(drawing):`<span class="scope-tag">${esc(level===1?(sc(a[AF.criteria])||"Scope"):"Subtask")}</span>`}</td>
+    <td class="v19-human"><div class="v212-owner-main">${esc(assignmentDisplayUser(a))}</div><div class="v211-task-sub">${isRoot?"Design Owner":`by ${esc(personDisplay(a[AF.assignedBy])||sc(a[AF.assignedBy])||"—")}`}</div></td>
+    <td>${statusPill(sc(a[AF.status]))}</td>
+    <td>${esc(displayDate(a[AF.targetDate]))}</td>
+    <td><div class="v211-progress"><span>${num0(a[AF.progress])}%</span>${progressBar(num0(a[AF.progress]))}</div></td>
+    <td><div class="v211-row-actions v214-row-actions"><button class="btn sm" data-v211-open-node="${esc(id)}">Open</button>${scopeBtn}<button class="btn sm" data-v211-add-subtask="${esc(id)}">+ Subtask</button>${!isRoot&&can&&!isClosedAssignment(a)?`<button class="btn sm" data-v217-reassign="${esc(id)}" title="Reassign">⇄</button>`:""}${isRoot?`<button class="btn sm v214-assignments-btn" data-v213-view-assignments="${esc(id)}">Assignments${desc?` (${desc})`:""}</button>`:""}</div></td>
+  </tr>`;
+  return row+(open?children.map(c=>nodeRow(c,depth+1,drawing,index)).join(""):"");
+}
+function shortLabel(a,drawing){
+  try{
+    let t=sc(a[AF.designTitle]).trim();const dn=String(drawing?.name||sc(a[AF.drawingDocument])||"").trim();
+    if(t&&dn&&t.toLowerCase().startsWith((dn+" — ").toLowerCase()))t=t.slice(dn.length+3).trim();
+    return t||v211NodeLabel(a);
+  }catch(_){return v211NodeLabel(a)}
+}
+let designsBase=null;
+patch("renderProjectDesignsV18",()=>renderProjectDesignsV18,f=>{renderProjectDesignsV18=f},base=>{designsBase=base;return safeDraw("renderProjectDesignsV18",base,function(b){
+  if(S.projectWorkspace.viewMode&&S.projectWorkspace.viewMode!=="list")return b();
+  const all=v211ProjectDrawingRows(),roots=all.filter(x=>x.root);
+  const everyone=[];for(const x of roots){everyone.push(x.root,...allDesc(x.root))}
+  const statuses=uniq(["Not Started",...everyone.map(a=>sc(a[AF.status])||"Not Started")]),people=uniq(everyone.map(a=>assignmentDisplayUser(a)));
+  V.pf.status=V.pf.status.filter(s=>statuses.some(x=>N(x)===N(s)));V.pf.people=V.pf.people.filter(s=>people.some(x=>N(x)===N(s)));
+  const on=filtersOn(),rows=on?all.filter(x=>x.root&&nodeVisible(x.root)):all,assigned=roots.length,unassigned=all.length-assigned,total=everyone.length;
+  const body=rows.length?rows.map(({drawing,root,index})=>{
+    if(root)return nodeRow(root,0,drawing,index);
+    return `<tr class="v211-unassigned"><td><div class="v218-cell" style="--d:0"><span class="v218-tog-sp"></span><span class="v211-seq">${index+1}</span><div><div class="v211-task-name">${esc(drawing.short?`${drawing.short} — ${drawing.name}`:drawing.name)}</div><div class="v211-task-sub">Main Design • Owner not assigned</div></div></div></td><td>${v211ScopeBadge(drawing)}</td><td><span class="pill">Unassigned</span></td><td><span class="pill">Not Started</span></td><td>—</td><td>0%</td><td><button class="btn primary sm" data-v211-assign-owner="${esc(drawing.id)}">Assign Design Owner</button></td></tr>`;
+  }).join(""):`<tr><td colspan="7"><div class="empty compact"><strong>${on?"No task matches the filters":"No Design Master rows found"}</strong>${on?"Change or clear the Status / Assigned To filters.":"All_Drawing_Types will appear here."}</div></td></tr>`;
+  return `<div class="v211-core-note v212-main-note"><div><b>Main Designs</b><span>Click <b>+</b> to open a design and see every task and subtask under it, like Zoho Projects. Use <b>＋</b> on any row to add a subtask, and <b>⇄</b> to reassign.</span></div><div class="v211-core-stats"><span class="pill brand">${all.length} Designs</span><span class="pill green">${assigned} Owned</span><span class="pill">${unassigned} Yet to Assign</span><span class="pill">${total} Tasks</span></div></div>
+  <div class="project-toolbar v218-toolbar"><div class="project-filters v218-filters"><div class="v218-filter"><label>Status</label>${MS.html("v218PfStatus",{options:statuses,value:V.pf.status,placeholder:"All status",onChange:v=>{V.pf.status=v;renderView()}})}</div><div class="v218-filter"><label>Assigned To</label>${MS.html("v218PfPeople",{options:people,value:V.pf.people,placeholder:"Everyone",onChange:v=>{V.pf.people=v;renderView()}})}</div>${on?`<button type="button" class="btn sm" data-v218-pf-clear>Clear filters</button>`:""}<button type="button" class="btn sm" data-v218-expand-all>+ Expand all</button><button type="button" class="btn sm" data-v218-collapse-all>− Collapse all</button></div><div class="view-switch"><button data-v18-view="list" class="active">List</button><button data-v18-view="kanban">Kanban</button><button data-v18-view="gantt">Gantt</button></div></div>
+  <div class="task-list-panel v211-task-panel"><table class="task-table v211-task-table v214-main-table v218-tree-table"><thead><tr><th>Design / Task</th><th>Scope</th><th>Assigned To</th><th>Status</th><th>Target</th><th>Progress</th><th>Action</th></tr></thead><tbody>${body}</tbody></table></div>`;
+})});
+try{
+  document.addEventListener("click",e=>{
+    const t=e.target;if(!t||!t.closest)return;
+    const tg=t.closest("[data-v218-toggle]");if(tg){e.preventDefault();e.stopImmediatePropagation();const id=tg.dataset.v218Toggle;if(filtersOn())return say("Clear the filters to collapse rows.");if(V.expanded.has(id))V.expanded.delete(id);else V.expanded.add(id);return renderView()}
+    if(t.closest("[data-v218-expand-all]")){e.preventDefault();try{for(const x of v211ProjectDrawingRows())if(x.root){V.expanded.add(String(idOf(x.root)));for(const c of allDesc(x.root))V.expanded.add(String(idOf(c)))}}catch(err){log(err)}return renderView()}
+    if(t.closest("[data-v218-collapse-all]")){e.preventDefault();V.expanded.clear();return renderView()}
+    if(t.closest("[data-v218-pf-clear]")){e.preventDefault();V.pf.status=[];V.pf.people=[];return renderView()}
+  },true);
+}catch(e){log("tree events",e)}
+// Breakdown tab: PDS designs use the same new assign screen
+patch("renderDelegateTab",()=>renderDelegateTab,f=>{renderDelegateTab=f},base=>safeDraw("renderDelegateTab",base,function(b){
+  const html=b(),a=S.current;if(!a)return html;
+  return html.replace('<button class="btn primary" data-detail-tab="pds">Open PDS Assignment</button>',`<button class="btn primary" data-v211-assign-further="${esc(idOf(a))}">Assign Tag + PDS Work</button>`);
+}));
+
+/* ---------- 8. Advanced Search (universal, Zoho Creator report style) ---------- */
+function workFields(){
+  return [
+    {k:"project",l:"Project Code",t:"lookup",get:a=>sc(a[AF.projectCode]),opts:()=>{try{return v18ProjectCodes()}catch(_){return[]}}},
+    {k:"design",l:"Design / Drawing",t:"lookup",get:a=>drawingForAssignment(a).name||sc(a[AF.drawingDocument])},
+    {k:"task",l:"Task / Subtask Name",t:"text",get:a=>v211NodeLabel(a)},
+    {k:"level",l:"Level",t:"lookup",get:a=>`L${num0(a[AF.assignmentLevel])}`},
+    {k:"to",l:"Assigned To",t:"lookup",get:a=>assignmentDisplayUser(a)},
+    {k:"by",l:"Assigned By",t:"lookup",get:a=>personDisplay(a[AF.assignedBy])||sc(a[AF.assignedBy])},
+    {k:"status",l:"Status",t:"lookup",get:a=>sc(a[AF.status])||"Not Started"},
+    {k:"priority",l:"Priority",t:"lookup",get:a=>sc(a[AF.priority])},
+    {k:"pdsType",l:"PDS / Design Type",t:"lookup",get:a=>sc(a[AF.designType])},
+    {k:"section",l:"Plant Section Name",t:"lookup",get:a=>sc(a[AF.plantSection])},
+    {k:"sectionType",l:"Plant Section Type",t:"lookup",get:a=>sc(a[AF.plantSectionType])},
+    {k:"tag",l:"Tag Number",t:"text",get:a=>sc(a[AF.tagNo])},
+    {k:"name",l:"Equipment Name",t:"text",get:a=>sc(a[AF.equipmentName])},
+    {k:"group",l:"Group Code",t:"lookup",get:a=>sc(a[AF.groupCode])},
+    {k:"dept",l:"Department Code",t:"lookup",get:a=>sc(a[AF.department])},
+    {k:"category",l:"Equipment Category",t:"lookup",get:a=>sc(a[AF.equipmentCategory])},
+    {k:"etype",l:"Equipment Type",t:"lookup",get:a=>sc(a[AF.equipmentType])},
+    {k:"start",l:"Start Date",t:"date",get:a=>sc(a[AF.startDate])},
+    {k:"target",l:"Target Date",t:"date",get:a=>sc(a[AF.targetDate])},
+    {k:"progress",l:"Progress %",t:"number",get:a=>String(num0(a[AF.progress]))}
+  ];
+}
+function equipFields(){
+  const cache=new Map(),get=e=>{if(!cache.has(e))cache.set(e,eqView(e));return cache.get(e)};
+  const f=eqFields(get);
+  f.find(x=>x.k==="project").opts=()=>{try{return v18ProjectCodes()}catch(_){return[]}};
+  f.push({k:"sectionRef",l:"Section Ref",t:"text",get:e=>EQX.sectionRef(e)},{k:"status",l:"Status",t:"lookup",get:e=>EQX.status(e)});
+  return f;
+}
+function advId(){return V.adv.ds==="equip"?"adv":"advw"}
+function advRows(){
+  if(V.adv.ds==="equip")return Array.isArray(S.equipment)?S.equipment:[];
+  return (S.assignments||[]).filter(a=>{try{return !isRevisionRecord||!isRevisionRecord(a)}catch(_){return true}});
+}
+async function openAdv(){
+  if(S.view!=="v218search")V.adv.back=S.view==="detail"?(S.previousView||"projects"):S.view;
+  S.view="v218search";renderAdv();
+  if(V.adv.ds==="equip"&&!S.cache?.equipmentFullLoaded)await loadEquip();
+}
+async function loadEquip(){
+  busy("Loading all Equipment / Tag data…");
+  try{await ensureUniversalSearchSources()}catch(e){log(e)}finally{idle()}
+  if(S.view==="v218search")renderAdv();
+}
+async function loadProjects(codes){
+  const list=(codes||[]).filter(c=>c&&!(typeof v208ProjectLoaded==="function"&&v208ProjectLoaded(c)));if(!list.length)return;
+  busy(`Loading ${list.length} project${list.length===1?"":"s"}…`);
+  try{for(let i=0;i<list.length;i++){try{updateBusyProgress(i,list.length,"Loading projects")}catch(_){}try{await v210LoadProjectData(list[i])}catch(e){log("load project",list[i],e)}}}
+  finally{idle()}
+  if(S.view==="v218search")renderAdv();
+}
+function renderAdv(){
+  try{
+    document.querySelectorAll(".navtab").forEach(b=>b.classList.remove("active"));
+    const ds=V.adv.ds,id=ds==="equip"?"adv":"advw",fields=ds==="equip"?equipFields():workFields(),rows=advRows();
+    RS.st(id).redraw=()=>{V.adv.show=200;renderAdv();if(ds!=="equip"){const pc=RS.st(id).on.project&&(RS.st(id).op.project||"Is")==="Is"?(RS.st(id).m.project||[]):[];if(pc.length)loadProjects(pc)}};
+    let res=RS.filter(id,fields,rows);const q=V.adv.q.trim();
+    if(q){try{res=res.filter(r=>textMatchesQuery(ds==="equip"?[r.project,r.tag,r.name,r.plantSection,r.plantSectionType,r.groupCode,r.department,r.equipmentCategory,r.equipmentType,EQX.subtype(r)]:[sc(r[AF.projectCode]),sc(r[AF.tagNo]),sc(r[AF.equipmentName]),sc(r[AF.plantSection]),sc(r[AF.plantSectionType]),v211NodeLabel(r),assignmentDisplayUser(r),sc(r[AF.status]),drawingForAssignment(r).name],q))}catch(e){log(e)}}
+    const shown=res.slice(0,V.adv.show);
+    let loadedNote="";
+    if(ds!=="equip"){
+      let codes=[];try{codes=v18ProjectCodes()}catch(_){}
+      const loaded=codes.filter(c=>typeof v208ProjectLoaded==="function"&&v208ProjectLoaded(c));
+      loadedNote=`<div class="notice ${loaded.length<codes.length?"warn":"good"} v218-adv-note">Searching design work of <b>${loaded.length}</b> of <b>${codes.length}</b> projects. Tick <b>Project Code</b> in Search and pick projects to include them${loaded.length<codes.length?`, or <button type="button" class="btn sm" data-v218-adv-loadall>Load all ${codes.length} projects</button>`:""}.</div>`;
+    }else if(!S.cache?.equipmentFullLoaded){loadedNote=`<div class="notice warn v218-adv-note">Equipment data is loading… <button type="button" class="btn sm" data-v218-adv-loadeq>Load now</button></div>`}
+    const head=ds==="equip"?["Project","Tag Number","Equipment Name","Plant Section","Section Type","Category","Type","Subtype","Group","Department",""]:["Project","Design","Task / Subtask","Assigned To","Status","Plant Section","Section Type","Tag","Target","Progress",""];
+    const tr=ds==="equip"?shown.map(e=>{const v=eqView(e);return `<tr><td>${esc(v.project)}</td><td><b>${esc(v.tag)}</b></td><td>${esc(v.name)}</td><td>${esc(v.section)}</td><td>${esc(v.type)}</td><td>${esc(v.category)}</td><td>${esc(v.etype)}</td><td>${esc(v.subtype)}</td><td>${esc(v.group)}</td><td>${esc(v.dept)}</td><td><button class="btn sm" data-v218-adv-eq="${esc(v.tag||v.name)}">Work</button></td></tr>`}).join(""):shown.map(a=>`<tr><td>${esc(sc(a[AF.projectCode]))}</td><td>${esc(drawingForAssignment(a).name||"")}</td><td><div class="v218-link" data-v211-open-node="${esc(idOf(a))}"><b>${esc(v211NodeLabel(a))}</b></div><div class="v211-task-sub">L${num0(a[AF.assignmentLevel])}</div></td><td>${esc(assignmentDisplayUser(a))}</td><td>${statusPill(sc(a[AF.status]))}</td><td>${esc(sc(a[AF.plantSection]))}</td><td>${esc(sc(a[AF.plantSectionType]))}</td><td>${esc(sc(a[AF.tagNo]))}</td><td>${esc(displayDate(a[AF.targetDate]))}</td><td>${num0(a[AF.progress])}%</td><td><button class="btn sm" data-v211-open-node="${esc(idOf(a))}">Open</button></td></tr>`).join("");
+    const panel=V.adv.panel?`<aside class="v218-adv-side">${RS.html(id,fields,rows,{title:"Search",note:"Tick a field, choose the condition and value. Lookups depend on the fields above them.",close:true})}</aside>`:"";
+    el("page").innerHTML=`<div class="v218-adv"><div class="section-row"><div><h2>Advanced Search</h2><p>Search like a Zoho Creator report: tick fields, choose conditions, pick one or more values.</p></div><div class="actions"><button class="btn" data-v218-adv-back>← Back</button></div></div>
+      <div class="v218-adv-bar"><div class="view-switch"><button data-v218-adv-ds="work" class="${ds!=="equip"?"active":""}">Design Work</button><button data-v218-adv-ds="equip" class="${ds==="equip"?"active":""}">Equipment / Tag</button></div><input id="v218AdvQ" class="input" placeholder="Quick search in results…" value="${esc(V.adv.q)}"><span class="pill brand">${res.length} result${res.length===1?"":"s"}</span>${V.adv.panel?"":`<button class="btn sm soft" data-v218-adv-panel>⚲ Search${RS.count(id,fields)?` (${RS.count(id,fields)})`:""}</button>`}<button class="btn sm" data-v218-rs-reset="${id}">Reset</button></div>
+      ${loadedNote}
+      <div class="v218-adv-grid ${V.adv.panel?"":"no-panel"}"><div class="task-list-panel v218-adv-table-wrap"><table class="task-table v218-adv-table"><thead><tr>${head.map(x=>`<th>${esc(x)}</th>`).join("")}</tr></thead><tbody>${tr||`<tr><td colspan="${head.length}"><div class="empty compact"><strong>No matching records</strong>Change the Search conditions.</div></td></tr>`}</tbody></table>${res.length>shown.length?`<div style="padding:10px"><button class="btn sm" data-v218-adv-more>Show 200 more (${res.length-shown.length} hidden)</button></div>`:""}</div>${panel}</div></div>`;
+  }catch(e){log("advanced search",e);S.view=V.adv.back||"projects";try{renderView()}catch(_){}say("Advanced Search could not be shown.")}
+}
+patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){
+  if(S.view==="v218search"){try{return renderAdv()}catch(e){log(e);S.view="projects"}}
+  return base.apply(this,arguments);
+});
+try{
+  const box=document.querySelector(".top-search");
+  if(box&&!box.querySelector("[data-v218-adv]")){const b=document.createElement("button");b.type="button";b.className="v218-adv-btn";b.setAttribute("data-v218-adv","1");b.title="Advanced Search (Zoho report style)";b.textContent="⚲ Filters";box.appendChild(b)}
+  let aq=null;
+  document.addEventListener("input",e=>{const t=e.target;if(t&&t.id==="v218AdvQ"){clearTimeout(aq);aq=setTimeout(()=>{V.adv.q=t.value;V.adv.show=200;renderAdv();refocus("v218AdvQ")},300)}});
+  document.addEventListener("click",e=>{
+    const t=e.target;if(!t||!t.closest)return;let b;
+    if(t.closest("[data-v218-adv]")){e.preventDefault();return run(openAdv)}
+    if(S.view!=="v218search")return;
+    if((b=t.closest("[data-v218-adv-ds]"))){e.preventDefault();V.adv.ds=b.dataset.v218AdvDs;V.adv.show=200;renderAdv();if(V.adv.ds==="equip"&&!S.cache?.equipmentFullLoaded)run(loadEquip);return}
+    if(t.closest("[data-v218-adv-back]")){e.preventDefault();S.view=V.adv.back||"projects";return renderView()}
+    if(t.closest("[data-v218-adv-more]")){e.preventDefault();V.adv.show+=200;return renderAdv()}
+    if(t.closest("[data-v218-adv-panel]")){e.preventDefault();V.adv.panel=true;return renderAdv()}
+    if(t.closest("[data-v218-adv-loadeq]")){e.preventDefault();return run(loadEquip)}
+    if(t.closest("[data-v218-adv-loadall]")){e.preventDefault();let c=[];try{c=v18ProjectCodes()}catch(_){}return run(()=>loadProjects(c))}
+    if((b=t.closest("[data-v218-adv-eq]"))){e.preventDefault();const q=b.dataset.v218AdvEq;if(el("globalSearch"))el("globalSearch").value=q;return run(()=>openUniversalSearch(q))}
+  },true);
+}catch(e){log("advanced search events",e)}
+
+/* ---------- 9. Styles ---------- */
+try{
+  const css=`
+  .v218-ms{position:relative;min-width:150px}.v218-ms-btn{width:100%;min-height:36px;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:4px 9px;border:1px solid #d0d5dd;border-radius:10px;background:#fff;cursor:pointer;text-align:left;font:inherit;font-size:12px}.v218-ms-btn:hover{border-color:#c42770}.v218-ms-ph{color:#98a2b3}.v218-ms-caret{color:#98a2b3;font-size:10px;flex:0 0 auto}.v218-ms-chips{display:flex;flex-wrap:wrap;gap:4px;min-width:0}.v218-chip{display:inline-flex;align-items:center;gap:4px;max-width:170px;padding:3px 7px;border-radius:999px;background:#f7edf2;border:1px solid #edd5df;color:#7f1747;font-size:10px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v218-chip i{font-style:normal;cursor:pointer;color:#a71958;font-weight:900}.v218-chip.more{background:#f2f4f7;border-color:#e4e7ec;color:#475467}
+  .v218-ms-pop{position:fixed;z-index:400;background:#fff;border:1px solid #e4e7ec;border-radius:12px;box-shadow:0 16px 40px rgba(16,24,40,.22);display:flex;flex-direction:column;overflow:hidden;min-width:240px}.v218-ms-q{margin:8px;padding:8px 10px;border:1px solid #d0d5dd;border-radius:9px;font:inherit;font-size:12px}.v218-ms-acts{display:flex;gap:6px;padding:0 8px 8px;border-bottom:1px solid #f2f4f7}.v218-ms-acts button{border:1px solid #e4e7ec;background:#fff;border-radius:8px;padding:4px 8px;font-size:10px;font-weight:800;cursor:pointer}.v218-ms-acts .ok{margin-left:auto;background:#c42770;border-color:#c42770;color:#fff}.v218-ms-list{overflow:auto;padding:4px 0;flex:1}.v218-ms-opt{display:flex;gap:8px;align-items:flex-start;padding:7px 12px;cursor:pointer;font-size:12px}.v218-ms-opt:hover{background:#fff7fb}.v218-ms-opt small{display:block;color:#667085;font-size:10px}.v218-ms-empty{padding:12px;color:#667085;font-size:12px}
+  .v218-rs{display:flex;flex-direction:column;border:1px solid #e4e7ec;border-radius:14px;background:#fff;max-height:70vh;min-height:300px;overflow:hidden}.v218-rs-top{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid #eaecf0;font-size:14px}.v218-rs-x{margin-left:auto;border:0;background:none;font-size:20px;color:#667085;cursor:pointer}.v218-rs-note{padding:8px 14px;font-size:10px;color:#667085;background:#fcfcfd;border-bottom:1px solid #f2f4f7}.v218-rs-list{overflow:auto;flex:1}.v218-rs-f{border-bottom:1px solid #f2f4f7}.v218-rs-f.on{background:#fbfbfc}.v218-rs-head{display:flex;gap:10px;align-items:center;padding:11px 14px;cursor:pointer;font-size:13px}.v218-rs-head input{width:16px;height:16px;accent-color:#c42770}.v218-rs-body{display:grid;gap:7px;padding:0 14px 12px 40px}.v218-rs-op{border:1px solid #c42770;border-radius:6px;padding:7px 8px;font:inherit;font-size:12px;background:#fff}.v218-rs-foot{display:flex;justify-content:center;gap:8px;padding:12px;border-top:1px solid #eaecf0}
+  .modal.v218-wide{width:min(1320px,100%)}.v218-assign{display:grid;gap:12px}.v218-assign-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;align-items:start}.v218-assign-grid.no-panel{grid-template-columns:1fr}.v218-assign-side{position:sticky;top:0}.v218-tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.v218-tools .input{flex:1;min-width:200px}.v218-meta{display:flex;gap:8px;align-items:center;font-size:10px;color:#667085;margin:8px 0}.v218-units{display:grid;gap:6px;max-height:52vh;overflow:auto;padding:2px}.v218-unit{display:grid;grid-template-columns:22px 1fr auto;gap:9px;align-items:center;border:1px solid #e5e7eb;border-radius:11px;padding:9px 10px;background:#fff;cursor:pointer}.v218-unit.selected{border-color:#d780aa;background:#fff8fb}.v218-unit.assigned{background:#f9fafb}.v218-unit-main b{display:block;font-size:12px;color:#172033}.v218-unit-main span{display:block;font-size:10px;color:#667085;margin-top:2px}.v218-unit-side{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;max-width:280px}.v218-more{margin:6px auto}.v218-span2{grid-column:span 2}.v218-summary{border:1px dashed #d780aa;background:#fff8fb;border-radius:12px;padding:10px 13px;font-size:12px;color:#344054}
+  .v218-toolbar{flex-wrap:wrap;gap:10px}.v218-filters{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.v218-filter{display:grid;gap:3px;min-width:190px}.v218-filter label{font-size:9px;font-weight:900;color:#667085;text-transform:uppercase;letter-spacing:.04em}
+  .v218-cell{display:flex;gap:7px;align-items:flex-start;padding-left:calc(var(--d,0)*24px)}.v218-tog{width:20px;height:20px;flex:0 0 20px;border:1px solid #98a2b3;border-radius:4px;background:#fff;color:#344054;font-weight:900;font-size:13px;line-height:16px;padding:0;cursor:pointer;margin-top:2px}.v218-tog:hover{border-color:#c42770;color:#c42770}.v218-tog-sp{width:20px;flex:0 0 20px}.v218-name-wrap{min-width:0;flex:1}.v218-link{cursor:pointer}.v218-link:hover{color:#c42770;text-decoration:underline}.v218-add{opacity:0;border:1px solid #e4e7ec;background:#fff;border-radius:6px;color:#c42770;font-weight:900;cursor:pointer;width:24px;height:22px;flex:0 0 auto}.v218-tr:hover .v218-add{opacity:1}.v218-child{background:#fcfcfd}.v218-child td{border-top-color:#f2f4f7}.v218-dim{opacity:.55}.v218-tree-table th:first-child{min-width:380px}.v218-tree-table th:last-child{min-width:300px}
+  .top-search{position:relative}.top-search #globalSearch{padding-right:112px}.v218-adv-btn{position:absolute;right:34px;top:50%;transform:translateY(-50%);border:1px solid #ffffff55;background:#ffffff22;color:#fff;border-radius:999px;padding:4px 10px;font-size:10px;font-weight:900;cursor:pointer;white-space:nowrap}.v218-adv-btn:hover{background:#ffffff38}
+  .v218-adv{display:grid;gap:12px}.v218-adv-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.v218-adv-bar .input{flex:1;min-width:220px}.v218-adv-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:12px;align-items:start}.v218-adv-grid.no-panel{grid-template-columns:1fr}.v218-adv-side{position:sticky;top:10px}.v218-adv-table-wrap{overflow:auto;max-height:72vh}.v218-adv-table th{position:sticky;top:0;background:#fafafa;z-index:1}.v218-adv-note{margin:0}
+  @media(max-width:1000px){.v218-assign-grid,.v218-adv-grid{grid-template-columns:1fr}.v218-assign-side,.v218-adv-side{position:static}.v218-span2{grid-column:auto}.v218-adv-btn{position:static;transform:none;margin-left:6px}}`;
+  const old=document.getElementById("v218Styles");if(old)old.remove();const st=document.createElement("style");st.id="v218Styles";st.textContent=css;document.head.appendChild(st);
+}catch(e){log("styles",e)}
+
+try{const bd=el("buildBadge");if(bd)bd.textContent=BUILD;document.title=`MEGA Engineering | Project Design Control ${BUILD}`}catch(_){}
+try{if(S.view==="project")renderView()}catch(_){}
+console.info(`[${BUILD}] loaded`);
+})()}catch(e){try{console.error("[V20.18] could not load",e)}catch(_){}}
 </script>
 </body>
 </html>
