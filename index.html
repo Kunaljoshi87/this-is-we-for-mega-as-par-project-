@@ -1,10 +1,53 @@
 <!DOCTYPE html>
+<!--
+========================================================================
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21
+========================================================================
+ HOW TO INSTALL
+   1. Open the widget code in Zoho Creator.
+   2. Delete ALL old code.
+   3. Paste this whole file and save. The badge at the top shows "V21".
+
+ HOW THE CODE IS ORGANISED (top to bottom)
+   STYLE block        All screen styles.
+   SCRIPT 1           Main widget (V17 base -> V20.14). Projects, designs,
+                      assignments, revisions, files, workflow, PDS,
+                      dependencies, emails, universal search, start-up.
+                      V21 removed only the older duplicate copies of
+                      functions that were never used (each place is marked
+                      "[V21 clean-up]"). Nothing that runs was changed.
+   SCRIPT megaV217    V20.17 layer: "Working as" person, roles, workflow
+                      permissions, date rules, progress roll-up, safe
+                      saves, email retry, reassign, error guards.
+                      >>> Settings: MEGA_V217_SETTINGS (ROLES, LEFT people).
+   SCRIPT megaV218    V20.19 layer: Zoho-style view menu, Group By, filter
+                      drawer, [+] task tree, multi-select Assigned To,
+                      dependent filters in Assign Scope / PDS, Advanced
+                      Search.
+   SCRIPT megaV21     V21 layer: instant first screen (saved copy),
+                      changed-only refresh, outbox for bulk jobs and
+                      emails, duplicate check before saving, field check
+                      at start-up, top status bar, System Health section.
+
+ SAFETY DESIGN
+   - Each layer replaces functions only if they exist, and wraps every
+     part in try/catch. A failing part is skipped and logged in the
+     browser console ([V20.17], [V20.19], [V21]); the rest keeps working.
+   - Nothing in the widget deletes Zoho data except the existing
+     "delete dependency" action.
+   - Data saved on the computer (localStorage) is only a fast preview.
+     Live Zoho data always replaces it, and saving is paused until the
+     live data has arrived.
+
+ NO NEW CREATOR FIELDS, FORMS, PERMISSIONS OR DELUGE SCRIPTS ARE NEEDED.
+========================================================================
+-->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V20.19</title>
+<title>MEGA Engineering | Project Design Control V21</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -230,7 +273,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V20.19</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -333,7 +376,7 @@ const CONFIG={
   SYNC_ASSIGNMENT_START:true,
   PAGE_SIZE:100,
   MAX_BATCH:5000,
-  ALERT_REFRESH_MS:60000,
+  ALERT_REFRESH_MS:180000,   // V21: background refresh every 3 minutes (saves Zoho API calls)
   READ_TIMEOUT_MS:20000,
   WRITE_TIMEOUT_MS:45000,
   FILE_TIMEOUT_MS:120000,
@@ -1200,7 +1243,7 @@ function revisionsForAssignment(a){if(!a)return[];const prefix=executionPrefix(i
 function currentRevision(a){const rows=revisionsForAssignment(a);return rows.length?rows[rows.length-1]:null}
 function isHistoricalRevision(r,a){const cur=currentRevision(a);return r&&cur&&idOf(r)!==idOf(cur)}
 function employeeNameFor(value){const v=String(value||"");const e=S.employees.find(x=>String(x.email||"").toLowerCase()===v.toLowerCase()||String(x.id||"")===v);return e?.name||v}
-function personDisplay(value){const raw=scalar(value).trim();if(!raw)return"";const e=S.employees.find(x=>String(x.email||"").toLowerCase()===raw.toLowerCase()||String(x.id||"")===raw);return e?.name||raw}
+/* [V21 clean-up] older copy of personDisplay() removed - the newer copy below is the one that always ran */
 // currentUserMatches(): compares email/ID/name to logged-in user. In POC it is used only for My Work / My Team filtering, not permissions.
 function currentUserMatches(value){const raw=scalar(value).trim().toLowerCase(),me=String(S.user||"").trim().toLowerCase();if(!raw||!me)return false;if(raw===me||raw.includes(me))return true;const emp=S.employees.find(e=>String(e.email||"").toLowerCase()===me);return emp?raw===String(emp.id||"").toLowerCase()||raw===String(emp.name||"").toLowerCase():false}
 /* ================= V17.14: EMAIL / ACTIVITY / SMART ALERT HELPERS ================= */
@@ -1403,27 +1446,19 @@ async function ensureUniversalSearchSources(){
   if(!Array.isArray(S.pds.summary)){try{await ensurePdsData("all")}catch(e){console.warn("Universal PDS search source failed",e);S.search.error=[S.search.error,`PDS search source: ${errorText(e)}`].filter(Boolean).join(" | ")}}
 }
 async function openUniversalSearch(query){const q=String(query||"").trim();S.globalSearch=q;if(!q){if(S.view==="search")S.view=S.search.returnView||"home";return renderView()}if(S.view!=="search")S.search.returnView=S.view==="detail"?(S.previousView||"home"):S.view;S.view="search";S.search.loading=true;S.search.error="";renderView();try{await ensureUniversalSearchSources();S.search.lastLoadedQuery=q}finally{S.search.loading=false;renderView()}}
-function relatedAssignmentsForEquipment(e){return S.assignments.filter(a=>pdsSameValue(scalar(a[AF.projectCode]),e.project)&&((e.tag&&pdsSameValue(scalar(a[AF.tagNo]),e.tag))||(!e.tag&&e.name&&pdsSameValue(scalar(a[AF.equipmentName]),e.name))))}
+/* [V21 clean-up] older copy of relatedAssignmentsForEquipment() removed - the newer copy below is the one that always ran */
 function relatedPdsRowsForEquipment(e){return (S.pds.summary||[]).filter(r=>pdsSameValue(pdsScopeValue(r,"project"),e.project)&&((e.tag&&pdsSameValue(pdsScopeValue(r,"tag"),e.tag))||(!e.tag&&e.name&&pdsSameValue(pdsScopeValue(r,"equipmentName"),e.name))))}
 function pdsTypesForRows(rows){const set=new Set();for(const r of rows||[]){const k=pdsRelatedTypeKey(r);if(k)set.add(pdsTypeLabel(k));else for(const t of pdsAssignableTypes())if(pdsStatusValue(r,t.key))set.add(t.label)}return [...set]}
-function universalSearchResults(q){
-  const equipment=S.equipment.filter(e=>textMatchesQuery([e.project,e.tag,e.name,e.plantSection,e.plantSectionType,e.groupCode,e.department,e.equipmentCategory,e.equipmentType],q));
-  const assignments=S.assignments.filter(a=>textMatchesQuery([scalar(a[AF.projectCode]),scalar(a[AF.tagNo]),scalar(a[AF.equipmentName]),scalar(a[AF.plantSection]),scalar(a[AF.plantSectionType]),scalar(a[AF.groupCode]),scalar(a[AF.department]),scalar(a[AF.equipmentCategory]),scalar(a[AF.equipmentType]),scalar(a[AF.designType]),scalar(a[AF.designTitle]),scalar(a[AF.drawingNumber]),scalar(a[AF.status]),assignmentDisplayUser(a),assignmentByDisplay(a),scopeSummary(a),drawingForAssignment(a).name,drawingForAssignment(a).short],q));
-  const revisions=S.revisions.filter(r=>textMatchesQuery([scalar(r[AF.projectCode]),scalar(r[AF.tagNo]),scalar(r[AF.equipmentName]),scalar(r[AF.designType]),scalar(r[AF.designTitle]),scalar(r[AF.drawingNumber]),scalar(r[AF.revision]),scalar(r[AF.revisionDescription]),scalar(r[AF.status]),...creatorFileEntries(r[AF.drawingFile]).map(x=>x.filename),...creatorFileEntries(r[AF.nativeFile]).map(x=>x.filename),...creatorFileEntries(r[AF.supportingFile]).map(x=>x.filename)],q));
-  const pds=(S.pds.summary||[]).filter(r=>textMatchesQuery(deepRecordText(r),q));
-  const projects=S.projects.filter(p=>textMatchesQuery([p.code,p.name],q));
-  const drawings=S.drawings.filter(d=>textMatchesQuery([d.name,d.short,d.type],q));
-  return {equipment,assignments,revisions,pds,projects,drawings};
-}
+/* [V21 clean-up] older copy of universalSearchResults() removed - the newer copy below is the one that always ran */
 function searchDetail(k,v){return v?`<div class="search-detail"><div class="k">${h(k)}</div><div class="v">${h(v)}</div></div>`:""}
 function renderEquipmentSearchCard(e,q){const rel=relatedAssignmentsForEquipment(e),pdsRows=relatedPdsRowsForEquipment(e),types=pdsTypesForRows(pdsRows),exact=nk(e.tag)===nk(q);return `<div class="search-result-card ${exact?"exact":""}"><div class="search-result-title"><div><h3>${h(e.tag||e.name||"Equipment")}${e.name&&e.tag?` — ${h(e.name)}`:""}</h3><div class="search-result-sub">Project ${h(e.project||"—")}${exact?" • Exact Tag match":""}</div></div><div class="actions"><span class="pill brand">${rel.length} assignment${rel.length===1?"":"s"}</span><span class="pill purple">${pdsRows.length} PDS row${pdsRows.length===1?"":"s"}</span></div></div><div class="search-detail-grid">${searchDetail("Plant Section",e.plantSection)}${searchDetail("Section Type",e.plantSectionType)}${searchDetail("Group",e.groupCode)}${searchDetail("Department",e.department)}${searchDetail("Category",e.equipmentCategory)}${searchDetail("Equipment Type",e.equipmentType)}${searchDetail("Project",e.project)}${searchDetail("PDS Types",types.join(", "))}</div>${rel.length?`<div class="search-related">${rel.slice(0,8).map(a=>`<button class="btn sm" data-open-assignment="${h(idOf(a))}">${h(drawingForAssignment(a).short||drawingForAssignment(a).name)} • ${h(assignmentDisplayUser(a))} • ${h(scalar(a[AF.status])||"Not Started")}</button>`).join("")}</div>`:`<div class="tiny muted" style="margin-top:9px">No Design_Tracking assignment currently exists for this tag/equipment.</div>`}</div>`}
-function renderAssignmentSearchCard(a){const d=drawingForAssignment(a),r=currentRevision(a);return `<div class="search-result-card"><div class="search-result-title"><div><h3>${h(scalar(a[AF.tagNo])||d.name||"Assignment")}${scalar(a[AF.equipmentName])?` — ${h(scalar(a[AF.equipmentName]))}`:""}</h3><div class="search-result-sub">Project ${h(scalar(a[AF.projectCode]))} • ${h(d.name)} • Level ${num(a[AF.assignmentLevel])}</div></div>${statusPill(scalar(a[AF.status]))}</div><div class="search-detail-grid">${searchDetail("Assigned To",assignmentDisplayUser(a))}${searchDetail("Assigned By",assignmentByDisplay(a))}${searchDetail("Responsibility",scopeSummary(a))}${searchDetail("PDS / Design Type",scalar(a[AF.designType]))}${searchDetail("Target",displayDate(a[AF.targetDate]))}${searchDetail("Priority",scalar(a[AF.priority]))}${searchDetail("Current Revision",r?`${scalar(r[AF.revision])||"R0"} • ${scalar(r[AF.status])||"Not Started"}`:"Not started")}${searchDetail("Drawing No",scalar(r?.[AF.drawingNumber])||scalar(a[AF.drawingNumber]))}</div><div class="search-related"><button class="btn primary sm" data-open-assignment="${h(idOf(a))}">Open full work</button><button class="btn sm" data-drawer-assignment="${h(idOf(a))}">Quick view</button></div></div>`}
-function renderPdsSearchCard(r){const type=pdsRelatedTypeKey(r),tag=pdsScopeValue(r,"tag"),name=pdsScopeValue(r,"equipmentName"),project=pdsScopeValue(r,"project");return `<div class="search-result-card"><div class="search-result-title"><div><h3>${h(tag||name||"PDS Record")}${tag&&name?` — ${h(name)}`:""}</h3><div class="search-result-sub">Project ${h(project||"—")} • ${h(type?pdsTypeLabel(type):"PD Sheet")}</div></div>${type?pdsStatusPill(pdsStatusValue(r,type)):""}</div><div class="search-detail-grid">${searchDetail("Plant Section",pdsScopeValue(r,"plantSection"))}${searchDetail("Section Type",pdsScopeValue(r,"plantSectionType"))}${searchDetail("Group",pdsScopeValue(r,"groupCode"))}${searchDetail("Department",pdsScopeValue(r,"department"))}${searchDetail("Category",pdsScopeValue(r,"category"))}${searchDetail("Equipment Type",pdsScopeValue(r,"equipmentType"))}${searchDetail("Section Ref",pdsScopeValue(r,"sectionRef"))}${searchDetail("Source ID",idOf(r))}</div></div>`}
+/* [V21 clean-up] older copy of renderAssignmentSearchCard() removed - the newer copy below is the one that always ran */
+/* [V21 clean-up] older copy of renderPdsSearchCard() removed - the newer copy below is the one that always ran */
 function renderUniversalSearch(){const q=S.globalSearch.trim();if(!q){S.view=S.search.returnView||"home";return renderView()}if(S.search.loading){$("page").innerHTML=`<div class="search-loading"><div class="spinner" style="margin:0 auto 10px"></div><strong>Searching all Design Control data…</strong><div class="tiny" style="margin-top:4px">Loading Equipment and PD Sheet only because Universal Search is being used.</div></div>`;return}const z=universalSearchResults(q),total=z.equipment.length+z.assignments.length+z.revisions.length+z.pds.length+z.projects.length+z.drawings.length;$("page").innerHTML=`<div class="search-page"><section class="hero" style="margin-bottom:0"><div><h2>Universal Search</h2><p>Results for <b>${h(q)}</b>. Search includes Tag Number, Equipment, Project, Drawing, assignment scope, employee, status, PDS and revision/file names.</p>${S.search.error?`<div class="tiny" style="color:var(--red);margin-top:6px">${h(S.search.error)}</div>`:""}</div><div class="hero-badge"><div class="n">${total}</div><div class="l">MATCHING RECORDS</div></div></section><div class="search-summary"><div class="mini-stat"><div class="n">${z.equipment.length}</div><div class="l">EQUIPMENT / TAGS</div></div><div class="mini-stat"><div class="n">${z.assignments.length}</div><div class="l">ASSIGNMENTS</div></div><div class="mini-stat"><div class="n">${z.pds.length}</div><div class="l">PDS SOURCE ROWS</div></div><div class="mini-stat"><div class="n">${z.revisions.length}</div><div class="l">REVISIONS</div></div></div>${z.equipment.length?`<section class="search-result-section"><div class="search-result-head"><div><b>Tag / Equipment Details</b><div class="tiny muted">Master Equipment List + related Design Tracking + PDS</div></div><span class="pill brand">${z.equipment.length}</span></div><div class="search-result-body"><div class="search-result-list">${z.equipment.slice(0,50).map(e=>renderEquipmentSearchCard(e,q)).join("")}</div>${z.equipment.length>50?`<div class="tiny muted" style="margin-top:8px">Showing first 50 of ${z.equipment.length} equipment matches.</div>`:""}</div></section>`:""}${z.assignments.length?`<section class="search-result-section"><div class="search-result-head"><b>Design / Assignment Results</b><span class="pill">${z.assignments.length}</span></div><div class="search-result-body"><div class="search-result-list">${z.assignments.slice(0,50).map(renderAssignmentSearchCard).join("")}</div></div></section>`:""}${z.pds.length?`<section class="search-result-section"><div class="search-result-head"><b>PDS Source Results</b><span class="pill purple">${z.pds.length}</span></div><div class="search-result-body"><div class="search-result-list">${z.pds.slice(0,30).map(renderPdsSearchCard).join("")}</div></div></section>`:""}${(z.projects.length||z.drawings.length||z.revisions.length)?`<section class="search-result-section"><div class="search-result-head"><b>Other Matches</b></div><div class="search-result-body"><div class="search-related">${z.projects.slice(0,10).map(p=>`<span class="pill">Project ${h(p.code)}${p.name?` • ${h(p.name)}`:""}</span>`).join("")}${z.drawings.slice(0,10).map(d=>`<span class="pill brand">${h(d.short||d.name)} • ${h(d.name)}</span>`).join("")}${z.revisions.slice(0,15).map(r=>`<span class="pill purple">${h(scalar(r[AF.revision])||"Revision")} • ${h(scalar(r[AF.drawingNumber])||scalar(r[AF.designTitle])||"Design")}</span>`).join("")}</div></div></section>`:""}${!total?`<div class="empty"><div class="ico">⌕</div><strong>No result found</strong>Try Tag Number, Project Code, Equipment Name, Drawing, Plant Section, Department, person or status.</div>`:""}</div>`}
 
 function assignmentUser(a){return scalar(a?.[AF.assignedTo])||"Unassigned"}
-function assignmentDisplayUser(a){return scalar(a?.[AF.assignedEmployeeName])||personDisplay(a?.[AF.assignedTo])||"Unassigned"}
-function assignmentByDisplay(a){return personDisplay(a?.[AF.assignedBy])||scalar(a?.[AF.assignedBy])||"—"}
+/* [V21 clean-up] older copy of assignmentDisplayUser() removed - the newer copy below is the one that always ran */
+/* [V21 clean-up] older copy of assignmentByDisplay() removed - the newer copy below is the one that always ran */
 function scopeSummary(a){if(!a)return"Entire Project";const stored=scalar(a[AF.responsibility]);if(stored)return stored;const bits=[];for(const c of CRITERIA){if(c.key==="tag"){const t=scalar(a[AF.tagNo]),n=scalar(a[AF.equipmentName]);if(t||n)bits.push(`Tag: ${[t,n].filter(Boolean).join(" — ")}`)}else{const v=scalar(a[c.field]);if(v)bits.push(`${c.label}: ${v}`)}}return bits.length?bits.join(" • "):"Entire Project"}
 function assignmentCriteria(a){return scalar(a?.[AF.criteria])||"Project"}
 function assignmentChildren(id,rows=S.assignments){return rows.filter(a=>scalar(a[AF.assignedFrom])===String(id))}
@@ -1440,7 +1475,7 @@ function currentExecutionLabel(a){const r=currentRevision(a);return r?`${scalar(
 function searchMatchAssignment(a,q){if(!q)return true;const d=drawingForAssignment(a);const hay=[scalar(a[AF.projectCode]),d.name,d.short,scalar(a[AF.designType]),assignmentDisplayUser(a),assignmentByDisplay(a),scopeSummary(a),assignmentCriteria(a),scalar(a[AF.tagNo]),scalar(a[AF.equipmentName])].join(" ").toLowerCase();return hay.includes(q.toLowerCase())}
 function assignmentDueClass(a){if(isClosedAssignment(a))return"completed";const diff=dateDiffDays(toInputDate(a[AF.targetDate]));if(diff!=null&&diff<0)return"overdue";if(scalar(a[AF.status])==="In Progress")return"inprogress";return""}
 function assignmentDueText(a){const iso=toInputDate(a[AF.targetDate]);const diff=dateDiffDays(iso);if(!iso)return"No target";if(isClosedAssignment(a))return displayDate(iso);if(diff<0)return `${Math.abs(diff)} day${Math.abs(diff)===1?"":"s"} overdue`;if(diff===0)return"Due today";if(diff<=7)return`Due in ${diff} day${diff===1?"":"s"}`;return displayDate(iso)}
-function primaryAssignmentFor(project,drawing){return S.assignments.find(a=>scalar(a[AF.projectCode])===project.code&&(scalar(a[AF.drawingMasterId])===drawing.id||scalar(a[AF.drawingDocument])===drawing.name)&&num(a[AF.assignmentLevel],-1)===0&&!scalar(a[AF.assignedFrom]))||null}
+/* [V21 clean-up] older copy of primaryAssignmentFor() removed - the newer copy below is the one that always ran */
 
 /* ================= V17.12: LOGICAL WORK ARCHITECTURE ===================
    IMPORTANT BUSINESS RULE:
@@ -2280,10 +2315,10 @@ function employeeOptions(value="",blank="Select team member…"){
 function projectOptions(value=""){return `<option value="">Select project…</option>`+S.projects.map(p=>`<option value="${h(p.id)}" ${p.id===value?"selected":""}>${h(p.code)}${p.name?` — ${h(p.name)}`:""}</option>`).join("")}
 function drawingOptions(value=""){return `<option value="">Select drawing / document…</option>`+S.drawings.map(d=>`<option value="${h(d.id)}" ${d.id===value?"selected":""}>${h(d.name)}${d.short?` (${h(d.short)})`:""}</option>`).join("")}
 function setView(v){if(S.view!=="detail"&&S.view!=="search")S.previousView=S.view;if(v!=="search"&&S.view==="search"){S.globalSearch="";if($("globalSearch"))$("globalSearch").value=""}S.view=v;document.querySelectorAll(".navtab").forEach(b=>b.classList.toggle("active",b.dataset.view===v));renderView()}
-function renderView(){document.querySelectorAll(".navtab").forEach(b=>b.classList.toggle("active",b.dataset.view===S.view));if(S.view==="home")renderHome();else if(S.view==="mine")renderMyWork();else if(S.view==="team")renderMyTeam();else if(S.view==="projects")renderProjects();else if(S.view==="new")renderNewAssignment();else if(S.view==="detail")renderDetailPage();else if(S.view==="search")renderUniversalSearch();requestAnimationFrame(updateNotificationBell)}
+/* [V21 clean-up] older copy of renderView() removed - the newer copy below is the one that always ran */
 
 // myAssignments(): records assigned directly to the logged-in user for the My Work view.
-function myAssignments(){return S.assignments.filter(a=>currentUserMatches(a[AF.assignedTo]))}
+/* [V21 clean-up] older copy of myAssignments() removed - the newer copy below is the one that always ran */
 // myDirectDelegations(): records the logged-in user assigned further for the My Team view.
 function myDirectDelegations(){return S.assignments.filter(a=>{const parent=assignmentById(scalar(a[AF.assignedFrom]));return currentUserMatches(a[AF.assignedBy])||(parent&&currentUserMatches(parent[AF.assignedTo]))})}
 function renderWorkCard(a){const d=drawingForAssignment(a),r=currentRevision(a),cls=assignmentDueClass(a);return `<div class="work-card ${cls}"><div class="work-top"><div class="doc-badge">${h(d.short||"DOC")}</div><div class="work-main"><div class="work-title">${h(d.name)}</div><div class="work-project">Project ${h(scalar(a[AF.projectCode]))} • ${h(assignmentCriteria(a))}</div></div>${statusPill(scalar(a[AF.status]))}</div><div class="scope">${h(scopeSummary(a))}</div><div class="work-meta"><div><span>Assigned by</span><strong>${h(assignmentByDisplay(a))}</strong></div><div><span>Target</span><strong>${h(assignmentDueText(a))}</strong></div></div><div class="work-foot">${r?`<span class="rev-chip">${h(scalar(r[AF.revision])||"R0")} · ${h(scalar(r[AF.status])||"Not Started")}</span>`:'<span class="rev-chip">No design started</span>'}<div class="actions"><button class="btn sm" data-drawer-assignment="${h(idOf(a))}">Quick view</button><button class="btn sm primary" data-open-assignment="${h(idOf(a))}">Open work</button></div></div></div>`}
@@ -2291,25 +2326,18 @@ function renderWorkCard(a){const d=drawingForAssignment(a),r=currentRevision(a),
    Renders Home, My Work, My Team, Projects and New Assignment screens.
    ======================================================================= */
 // renderHome(): builds the user dashboard and priority-work cards.
-function renderHome(){const mine=myAssignments(),active=mine.filter(a=>!isClosedAssignment(a)),inProg=mine.filter(a=>scalar(a[AF.status])==="In Progress"),overdue=mine.filter(a=>{const d=dateDiffDays(toInputDate(a[AF.targetDate]));return d!=null&&d<0&&!isClosedAssignment(a)}),completed=mine.filter(a=>scalar(a[AF.status])==="Completed"),q=S.globalSearch.trim().toLowerCase();const attention=mine.filter(a=>searchMatchAssignment(a,q)).sort((a,b)=>{const ad=dateDiffDays(toInputDate(a[AF.targetDate]));const bd=dateDiffDays(toInputDate(b[AF.targetDate]));return (ad??9999)-(bd??9999)}).slice(0,6);$("page").innerHTML=`<section class="hero"><div><h2>${h(greeting())}, ${h(personDisplay(S.user)||"Team Member")}</h2><p>See what needs your attention, continue design work, upload drawings, track revisions and delegate responsibility without opening the large Creator form.</p></div><div class="hero-badge"><div class="n">${active.length}</div><div class="l">ACTIVE RESPONSIBILITIES</div></div></section><section class="metrics"><div class="metric"><div class="metric-icon brand">✓</div><div><div class="num">${mine.length}</div><div class="label">Assigned to me</div></div></div><div class="metric"><div class="metric-icon blue">↻</div><div><div class="num">${inProg.length}</div><div class="label">In progress</div></div></div><div class="metric"><div class="metric-icon amber">!</div><div><div class="num">${overdue.length}</div><div class="label">Overdue</div></div></div><div class="metric"><div class="metric-icon green">✓</div><div><div class="num">${completed.length}</div><div class="label">Completed</div></div></div></section>${renderSmartAlertCenter(mine)}<div class="section-row"><div><h2>My priority work</h2><p>Nearest target dates are shown first.</p></div><button class="btn sm" data-view-jump="mine">View all my work</button></div>${attention.length?`<div class="cards">${attention.map(renderWorkCard).join("")}</div>`:`<div class="empty"><div class="ico">✓</div><strong>No work needs attention</strong>Your assigned drawing responsibilities will appear here.</div>`}<div class="section-row"><div><h2>My team activity</h2><p>Responsibilities you assigned further.</p></div><button class="btn sm" data-view-jump="team">View my team</button></div>${renderTeamPreview()}`}
+/* [V21 clean-up] older copy of renderHome() removed - the newer copy below is the one that always ran */
 function greeting(){const h=new Date().getHours();return h<12?"Good morning":h<17?"Good afternoon":"Good evening"}
 function renderTeamPreview(){
   const groups=groupAssignments().filter(g=>myDirectDelegations().some(a=>groupKey(a)===g.key)).slice(0,4);
   if(!groups.length)return`<div class="empty compact"><strong>No delegated work yet</strong>Open one of your assignments and use <b>Assign Further</b>.</div>`;
   return `<div class="panel"><div class="panel-body"><div class="child-list">${groups.map(g=>{const st=myTeamGroupStats(g),d=groupDrawing(g),names=st.engineers.slice(0,3).join(", ");return `<div class="child-row"><div class="doc-badge">${h(d.short||"DOC")}</div><div class="main"><div class="name">${h(d.name)}</div><div class="sc">Project ${h(g.projectCode)} • ${st.total} current work item${st.total===1?"":"s"}${names?` • ${h(names)}`:""}</div></div><span class="pill">${st.engineers.length} engineer${st.engineers.length===1?"":"s"}</span><button class="btn sm" data-open-group="${h(g.key)}">Open</button></div>`}).join("")}</div></div></div>`}
 
-function renderMyWork(){const q=S.globalSearch.trim().toLowerCase(),rows=myAssignments().filter(a=>searchMatchAssignment(a,q)).sort((a,b)=>{const ad=dateDiffDays(toInputDate(a[AF.targetDate]));const bd=dateDiffDays(toInputDate(b[AF.targetDate]));return (ad??9999)-(bd??9999)});$("page").innerHTML=`<div class="section-row"><div><h2>My Work</h2><p>Every responsibility assigned directly to you. Open a card to update status, work on files, revisions or assign further.</p></div><span class="pill brand">${rows.length} assignments</span></div>${rows.length?`<div class="cards">${rows.map(renderWorkCard).join("")}</div>`:`<div class="empty"><div class="ico">⌁</div><strong>No assignments found</strong>${S.globalSearch?"Try another search.":"Work assigned to you will appear here."}</div>`}`}
+/* [V21 clean-up] older copy of renderMyWork() removed - the newer copy below is the one that always ran */
 
-function renderMyTeam(){
-  const q=S.globalSearch.trim().toLowerCase(),groups=groupAssignments().filter(g=>myDirectDelegations().some(a=>groupKey(a)===g.key)).filter(g=>{const d=groupDrawing(g),st=myTeamGroupStats(g),hay=[g.projectCode,d.name,d.short,...st.engineers].join(" ").toLowerCase();return !q||hay.includes(q)});
-  ensurePdsSummaryForDashboard(groups);
-  $("page").innerHTML=`<div class="section-row"><div><h2>My Team</h2><p>One card per Project + Drawing. Counts show current logical work and unique engineers, not raw Design_Tracking rows.</p></div><span class="pill brand">${groups.length} drawing${groups.length===1?"":"s"}</span></div>${groups.length?`<div class="group-grid">${groups.map(g=>{const st=myTeamGroupStats(g),d=groupDrawing(g),names=st.engineers.slice(0,5);return `<div class="group-card"><div class="group-head"><div class="doc-badge">${h(d.short||"DOC")}</div><div class="group-main"><div class="group-title">${h(d.name)}</div><div class="group-sub">Project ${h(g.projectCode)}</div></div><span class="pill">${st.engineers.length} current engineer${st.engineers.length===1?"":"s"}</span></div><div class="group-stats"><div class="mini-stat"><div class="n">${st.total}</div><div class="l">CURRENT WORK</div></div><div class="mini-stat"><div class="n">${st.completed}</div><div class="l">COMPLETED</div></div><div class="mini-stat"><div class="n">${st.progress}%</div><div class="l">AVG PROGRESS</div></div></div>${names.length?`<div class="engineer-line">Current engineers: <strong>${h(names.join(", "))}${st.engineers.length>5?` +${st.engineers.length-5} more`:""}</strong></div>`:""}<div style="margin-top:11px"><button class="btn sm primary" data-open-group="${h(g.key)}">Open structure</button></div></div>`}).join("")}</div>`:`<div class="empty"><div class="ico">♧</div><strong>No project design work found</strong>Open a Project and use <b>Assign Design</b> to create work.</div>`}`}
+/* [V21 clean-up] older copy of renderMyTeam() removed - the newer copy below is the one that always ran */
 
-function renderProjects(){
-  const q=S.globalSearch.trim().toLowerCase();
-  const groups=groupAssignments().filter(g=>{const d=groupDrawing(g),hay=[g.projectCode,d.name,d.short,g.root?assignmentDisplayUser(g.root):"",...g.rows.map(scopeSummary)].join(" ").toLowerCase();return !q||hay.includes(q)}).sort((a,b)=>String(b.projectCode).localeCompare(String(a.projectCode),undefined,{numeric:true}));
-  ensurePdsSummaryForDashboard(groups);
-  $("page").innerHTML=`<div class="section-row"><div><h2>Projects & Drawings</h2><p>Each Project + Drawing appears once. Counts are calculated from logical engineering work items; revisions and manager rows never inflate the totals.</p></div><span class="pill brand">${groups.length} drawings</span></div>${groups.length?`<div class="group-grid">${groups.map(renderGroupCard).join("")}</div>`:`<div class="empty"><div class="ico">▦</div><strong>No project drawings found</strong>${S.globalSearch?"Try another search.":"Create a primary assignment to start a project drawing structure."}</div>`}`}
+/* [V21 clean-up] older copy of renderProjects() removed - the newer copy below is the one that always ran */
 function renderGroupCard(g){
   const p=projectForCode(g.projectCode),d=groupDrawing(g),st=groupLogicalStats(g),revCount=g.rows.reduce((s,a)=>s+revisionsForAssignment(a).length,0),engineers=st.engineers||[];
   const loadingPds=st.isPds&&!st.sourceReady;
@@ -2328,17 +2356,17 @@ function familyPath(a){const rows=currentGroupRows(),map=new Map(rows.map(x=>[id
    ======================================================================= */
 // renderTree(): recursively renders the assignment family tree.
 function renderTree(){const rows=currentGroupRows(),root=primaryForRows(rows);if(!root)return`<div class="tree-empty">No primary assignment.</div>`;const q=(S.treeSearch||"").toLowerCase();const allowed=new Set();if(q){for(const r of rows){const hay=[assignmentDisplayUser(r),scopeSummary(r),assignmentCriteria(r)].join(" ").toLowerCase();if(hay.includes(q)){let cur=r;while(cur){allowed.add(idOf(cur));cur=assignmentById(scalar(cur[AF.assignedFrom]))}}}}else rows.forEach(r=>allowed.add(idOf(r)));const renderNode=r=>{const id=idOf(r),kids=assignmentChildren(id,rows).filter(k=>allowed.has(idOf(k))),open=S.expanded.has(id),active=idOf(S.current)===id,rev=currentRevision(r);return `<div class="tree-node"><div class="node-row ${active?"active":""}" data-node="${h(id)}"><button class="expander ${kids.length?"":"blank"}" data-expand="${h(id)}">${open?"−":"+"}</button><div class="avatar">${h(initials(assignmentDisplayUser(r)))}</div><div class="node-main"><div class="node-user">${h(assignmentDisplayUser(r))}</div><div class="node-scope">${h(scopeSummary(r))}</div></div><div class="node-side">${rev?`<span class="pill purple">${h(scalar(rev[AF.revision])||"R0")}</span>`:statusPill(scalar(r[AF.status]))}<div class="node-level">Level ${num(r[AF.assignmentLevel])}</div></div></div>${open&&kids.length?`<div class="tree-children">${kids.map(renderNode).join("")}</div>`:""}</div>`};return renderNode(root)}
-function renderDetailPage(){if(!S.current){S.view="home";return renderHome()}const a=S.current,d=S.drawing||drawingForAssignment(a),path=familyPath(a);$("page").innerHTML=`<div class="detail-shell"><aside class="panel tree-panel"><div class="tree-head"><div class="strong">Assignment Structure</div><div class="tiny muted" style="margin:2px 0 9px">Expand people and responsibilities. Click a node for Quick View.</div><div class="tree-search"><input id="treeSearch" class="input" placeholder="Search person / scope…" value="${h(S.treeSearch||"")}"></div></div><div id="treeArea" class="tree-scroll">${renderTree()}</div></aside><section class="detail-main"><div class="detail-hero"><div class="crumbs"><button data-back>← Back</button><span>›</span><span>Project ${h(scalar(a[AF.projectCode]))}</span><span>›</span><span>${h(d.short||d.name)}</span>${path.map(p=>`<span>›</span><button class="btn link sm" data-open-assignment="${h(idOf(p))}">${h(assignmentDisplayUser(p))}</button>`).join("")}</div><div class="detail-top"><div class="detail-title"><div class="doc-badge">${h(d.short||"DOC")}</div><div><h2>${h(d.name)}</h2><p>Project ${h(scalar(a[AF.projectCode]))} • ${h(assignmentDisplayUser(a))}'s responsibility</p></div></div><div class="detail-actions">${statusPill(scalar(a[AF.status]))}${currentRevision(a)?`<span class="pill purple">Current ${h(scalar(currentRevision(a)[AF.revision])||"R0")}</span>`:""}</div></div><div class="detail-meta"><span class="pill">Assigned by ${h(assignmentByDisplay(a))}</span><span class="pill">Level ${num(a[AF.assignmentLevel])}</span><span class="pill">Target ${h(displayDate(a[AF.targetDate]))}</span>${assignmentAlerts(a).length?`<span class="pill red">${assignmentAlerts(a).length} alert${assignmentAlerts(a).length===1?"":"s"}</span>`:""}</div></div><div class="subtabs"><button class="subtab ${S.detailTab==="overview"?"active":""}" data-detail-tab="overview">Overview</button><button class="subtab ${S.detailTab==="activity"?"active":""}" data-detail-tab="activity">Activity & Alerts</button>${isPdsDrawing(a)?`<button class="subtab ${S.detailTab==="pds"?"active":""}" data-detail-tab="pds">PDS Workspace</button>`:""}<button class="subtab ${S.detailTab==="files"?"active":""}" data-detail-tab="files">Design Files</button><button class="subtab ${S.detailTab==="revisions"?"active":""}" data-detail-tab="revisions">Revision History</button><button class="subtab ${S.detailTab==="delegate"?"active":""}" data-detail-tab="delegate">Assign Further</button></div><div id="detailTabBody">${renderDetailTab()}</div></section></div>`}
-function renderDetailTab(){if(S.detailTab==="activity")return renderActivityAlertsTab();if(S.detailTab==="pds")return renderPdsWorkspaceTab();if(S.detailTab==="files")return renderFilesTab();if(S.detailTab==="revisions")return renderRevisionTab();if(S.detailTab==="delegate")return renderDelegateTab();return renderOverviewTab()}
+/* [V21 clean-up] older copy of renderDetailPage() removed - the newer copy below is the one that always ran */
+/* [V21 clean-up] older copy of renderDetailTab() removed - the newer copy below is the one that always ran */
 function renderActivityAlertsTab(){const a=S.current;return `<div class="tab-card"><div class="section-row" style="margin-top:0"><div><h2>Smart alerts</h2><p>Calculated from Target Date, work status and current revision.</p></div></div>${renderAlertList(a)}<div class="section-row"><div><h2>Activity timeline</h2><p>Shows Creator audit/system events; persistent custom activity is added when Activity_Log exists.</p></div></div>${renderActivityTimeline(a)}</div>`}
-function renderOverviewTab(){const a=S.current,k=childStats(a),r=currentRevision(a),canEdit=true; /* POC OPEN ACCESS: show update/delegate controls to any permitted Creator user. */ return `<div class="tab-card"><div class="scope-box"><div class="k">RESPONSIBILITY</div><div class="v">${h(scopeSummary(a))}</div></div><div class="summary"><div class="summary-item"><div class="k">ASSIGNED TO</div><div class="v">${h(assignmentDisplayUser(a))}</div></div><div class="summary-item"><div class="k">ASSIGNED BY</div><div class="v">${h(assignmentByDisplay(a))}</div></div><div class="summary-item"><div class="k">START DATE</div><div class="v">${h(displayDate(a[AF.startDate]))}</div></div><div class="summary-item"><div class="k">TARGET DATE</div><div class="v">${h(displayDate(a[AF.targetDate]))}</div></div><div class="summary-item"><div class="k">STATUS</div><div class="v">${statusPill(scalar(a[AF.status]))}</div></div><div class="summary-item"><div class="k">PROGRESS</div><div class="v">${num(a[AF.progress])}%</div></div><div class="summary-item"><div class="k">CRITERIA</div><div class="v">${h(assignmentCriteria(a))}</div></div><div class="summary-item"><div class="k">END DATE</div><div class="v">${h(displayDate(a[AF.endDate]))}</div></div></div><div class="two-col"><div><div class="section-row" style="margin-top:0"><div><h2>Design execution</h2><p>Files, workflow and current revision for this responsibility.</p></div></div>${r?`<div class="exec-hero"><div class="exec-rev"><div class="rev-circle">${h(scalar(r[AF.revision])||"R0")}</div><div><h3>${h(scalar(r[AF.status])||"Not Started")}</h3><p>${h(scalar(r[AF.revisionDescription])||"No revision description")}</p></div></div><button class="btn sm primary" data-detail-tab="files">Open design</button></div>`:`<div class="empty compact"><strong>No design revision started</strong>${canEdit?`<div style="margin-top:9px"><button class="btn sm primary" data-detail-tab="files">Start R0</button></div>`:"The assignee can start R0 from Design Files."}</div>`}</div><div><div class="section-row" style="margin-top:0"><div><h2>Further assignments</h2><p>${k.total} responsibility${k.total===1?"":"ies"} below this node.</p></div>${canEdit?'<button class="btn sm soft" data-detail-tab="delegate">Assign Further</button>':""}</div>${k.total?`<div class="child-list">${assignmentChildren(idOf(a)).slice(0,5).map(c=>`<div class="child-row"><div class="avatar">${h(initials(assignmentDisplayUser(c)))}</div><div class="main"><div class="name">${h(assignmentDisplayUser(c))}</div><div class="sc">${h(scopeSummary(c))}</div></div>${statusPill(scalar(c[AF.status]))}</div>`).join("")}</div>`:`<div class="empty compact"><strong>No further assignment</strong>This responsibility has not been divided further.</div>`}</div></div><div class="actions" style="margin-top:14px">${canEdit?'<button class="btn" data-act="edit-assignment">Update status / progress</button>':""}<button class="btn" data-detail-tab="revisions">Revision history (${revisionsForAssignment(a).length})</button></div></div>`}
+/* [V21 clean-up] older copy of renderOverviewTab() removed - the newer copy below is the one that always ran */
 
 /* ================= V17.14: RIGHT-SIDE DETAIL DRAWER ================= */
 function drawerAssignment(){return assignmentById(S.drawer.assignmentId)}
 function openDetailDrawer(id,tab="overview"){const a=assignmentById(id);if(!a)return;S.drawer={open:true,assignmentId:String(id),tab};renderDetailDrawer()}
 function closeDetailDrawer(){S.drawer.open=false;S.drawer.assignmentId="";const d=$("detailDrawer"),b=$("drawerBackdrop");if(d)d.classList.remove("open");if(b)b.classList.remove("open");if(d)d.setAttribute("aria-hidden","true")}
 function renderDrawerBreadcrumbs(a){const path=[];let cur=a,guard=0;while(cur&&guard++<30){path.unshift(cur);const pid=scalar(cur[AF.assignedFrom]);cur=pid?assignmentById(pid):null}const d=drawingForAssignment(a);return `<div class="drawer-crumbs"><span class="drawer-crumb current">${h(scalar(a[AF.projectCode]))}</span><span>›</span><span class="drawer-crumb current">${h(d.short||d.name)}</span>${path.map((p,i)=>`<span>›</span><button class="drawer-crumb ${i===path.length-1?"current":""}" data-drawer-assignment="${h(idOf(p))}">${h(assignmentDisplayUser(p))}</button>`).join("")}</div>`}
-function renderDetailDrawer(){const a=drawerAssignment(),d=$("detailDrawer"),b=$("drawerBackdrop");if(!a||!d||!b)return closeDetailDrawer();const dr=drawingForAssignment(a),r=currentRevision(a),email=employeeEmailFor(a[AF.assignedTo]),alerts=assignmentAlerts(a);b.classList.add("open");d.classList.add("open");d.setAttribute("aria-hidden","false");$("drawerHead").innerHTML=`${renderDrawerBreadcrumbs(a)}<div class="drawer-head-top"><div><div class="drawer-sub">${h(dr.name)} • Project ${h(scalar(a[AF.projectCode]))}</div><div class="drawer-title">${h(assignmentDisplayUser(a))}</div><div class="drawer-sub">${h(scopeSummary(a))}</div></div><button class="drawer-close" data-drawer-close>×</button></div><div class="detail-meta" style="margin-top:10px"><span class="pill">Level ${num(a[AF.assignmentLevel])}</span>${statusPill(scalar(a[AF.status]))}${r?`<span class="pill purple">${h(scalar(r[AF.revision])||"R0")}</span>`:""}${alerts.length?`<span class="pill red">${alerts.length} alert${alerts.length===1?"":"s"}</span>`:""}</div>`;const tabs=["overview","activity","alerts"];$("drawerTabs").innerHTML=tabs.map(t=>`<button class="drawer-tab ${S.drawer.tab===t?"active":""}" data-drawer-tab="${t}">${t==="overview"?"Overview":t==="activity"?"Activity":"Alerts"}</button>`).join("");if(S.drawer.tab==="activity")$("drawerBody").innerHTML=renderActivityTimeline(a);else if(S.drawer.tab==="alerts")$("drawerBody").innerHTML=renderAlertList(a);else $("drawerBody").innerHTML=`<div class="scope-box"><div class="k">RESPONSIBILITY</div><div class="v">${h(scopeSummary(a))}</div></div><div class="summary" style="grid-template-columns:1fr 1fr;margin-top:12px"><div class="summary-item"><div class="k">ASSIGNED TO</div><div class="v">${h(assignmentDisplayUser(a))}</div></div><div class="summary-item"><div class="k">EMAIL</div><div class="v">${h(email||"—")}</div></div><div class="summary-item"><div class="k">ASSIGNED BY</div><div class="v">${h(assignmentByDisplay(a))}</div></div><div class="summary-item"><div class="k">TARGET</div><div class="v">${h(displayDate(a[AF.targetDate]))}</div></div><div class="summary-item"><div class="k">PROGRESS</div><div class="v">${num(a[AF.progress])}%</div></div><div class="summary-item"><div class="k">CURRENT DESIGN</div><div class="v">${r?h(`${scalar(r[AF.revision])||"R0"} • ${scalar(r[AF.status])||"Not Started"}`):"Not started"}</div></div></div>${alerts.length?`<div class="section-row"><div><h2>Needs attention</h2></div></div>${renderAlertList(a)}`:""}`;$("drawerActions").innerHTML=`<button class="btn primary" data-drawer-open-full="${h(idOf(a))}">Open full work</button><button class="btn soft" data-drawer-open-delegate="${h(idOf(a))}">Assign Further</button>`}
+/* [V21 clean-up] older copy of renderDetailDrawer() removed - the newer copy below is the one that always ran */
 
 /* =============== SECTION 12: DESIGN FILES / WORKFLOW ===================
    Controls R0/R1/R2 files, Checker/Reviewer/Approver and workflow statuses.
@@ -3154,29 +3182,17 @@ let demoSeq=500;function demoAdd(data){const id=(isAssignmentRecord(data)?"A":"R
    ====================================================================== */
 S.projectWorkspace={code:"",tab:"designs",viewMode:"list",status:"All",owner:"All",assignDraft:{mode:"Tag Wise",drawingId:"",section:"",sectionType:"",tag:"",user:"",priority:"Medium",start:todayIso(),target:"",end:"",remark:""}};
 
-function v18ProjectAssignments(code){return S.assignments.filter(a=>scalar(a[AF.projectCode])===String(code||""));}
+/* [V21 clean-up] older copy of v18ProjectAssignments() removed - the newer copy below is the one that always ran */
 function v18ProjectRevisions(code){return S.revisions.filter(r=>scalar(r[AF.projectCode])===String(code||""));}
 function v18OpenAssignments(rows){return rows.filter(a=>!isClosedAssignment(a));}
 function v18ProjectRoots(code){return v18ProjectAssignments(code).filter(a=>num(a[AF.assignmentLevel])===0);}
 function v18ProjectCurrentRevisions(code){return v18ProjectAssignments(code).map(a=>currentRevision(a)).filter(Boolean);}
-function v18ProjectStats(code){
-  const rows=v18ProjectAssignments(code), open=v18OpenAssignments(rows), roots=rows.filter(a=>num(a[AF.assignmentLevel])===0), completed=rows.filter(a=>scalar(a[AF.status])==="Completed");
-  const logical=rows.filter(a=>num(a[AF.assignmentLevel])>0 || !assignmentChildren(idOf(a)).length);
-  const base=logical.length?logical:rows;
-  const avg=base.length?Math.round(base.reduce((s,a)=>s+num(a[AF.progress]),0)/base.length):0;
-  const overdue=open.filter(a=>{const d=dateDiffDays(toInputDate(a[AF.targetDate]));return d!=null&&d<0;}).length;
-  const owners=[...new Set(roots.map(assignmentDisplayUser).filter(Boolean))];
-  return {rows,open,roots,completed,avg,overdue,owners,total:base.length};
-}
+/* [V21 clean-up] older copy of v18ProjectStats() removed - the newer copy below is the one that always ran */
 function v18ProjectForCode(code){return S.projects.find(p=>String(p.code)===String(code))||{code:String(code),name:""};}
 function v18ProjectCodes(){return [...new Set([...S.projects.map(p=>p.code).filter(Boolean),...S.assignments.map(a=>scalar(a[AF.projectCode])).filter(Boolean)])].sort((a,b)=>String(b).localeCompare(String(a),undefined,{numeric:true}));}
 function v18ProjectStatus(st){if(!st.rows.length)return '<span class="pill">No Design Work</span>';if(st.open.length)return '<span class="pill green">Active</span>';return '<span class="pill blue">Completed</span>';}
 
-function renderProjects(){
-  const q=S.globalSearch.trim().toLowerCase();
-  const codes=v18ProjectCodes().filter(code=>{const p=v18ProjectForCode(code),st=v18ProjectStats(code),hay=[code,p.name,...st.owners].join(" ").toLowerCase();return !q||hay.includes(q)});
-  $("page").innerHTML=`<div class="project-index-head"><div class="project-index-title"><h2>Projects</h2><p>Open a project to manage designs, scope assignments, documents, workflow, revisions and dependencies.</p></div><div class="actions"><span class="pill brand">${codes.length} projects</span><button class="btn primary" data-v18-global-assign>＋ Assign Design</button></div></div><div class="project-list"><table class="project-table"><thead><tr><th>Project Code</th><th>Project Name</th><th>Design Status</th><th>Design Work</th><th>Open</th><th>Completed</th><th>Overdue</th><th>Progress</th><th>Primary Owner(s)</th></tr></thead><tbody>${codes.length?codes.map(code=>{const p=v18ProjectForCode(code),st=v18ProjectStats(code);return `<tr class="project-row" data-project-open="${h(code)}"><td class="project-code">${h(code)}</td><td><div class="project-name">${h(p.name||"—")}</div></td><td>${v18ProjectStatus(st)}</td><td>${st.total}</td><td>${st.open.length}</td><td>${st.completed.length}</td><td>${st.overdue?`<span class="pill red">${st.overdue}</span>`:"0"}</td><td class="project-progress-cell"><div class="project-progress-label"><span>Engineering</span><b>${st.avg}%</b></div>${progressBar(st.avg)}</td><td>${h(st.owners.slice(0,3).join(", ")||"—")}${st.owners.length>3?` +${st.owners.length-3}`:""}</td></tr>`}).join(""):`<tr><td colspan="9"><div class="empty compact"><strong>No projects found</strong>Project master data will appear here.</div></td></tr>`}</tbody></table></div>`;
-}
+/* [V21 clean-up] older copy of renderProjects() removed - the newer copy below is the one that always ran */
 
 async function openProjectWorkspace(code,tab="designs"){
   code=String(code||"").trim();if(!code)return;
@@ -3198,13 +3214,9 @@ function renderProjectDashboardV18(){
 }
 function v18StatusBars(rows){const groups={"Not Started":0,"In Progress":0,"Check":0,"Review":0,"Approval":0,"Issued/Completed":0};rows.forEach(r=>{const s=scalar(r[AF.status]);if(["Submitted for Check","Checking","Checked"].includes(s))groups.Check++;else if(["Submitted for Review","Reviewing","Reviewed"].includes(s))groups.Review++;else if(["Submitted for Approval","Approving","Approved"].includes(s))groups.Approval++;else if(["Issued","Completed"].includes(s))groups["Issued/Completed"]++;else if(s==="In Progress")groups["In Progress"]++;else groups["Not Started"]++;});const max=Math.max(1,...Object.values(groups));return `<div class="chart-bars">${Object.entries(groups).map(([k,v])=>`<div class="chart-bar"><div>${h(k)}</div><div class="track"><div class="fill" style="width:${Math.round(v/max*100)}%"></div></div><b>${v}</b></div>`).join("")}</div>`;}
 
-function v18FilteredAssignments(){const code=S.projectWorkspace.code;let rows=v18ProjectAssignments(code);if(S.projectWorkspace.status!=="All")rows=rows.filter(a=>scalar(a[AF.status])===S.projectWorkspace.status);if(S.projectWorkspace.owner!=="All")rows=rows.filter(a=>assignmentDisplayUser(a)===S.projectWorkspace.owner);return rows.sort((a,b)=>{const da=drawingForAssignment(a).name,db=drawingForAssignment(b).name;return da.localeCompare(db)||num(a[AF.assignmentLevel])-num(b[AF.assignmentLevel])});}
-function v18AssignmentRow(a){const d=drawingForAssignment(a),r=currentRevision(a),lvl=num(a[AF.assignmentLevel]);return `<tr data-open-assignment="${h(idOf(a))}"><td><span class="project-code">${h(idOf(a))}</span></td><td><span class="indent">${"↳".repeat(Math.min(lvl,1))}</span><span class="task-title">${h(d.name)}</span><div class="task-sub">${lvl===0?"Primary drawing responsibility":`Level ${lvl} responsibility`}</div></td><td><span class="scope-tag" title="${h(scopeSummary(a))}">${h(scopeSummary(a))}</span></td><td>${h(assignmentDisplayUser(a))}</td><td>${statusPill(scalar(a[AF.status]))}</td><td>${h(displayDate(a[AF.startDate]))}</td><td>${h(displayDate(a[AF.targetDate]))}</td><td>${num(a[AF.progress])}%</td><td>${r?`<span class="pill purple">${h(scalar(r[AF.revision])||"R0")}</span>`:'<span class="pill">—</span>'}</td></tr>`;}
-function renderProjectDesignsV18(){
-  const rows=v18FilteredAssignments(),owners=[...new Set(v18ProjectAssignments(S.projectWorkspace.code).map(assignmentDisplayUser).filter(Boolean))].sort();
-  const statuses=[...new Set(v18ProjectAssignments(S.projectWorkspace.code).map(a=>scalar(a[AF.status])).filter(Boolean))].sort();
-  return `<div class="project-toolbar"><div class="project-filters"><select id="v18StatusFilter"><option>All</option>${statuses.map(x=>`<option ${x===S.projectWorkspace.status?"selected":""}>${h(x)}</option>`).join("")}</select><select id="v18OwnerFilter"><option>All</option>${owners.map(x=>`<option ${x===S.projectWorkspace.owner?"selected":""}>${h(x)}</option>`).join("")}</select><span class="pill brand">${rows.length} work items</span></div><div class="view-switch"><button data-v18-view="list" class="${S.projectWorkspace.viewMode==="list"?"active":""}">List</button><button data-v18-view="kanban" class="${S.projectWorkspace.viewMode==="kanban"?"active":""}">Kanban</button><button data-v18-view="gantt" class="${S.projectWorkspace.viewMode==="gantt"?"active":""}">Gantt</button></div></div><div style="margin-top:10px">${S.projectWorkspace.viewMode==="kanban"?renderProjectKanbanV18(rows):S.projectWorkspace.viewMode==="gantt"?renderProjectGanttV18(rows):`<div class="task-list-panel"><table class="task-table"><thead><tr><th>ID</th><th>Drawing / Design</th><th>Responsibility / Scope</th><th>Owner</th><th>Status</th><th>Start</th><th>Target</th><th>Progress</th><th>Revision</th></tr></thead><tbody>${rows.length?rows.map(v18AssignmentRow).join(""):`<tr><td colspan="9"><div class="empty compact"><strong>No design assignments yet</strong>Use Assign Design to start.</div></td></tr>`}</tbody></table></div>`}</div>`;
-}
+/* [V21 clean-up] older copy of v18FilteredAssignments() removed - the newer copy below is the one that always ran */
+/* [V21 clean-up] older copy of v18AssignmentRow() removed - the newer copy below is the one that always ran */
+/* [V21 clean-up] older copy of renderProjectDesignsV18() removed - the newer copy below is the one that always ran */
 function renderProjectKanbanV18(rows){const cols=[{k:"Not Started",match:s=>["Not Started","Returned","On Hold"].includes(s)},{k:"In Progress",match:s=>["In Progress"].includes(s)},{k:"Technical Review",match:s=>["Submitted for Check","Checking","Checked","Submitted for Review","Reviewing","Reviewed"].includes(s)},{k:"Approval / Done",match:s=>["Submitted for Approval","Approving","Approved","Issued","Completed"].includes(s)}];return `<div class="kanban">${cols.map(c=>{const r=rows.filter(a=>c.match(scalar(a[AF.status])));return `<div class="kanban-col"><div class="kanban-head"><span>${h(c.k)}</span><span class="pill">${r.length}</span></div><div class="kanban-body">${r.map(a=>{const d=drawingForAssignment(a);return `<div class="kanban-card" data-open-assignment="${h(idOf(a))}"><div class="title">${h(d.short||d.name)} — ${h(assignmentDisplayUser(a))}</div><div class="meta">${h(scopeSummary(a))}</div><div class="meta">Target ${h(displayDate(a[AF.targetDate]))} • ${num(a[AF.progress])}%</div></div>`}).join("")||'<div class="tiny muted">No items</div>'}</div></div>`}).join("")}</div>`;}
 function renderProjectGanttV18(rows){const dated=rows.filter(a=>toInputDate(a[AF.startDate])&&toInputDate(a[AF.targetDate]));if(!dated.length)return '<div class="empty"><strong>No scheduled designs</strong>Add Start and Target dates to see the Gantt view.</div>';const dates=dated.flatMap(a=>[new Date(toInputDate(a[AF.startDate])+"T00:00:00"),new Date(toInputDate(a[AF.targetDate])+"T00:00:00")]);const min=new Date(Math.min(...dates)),max=new Date(Math.max(...dates)),span=Math.max(1,(max-min)/86400000+1);return `<div class="gantt"><div class="gantt-row"><div class="gantt-left"><b>${h(displayDate(min.toISOString().slice(0,10)))} → ${h(displayDate(max.toISOString().slice(0,10)))}</b></div><div class="gantt-track"></div></div>${dated.map(a=>{const s=new Date(toInputDate(a[AF.startDate])+"T00:00:00"),t=new Date(toInputDate(a[AF.targetDate])+"T00:00:00"),left=Math.max(0,(s-min)/86400000/span*100),width=Math.max(2,((t-s)/86400000+1)/span*100),d=drawingForAssignment(a);return `<div class="gantt-row" data-open-assignment="${h(idOf(a))}"><div class="gantt-left"><div class="name">${h(d.short||d.name)} • ${h(assignmentDisplayUser(a))}</div><div class="sub">${h(scopeSummary(a))}</div></div><div class="gantt-track"><div class="gantt-bar" style="left:${left}%;width:${Math.min(100-left,width)}%">${h(scalar(a[AF.status])||"")}</div></div></div>`}).join("")}</div>`;}
 
@@ -3212,7 +3224,7 @@ function renderProjectDocumentsV18(){const rows=v18ProjectAssignments(S.projectW
 
 function renderProjectMilestonesV18(){const rows=v18ProjectCurrentRevisions(S.projectWorkspace.code),stages=[['Planning',s=>['','Not Started'].includes(s)],['Design',s=>s==='In Progress'],['Check',s=>['Submitted for Check','Checking','Checked'].includes(s)],['Review',s=>['Submitted for Review','Reviewing','Reviewed'].includes(s)],['Approval',s=>['Submitted for Approval','Approving','Approved'].includes(s)],['Issue',s=>['Issued','Completed'].includes(s)]];return `<div class="section-row"><div><h2>Engineering Milestones / Stage Gates</h2><p>Zoho-Projects-style milestone view mapped to your existing design workflow statuses.</p></div></div><div class="stage-grid">${stages.map(([name,fn])=>{const n=rows.filter(r=>fn(scalar(r[AF.status]))).length;return `<div class="stage-card"><div class="n">${n}</div><div class="t">${h(name.toUpperCase())}</div></div>`}).join("")}</div><div class="notice" style="margin-top:12px">These are engineering stage gates derived from the old Design_Tracking status workflow; no new Milestone form is created.</div>`;}
 
-function renderProjectDependenciesV18(){const rows=v18ProjectAssignments(S.projectWorkspace.code).filter(a=>scalar(a[AF.assignedFrom]));return `<div class="section-row"><div><h2>Dependencies</h2><p>Predecessor / successor style view using the existing Assigned_From_ID hierarchy.</p></div><span class="pill brand">${rows.length} links</span></div>${rows.length?`<div class="dep-tree">${rows.map(a=>{const p=assignmentById(scalar(a[AF.assignedFrom]));return `<div class="dep-row"><div class="dep-node"><strong>${h(p?drawingForAssignment(p).name:"Parent")}</strong><span>${h(p?`${assignmentDisplayUser(p)} • ${scopeSummary(p)}`:"Missing predecessor")}</span></div><div class="dep-arrow">Predecessor →</div><div class="dep-node"><strong>${h(drawingForAssignment(a).name)}</strong><span>${h(`${assignmentDisplayUser(a)} • ${scopeSummary(a)}`)}</span></div></div>`}).join("")}</div>`:`<div class="empty"><strong>No assignment dependencies</strong>Further assignments will appear here as predecessor/successor links.</div>`}<div class="notice warn" style="margin-top:12px"><b>Cross-drawing engineering references:</b> V17.15 has no persistent many-to-many dependency field/form. This screen therefore does not invent cross-drawing links. The existing assignment hierarchy is live; document-reference dependencies can be added as the next backend extension.</div>`;}
+/* [V21 clean-up] older copy of renderProjectDependenciesV18() removed - the newer copy below is the one that always ran */
 
 function renderProjectIssuesV18(){const rows=v18ProjectAssignments(S.projectWorkspace.code).filter(a=>['Returned','On Hold'].includes(scalar(a[AF.status]))||assignmentAlerts(a).length);return `<div class="section-row"><div><h2>Issues / Attention</h2><p>Returned, on-hold, overdue and workflow-alert items derived from existing records.</p></div><span class="pill red">${rows.length}</span></div>${rows.length?`<div class="task-list-panel"><table class="task-table"><thead><tr><th>Drawing</th><th>Scope</th><th>Owner</th><th>Status</th><th>Alert</th><th>Target</th></tr></thead><tbody>${rows.map(a=>`<tr data-open-assignment="${h(idOf(a))}"><td class="task-title">${h(drawingForAssignment(a).name)}</td><td>${h(scopeSummary(a))}</td><td>${h(assignmentDisplayUser(a))}</td><td>${statusPill(scalar(a[AF.status]))}</td><td>${h(assignmentAlerts(a).map(x=>x.title).join(', ')||'Workflow attention')}</td><td>${h(displayDate(a[AF.targetDate]))}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty"><strong>No active engineering issues</strong>Returned, on-hold or deadline alerts will appear here.</div>`}`;}
 
@@ -3220,50 +3232,20 @@ function renderProjectCalendarV18(){const rows=v18ProjectAssignments(S.projectWo
 
 function renderProjectReportsV18(){const rows=v18ProjectAssignments(S.projectWorkspace.code),byOwner={};rows.forEach(a=>{const k=assignmentDisplayUser(a)||'Unassigned';(byOwner[k]??=[]).push(a)});const byStatus={};rows.forEach(a=>{const k=scalar(a[AF.status])||'Not Started';byStatus[k]=(byStatus[k]||0)+1});const max=Math.max(1,...Object.values(byStatus));return `<div class="two-col"><div class="panel"><div class="panel-head"><div><h2>Status Report</h2><p>Design assignments by status.</p></div></div><div class="panel-body"><div class="chart-bars">${Object.entries(byStatus).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="chart-bar"><div>${h(k)}</div><div class="track"><div class="fill" style="width:${Math.round(v/max*100)}%"></div></div><b>${v}</b></div>`).join("")||'<div class="tiny muted">No data</div>'}</div></div></div><div class="panel"><div class="panel-head"><div><h2>Workload by Owner</h2><p>Current assignment counts and average progress.</p></div></div><div class="panel-body"><div class="child-list">${Object.entries(byOwner).sort((a,b)=>b[1].length-a[1].length).map(([k,r])=>`<div class="child-row"><div class="avatar">${h(initials(k))}</div><div class="main"><div class="name">${h(k)}</div><div class="sc">${r.length} responsibilities • ${Math.round(r.reduce((s,a)=>s+num(a[AF.progress]),0)/r.length)}% avg progress</div></div></div>`).join("")||'<div class="tiny muted">No data</div>'}</div></div></div></div>`;}
 
-function renderProjectActivityV18(){const items=[];v18ProjectAssignments(S.projectWorkspace.code).forEach(a=>assignmentActivityTimeline(a).forEach(x=>items.push({...x,assignment:a})));const stamp=x=>{const d=new Date(x.time);return Number.isNaN(d.getTime())?0:d.getTime()};items.sort((a,b)=>stamp(b)-stamp(a));return `<div class="section-row"><div><h2>Project Activity Stream</h2><p>Combined assignment, revision, file and workflow activity from Activity_Log.</p></div></div>${items.length?`<div class="timeline">${items.slice(0,150).map(x=>`<div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-card" data-open-assignment="${h(idOf(x.assignment))}"><div class="action">${h(x.action||'Activity')}${x.revision?` • ${h(x.revision)}`:''}</div><div class="meta">${h(x.actor||'System')}${x.time?` • ${h(displayDateTime(x.time))}`:''} • ${h(drawingForAssignment(x.assignment).name)}</div>${x.detail?`<div class="detail">${h(x.detail)}</div>`:''}</div></div>`).join("")}</div>`:`<div class="empty"><strong>No activity recorded</strong>New actions will appear here.</div>`}`;}
+/* [V21 clean-up] older copy of renderProjectActivityV18() removed - the newer copy below is the one that always ran */
 
 function v18DrawingOptions(selected){return S.drawings.filter(d=>!d.active||!["false","no","inactive"].includes(String(d.active).toLowerCase())).sort((a,b)=>a.name.localeCompare(b.name)).map(d=>`<option value="${h(d.id)}" ${d.id===selected?'selected':''}>${h(d.short?`${d.short} — ${d.name}`:d.name)}</option>`).join('');}
 function v18ProjectEquipment(){return S.cache.equipmentByProject.get(S.projectWorkspace.code)||[];}
 function v18Unique(rows,key){const map=new Map();for(const r of rows||[]){const v=String(r?.[key]||'').trim();if(v&&!map.has(nk(v)))map.set(nk(v),v);}return [...map.values()].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));}
 function v18ScopeEq(a,b){return pdsSameValue(String(a||'').trim(),String(b||'').trim());}
-function v18ScopeDescription(d){if(d.mode==='Project Wise')return `Entire Project ${S.projectWorkspace.code}`;if(d.mode==='Section Wise')return `Project ${S.projectWorkspace.code} › ${d.section||'Select section'}`;if(d.mode==='Section Type Wise')return `Project ${S.projectWorkspace.code} › ${d.section||'Section'} › ${d.sectionType||'Section Type'}`;const eq=v18ProjectEquipment().find(x=>x.tag===d.tag);return `Project ${S.projectWorkspace.code} › ${d.section||'Section'} › ${d.sectionType||'Section Type'} › Tag: ${d.tag||'Select tag'}${eq?.name?` — ${eq.name}`:''}`;}
-async function openV18AssignModal(){
-  if(!S.projectWorkspace.code){S.view='projects';renderView();return toast('Open a Project first.','warn');}
-  busy(`Loading Project ${S.projectWorkspace.code} scope…`);
-  try{
-    await ensureEquipmentForProject(S.projectWorkspace.code);
-    S.projectWorkspace.assignDraft={mode:'Tag Wise',drawingId:'',section:'',sectionType:'',tag:'',user:'',priority:'Medium',start:todayIso(),target:'',end:'',remark:''};
-    renderV18AssignModal();
-  }finally{idle();}
-}
-function renderV18AssignModal(){
-  const d=S.projectWorkspace.assignDraft||{},eq=v18ProjectEquipment();
-  const sections=v18Unique(eq,'plantSection');
-  const sectionRows=d.section?eq.filter(x=>v18ScopeEq(x.plantSection,d.section)):eq;
-  const types=v18Unique(sectionRows,'plantSectionType');
-  const typeRows=d.sectionType?sectionRows.filter(x=>v18ScopeEq(x.plantSectionType,d.sectionType)):sectionRows;
-  const tagMap=new Map();for(const x of typeRows){const key=String(x.tag||x.id||x.name||'').trim();if(key&&!tagMap.has(key))tagMap.set(key,x);}
-  const tags=[...tagMap.values()].sort((a,b)=>String(a.tag||a.name).localeCompare(String(b.tag||b.name),undefined,{numeric:true}));
-  const needSection=['Section Wise','Section Type Wise','Tag Wise'].includes(d.mode),needType=['Section Type Wise','Tag Wise'].includes(d.mode),needTag=d.mode==='Tag Wise';
-  const scopeMissing=needSection&&!sections.length;
-  const typeDisabled=needType&&!d.section;
-  const tagDisabled=needTag&&(!d.section||!d.sectionType);
-  const createDisabled=scopeMissing?'disabled':'';
-  const scopeHealth=`<div class="v181-scope-health"><span class="pill brand">${eq.length} equipment</span><span class="pill">${sections.length} sections</span><span class="pill">${types.length} section types</span>${needTag?`<span class="pill">${tags.length} tags</span>`:''}</div>`;
-  const scopeFields=!needSection?'':`<div class="v181-form-section"><div class="v181-form-section-head"><div><b>2. Responsibility Scope</b><span> • fields below are filtered from Project ${h(S.projectWorkspace.code)}</span></div>${scopeHealth}</div><div class="v181-form-section-body"><div class="v18-assign-grid"><div class="field"><label>Plant Section <span class="v181-required">*</span></label><select id="v18Section" ${scopeMissing?'disabled':''}><option value="">Select Plant Section…</option>${sections.map(x=>`<option value="${h(x)}" ${v18ScopeEq(x,d.section)?'selected':''}>${h(x)}</option>`).join('')}</select><div class="field-help">Source: Master Equipment List; section name is restored from All_Plant_Section_Types when the legacy grouped field is blank.</div></div>${needType?`<div class="field"><label>Plant Section Type <span class="v181-required">*</span></label><select id="v18SectionType" ${typeDisabled?'disabled':''}><option value="">${typeDisabled?'Select Plant Section first…':'Select Section Type…'}</option>${types.map(x=>`<option value="${h(x)}" ${v18ScopeEq(x,d.sectionType)?'selected':''}>${h(x)}</option>`).join('')}</select></div>`:''}${needTag?`<div class="field v181-field-span-2"><label>Tag / Equipment <span class="v181-required">*</span></label><select id="v18Tag" ${tagDisabled?'disabled':''}><option value="">${tagDisabled?'Select Section and Section Type first…':'Select Tag / Equipment…'}</option>${tags.map(x=>`<option value="${h(x.tag)}" ${x.tag===d.tag?'selected':''}>${h(x.tag||'No Tag')}${x.name?` — ${h(x.name)}`:''}${x.equipmentType?` • ${h(x.equipmentType)}`:''}</option>`).join('')}</select></div>`:''}</div>${scopeMissing?`<div class="v181-empty-scope"><div><b>No Plant Section data resolved for Project ${h(S.projectWorkspace.code)}.</b><br>The widget will now use the restored legacy lookup-safe resolver. If permissions/data changed, reload this scope.</div><button type="button" class="btn danger sm" data-v18-reload-scope>Reload Scope Data</button></div>`:''}</div></div>`;
-  openModal('Assign Design',`Project ${S.projectWorkspace.code} • choose drawing, responsibility scope and planning details`,
-  `<div class="notice good"><b>Existing backend retained:</b> all records still save to <b>Design_Tracking</b> and continue using Primary_Assignment_ID / Assigned_From_ID / Assignment_Level.</div>
-   <div class="v181-form-section"><div class="v181-form-section-head"><div><b>1. Design Selection</b><span> • choose the engineering drawing/document and assignment level</span></div></div><div class="v181-form-section-body"><div class="v18-assign-grid"><div class="field"><label>Drawing / Design <span class="v181-required">*</span></label><select id="v18Drawing"><option value="">Select drawing / design…</option>${v18DrawingOptions(d.drawingId)}</select></div><div class="field"><label>Assignment Mode <span class="v181-required">*</span></label><select id="v18Mode">${['Project Wise','Section Wise','Section Type Wise','Tag Wise'].map(x=>`<option ${x===d.mode?'selected':''}>${x}</option>`).join('')}</select><div class="field-help">Project → Section → Section Type → Tag is applied only as required by this mode.</div></div></div></div></div>
-   ${scopeFields}
-   <div class="v181-form-section"><div class="v181-form-section-head"><div><b>${needSection?'3':'2'}. Assignment & Planning</b><span> • owner, priority and dates</span></div></div><div class="v181-form-section-body"><div class="v18-assign-grid"><div class="field"><label>Assigned To <span class="v181-required">*</span></label><select id="v18User">${employeeOptions(d.user||'', 'Select employee…')}</select></div><div class="field"><label>Priority</label><select id="v18Priority">${PRIORITIES.map(x=>`<option ${x===(d.priority||'Medium')?'selected':''}>${h(x)}</option>`).join('')}</select></div><div class="field"><label>Start Date <span class="v181-required">*</span></label><input id="v18Start" type="date" value="${h(d.start||todayIso())}"></div><div class="field"><label>Target / Forecast Date <span class="v181-required">*</span></label><input id="v18Target" type="date" min="${h(d.start||todayIso())}" value="${h(d.target||'')}"></div><div class="field"><label>Planned End Date</label><input id="v18End" type="date" min="${h(d.start||todayIso())}" value="${h(d.end||'')}"></div><div class="field"><label>Remark</label><textarea id="v18Remark" rows="2" placeholder="Optional instruction / planning remark">${h(d.remark||'')}</textarea></div></div></div></div>
-   <div class="v18-scope-summary"><b>Responsibility that will be created</b><br>${h(v18ScopeDescription(d))}</div><div class="v18-note">Section / Section Type / Tag assignments keep the existing Project + Drawing primary root and create the selected scope as its child, so the old assignment tree, revision and workflow code continue to work unchanged.</div>`,
-  `<button class="btn" data-modal="close">Cancel</button><button class="btn primary" data-v18-create-assignment ${createDisabled}>Create Assignment</button>`);
-}
-function v18CollectAssignDraft(){const d=S.projectWorkspace.assignDraft||{};for(const [id,key] of [['v18Drawing','drawingId'],['v18Mode','mode'],['v18Section','section'],['v18SectionType','sectionType'],['v18Tag','tag'],['v18User','user'],['v18Priority','priority'],['v18Start','start'],['v18Target','target'],['v18End','end'],['v18Remark','remark']]){const el=$(id);if(el)d[key]=el.value;}S.projectWorkspace.assignDraft=d;return d;}
+/* [V21 clean-up] older copy of v18ScopeDescription() removed - the newer copy below is the one that always ran */
+/* [V21 clean-up] older copy of openV18AssignModal() removed - the newer copy below is the one that always ran */
+/* [V21 clean-up] older copy of renderV18AssignModal() removed - the newer copy below is the one that always ran */
+/* [V21 clean-up] older copy of v18CollectAssignDraft() removed - the newer copy below is the one that always ran */
 function v18RootData(p,drawing,recipient,draft){return {[AF.projectCode]:p.code,[AF.projectRecordId]:p.id||'',[AF.drawingDocument]:drawing.name,[AF.drawingMasterId]:drawing.id,[AF.shortName]:drawing.short||'',[AF.assignmentLevel]:0,[AF.assignedBy]:S.user||recipient.email,[AF.assignedTo]:recipient.backendValue,[AF.assignedEmployeeName]:recipient.name,[AF.criteria]:'Project',[AF.responsibility]:`Entire Project ${p.code}`,[AF.logicalTaskKey]:`ASSIGN::${nk(p.code)}::${nk(drawing.id||drawing.short||drawing.name)}::PROJECT`,[AF.startDate]:toCreatorDate(draft.start),[AF.targetDate]:toCreatorDate(draft.target),[AF.endDate]:toCreatorDate(draft.end),[AF.priority]:draft.priority||'Medium',[AF.status]:'Not Started',[AF.progress]:0,[AF.remark]:draft.remark||'',[AF.activityLog]:initialActivity('Primary Assignment Created',`${recipient.name} assigned Project ${p.code} / ${drawing.name}.`,{kind:'assignment',assignedTo:recipient.email})};}
 async function v18EnsurePrimary(p,drawing,recipient,draft){let root=primaryAssignmentFor(p,drawing);if(root)return root;const data=v18RootData(p,drawing,recipient,draft),id=await addRecord(data);await updateRecord(id,{[AF.primaryAssignment]:id});root={ID:id,...data,[AF.primaryAssignment]:id};S.records.push(root);S.assignments.push(root);return root;}
-function v18ChildData(root,drawing,recipient,draft){const data={[AF.projectCode]:scalar(root[AF.projectCode]),[AF.projectRecordId]:scalar(root[AF.projectRecordId]),[AF.drawingDocument]:drawing.name,[AF.drawingMasterId]:drawing.id,[AF.shortName]:drawing.short||'',[AF.primaryAssignment]:scalar(root[AF.primaryAssignment])||idOf(root),[AF.assignedFrom]:idOf(root),[AF.assignmentLevel]:num(root[AF.assignmentLevel])+1,[AF.assignedBy]:S.user||assignmentUser(root),[AF.assignedTo]:recipient.backendValue,[AF.assignedEmployeeName]:recipient.name,[AF.startDate]:toCreatorDate(draft.start),[AF.targetDate]:toCreatorDate(draft.target),[AF.endDate]:toCreatorDate(draft.end),[AF.priority]:draft.priority||'Medium',[AF.status]:'Not Started',[AF.progress]:0,[AF.remark]:draft.remark||'',[AF.activityLog]:initialActivity('Assignment Created',`${recipient.name} received ${v18ScopeDescription(draft)}.`,{kind:'assignment',assignedTo:recipient.email})};let labels=[];if(draft.mode==='Section Wise'){data[AF.plantSection]=draft.section;labels=['Plant Section'];}else if(draft.mode==='Section Type Wise'){data[AF.plantSection]=draft.section;data[AF.plantSectionType]=draft.sectionType;labels=['Plant Section','Plant Section Type'];}else if(draft.mode==='Tag Wise'){const eq=v18ProjectEquipment().find(x=>x.tag===draft.tag);data[AF.plantSection]=draft.section||eq?.plantSection||'';data[AF.plantSectionType]=draft.sectionType||eq?.plantSectionType||'';data[AF.tagNo]=draft.tag;data[AF.equipmentName]=eq?.name||'';data[AF.equipmentRecordId]=eq?.id||'';data[AF.groupCode]=eq?.groupCode||'';data[AF.department]=eq?.department||'';data[AF.equipmentCategory]=eq?.equipmentCategory||'';data[AF.equipmentType]=eq?.equipmentType||'';labels=['Plant Section','Plant Section Type','Tag / Equipment'];}data[AF.criteria]=assignmentCriteriaPayload(labels);data[AF.responsibility]=responsibilityFromData(data);data[AF.logicalTaskKey]=normalLogicalKeyFromAssignment(data);return data;}
-async function createV18Assignment(){const draft=v18CollectAssignDraft(),p=v18ProjectForCode(S.projectWorkspace.code),drawing=S.drawings.find(x=>x.id===draft.drawingId);if(!drawing)throw new Error('Select Drawing / Design.');if(!draft.user||!draft.start||!draft.target)throw new Error('Assigned To, Start Date and Target Date are required.');if(draft.target<draft.start)throw new Error('Target / Forecast Date cannot be before Start Date.');if(draft.end&&draft.end<draft.start)throw new Error('Planned End Date cannot be before Start Date.');if(['Section Wise','Section Type Wise','Tag Wise'].includes(draft.mode)&&!draft.section)throw new Error('Select Plant Section.');if(['Section Type Wise','Tag Wise'].includes(draft.mode)&&!draft.sectionType)throw new Error('Select Plant Section Type.');if(draft.mode==='Tag Wise'&&!draft.tag)throw new Error('Select Tag / Equipment.');const recipient=requireAssignmentRecipient(draft.user);busy('Creating design assignment…');try{if(draft.mode==='Project Wise'){let root=primaryAssignmentFor(p,drawing);if(root){closeModal();toast('Project-wise primary assignment already exists. Opening it.','warn');return openAssignment(idOf(root));}root=await v18EnsurePrimary(p,drawing,recipient,draft);await notifyCreatedAssignments([root]);closeModal();toast(`Project-wise assignment created for ${recipient.name}.`,'good');S.projectWorkspace.tab='designs';renderView();return;}const root=await v18EnsurePrimary(p,drawing,recipient,draft);const data=v18ChildData(root,drawing,recipient,draft),id=await addRecord(data),rec={ID:id,...data};S.records.push(rec);S.assignments.push(rec);await notifyCreatedAssignments([rec]);closeModal();toast(`${draft.mode} assignment created for ${recipient.name}.`,'good');S.projectWorkspace.tab='designs';renderView();}finally{idle();}}
+/* [V21 clean-up] older copy of v18ChildData() removed - the newer copy below is the one that always ran */
+/* [V21 clean-up] older copy of createV18Assignment() removed - the newer copy below is the one that always ran */
 
 
 /* ======================================================================
@@ -3353,37 +3335,15 @@ function v182HealthHtml(){const eq=v18ProjectEquipment(),sections=v182SectionUni
 function v182CreateLabel(d){if(d.mode==='Project Wise')return 'Create Project Assignment';const n=v182SelectedValues(d).length;return `Create ${n} Assignment${n===1?'':'s'}`;}
 function v182CanCreate(d){if(d.mode==='Project Wise')return true;const n=v182SelectedValues(d).length;return n>0&&n<=CONFIG.MAX_BATCH;}
 function v182PreviewText(d){const units=v182SelectedUnits(d);if(d.mode==='Project Wise')return `Entire Project ${S.projectWorkspace.code}`;if(!units.length)return `Select ${v182ScopeLabel(d.mode)} to continue.`;const names=units.slice(0,3).map(u=>d.mode==='Section Wise'?u.section:d.mode==='Section Type Wise'?`${u.section} › ${u.type}`:`${u.tag}${u.name?` — ${u.name}`:''}`);return names.join(' | ')+(units.length>3?` | +${units.length-3} more`:'');}
-async function openV18AssignModal(){
-  if(!S.projectWorkspace.code){S.view='projects';renderView();return toast('Open a Project first.','warn');}
-  busy(`Loading Project ${S.projectWorkspace.code} scope…`);
-  try{await ensureEquipmentForProject(S.projectWorkspace.code);S.projectWorkspace.assignDraft={mode:'Tag Wise',drawingId:'',selectedSections:[],selectedSectionTypes:[],selectedTags:[],user:'',priority:'Medium',start:todayIso(),target:'',end:'',remark:''};renderV18AssignModal();}finally{idle();}
-}
-function renderV18AssignModal(){
-  const d=v182EnsureDraft(),eq=v18ProjectEquipment(),scopeNeeded=d.mode!=='Project Wise',scopeMissing=scopeNeeded&&!v182UnitsForMode(d.mode).length,selectedCount=v182SelectedValues(d).length,overLimit=selectedCount>CONFIG.MAX_BATCH;
-  const createDisabled=(!v182CanCreate(d)||scopeMissing)?'disabled':'';
-  openModal('Assign Design',`Project ${S.projectWorkspace.code} • select the drawing, responsibility scope and assignee`,
-  `<div class="v182-assign-shell"><div class="notice good"><b>Existing Creator backend retained.</b> Project, Plant Section, Section Type, Tag and Employee data are fetched from the existing masters. New work is saved only to <b>Design_Tracking</b>.</div>
-   <div class="v181-form-section"><div class="v181-form-section-head"><div><div class="v182-form-title">1. Drawing & Assignment Scope</div><div class="v182-form-sub">Choose the engineering drawing/document, then choose how broadly it must be assigned.</div></div>${v182HealthHtml()}</div><div class="v181-form-section-body"><div class="field"><div class="v182-field-label"><label>Drawing / Design <span class="v181-required">*</span></label><span class="source">Source: All_Drawing_Types</span></div><select id="v18Drawing"><option value="">Select drawing / design…</option>${v18DrawingOptions(d.drawingId)}</select></div>${v182ModeCards(d)}</div></div>
-   <div class="v181-form-section"><div class="v181-form-section-head"><div><div class="v182-form-title">2. Responsibility Selection</div><div class="v182-form-sub">${d.mode==='Project Wise'?'Overall project scope.':`Select one, many, or all ${v182ScopeLabel(d.mode)} from Project ${S.projectWorkspace.code}.`}</div></div>${scopeMissing?`<button type="button" class="btn danger sm" data-v18-reload-scope>Reload Scope Data</button>`:''}</div><div class="v181-form-section-body">${v182ScopePickerHtml(d)}${overLimit?`<div class="v182-batch-note warn">${selectedCount} selected. Maximum ${CONFIG.MAX_BATCH} can be created in one batch. Deselect some items and create the remaining batch separately.</div>`:`<div class="v182-batch-note">Every selected ${h(v182ScopeLabel(d.mode).replace(/s$/,''))} becomes its own primary Design_Tracking responsibility. It can be assigned further later using the existing hierarchy.</div>`}</div></div>
-   <div class="v181-form-section"><div class="v181-form-section-head"><div><div class="v182-form-title">3. Assignment & Planning</div><div class="v182-form-sub">The same assignee and planning dates will be applied to all selected responsibilities in this batch.</div></div></div><div class="v181-form-section-body"><div class="v18-assign-grid"><div class="field"><div class="v182-field-label"><label>Assigned To <span class="v181-required">*</span></label><span class="source">Source: Employee Master</span></div><select id="v18User">${employeeOptions(d.user||'', 'Select employee…')}</select></div><div class="field"><label>Priority</label><select id="v18Priority">${PRIORITIES.map(x=>`<option ${x===(d.priority||'Medium')?'selected':''}>${h(x)}</option>`).join('')}</select></div><div class="field"><label>Start Date <span class="v181-required">*</span></label><input id="v18Start" type="date" value="${h(d.start||todayIso())}"></div><div class="field"><label>Target / Forecast Date <span class="v181-required">*</span></label><input id="v18Target" type="date" min="${h(d.start||todayIso())}" value="${h(d.target||'')}"></div><div class="field"><label>Planned End Date</label><input id="v18End" type="date" min="${h(d.start||todayIso())}" value="${h(d.end||'')}"></div><div class="field"><label>Remark / Instruction</label><textarea id="v18Remark" rows="2" placeholder="Optional common instruction for this assignment batch">${h(d.remark||'')}</textarea></div></div></div></div>
-   <div class="v182-summary"><div><div class="summary-title">Assignment Preview</div><div id="v182ScopeSummaryText" class="summary-value">${h(v182PreviewText(d))}</div></div><div><div id="v182SummaryCount" class="summary-count">${d.mode==='Project Wise'?1:selectedCount}</div><div class="summary-label">RESPONSIBILIT${(d.mode==='Project Wise'?1:selectedCount)===1?'Y':'IES'} TO CREATE</div></div></div></div>`,
-  `<button class="btn" data-modal="close">Cancel</button><button class="btn primary" data-v18-create-assignment ${createDisabled}><span id="v182CreateButtonText" class="v182-create-count">${h(v182CreateLabel(d))}</span></button>`);
-}
-function v18CollectAssignDraft(){const d=v182EnsureDraft();for(const [id,key] of [['v18Drawing','drawingId'],['v18User','user'],['v18Priority','priority'],['v18Start','start'],['v18Target','target'],['v18End','end'],['v18Remark','remark']]){const el=$(id);if(el)d[key]=el.value;}S.projectWorkspace.assignDraft=d;return d;}
+/* [V21 clean-up] older copy of openV18AssignModal() removed - the newer copy below is the one that always ran */
+/* [V21 clean-up] older copy of renderV18AssignModal() removed - the newer copy below is the one that always ran */
+/* [V21 clean-up] older copy of v18CollectAssignDraft() removed - the newer copy below is the one that always ran */
 function primaryAssignmentFor(project,drawing){return S.assignments.find(a=>scalar(a[AF.projectCode])===project.code&&(scalar(a[AF.drawingMasterId])===drawing.id||scalar(a[AF.drawingDocument])===drawing.name)&&num(a[AF.assignmentLevel],-1)===0&&!scalar(a[AF.assignedFrom])&&!scalar(a[AF.plantSection])&&!scalar(a[AF.plantSectionType])&&!scalar(a[AF.tagNo])&&nk(scalar(a[AF.criteria])||'project')==='project')||null;}
 function v182ExistingScopedRoot(p,drawing,mode,u){return S.assignments.find(a=>{if(scalar(a[AF.projectCode])!==String(p.code||''))return false;if(!(scalar(a[AF.drawingMasterId])===drawing.id||scalar(a[AF.drawingDocument])===drawing.name))return false;if(num(a[AF.assignmentLevel],-1)!==0||scalar(a[AF.assignedFrom]))return false;if(mode==='Section Wise')return v18ScopeEq(scalar(a[AF.plantSection]),u.section)&&!scalar(a[AF.plantSectionType])&&!scalar(a[AF.tagNo]);if(mode==='Section Type Wise')return v18ScopeEq(scalar(a[AF.plantSection]),u.section)&&v18ScopeEq(scalar(a[AF.plantSectionType]),u.type)&&!scalar(a[AF.tagNo]);if(mode==='Tag Wise'){if(u.eq?.id)return scalar(a[AF.equipmentRecordId])===String(u.eq.id);return !!u.tag&&v18ScopeEq(scalar(a[AF.tagNo]),u.tag)&&v18ScopeEq(scalar(a[AF.plantSection]),u.section)&&v18ScopeEq(scalar(a[AF.plantSectionType]),u.type);}return false;});}
 function v182ScopedRootData(p,drawing,recipient,draft,u){const data=v18RootData(p,drawing,recipient,draft);data[AF.assignmentLevel]=0;data[AF.assignedFrom]='';let labels=[];if(draft.mode==='Section Wise'){data[AF.plantSection]=u.section;labels=['Plant Section'];}else if(draft.mode==='Section Type Wise'){data[AF.plantSection]=u.section;data[AF.plantSectionType]=u.type;labels=['Plant Section','Plant Section Type'];}else if(draft.mode==='Tag Wise'){const eq=u.eq||{};data[AF.plantSection]=u.section||eq.plantSection||'';data[AF.plantSectionType]=u.type||eq.plantSectionType||'';data[AF.tagNo]=u.tag||eq.tag||'';data[AF.equipmentName]=u.name||eq.name||'';data[AF.equipmentRecordId]=eq.id||'';data[AF.groupCode]=eq.groupCode||'';data[AF.department]=eq.department||'';data[AF.equipmentCategory]=eq.equipmentCategory||'';data[AF.equipmentType]=eq.equipmentType||'';labels=['Plant Section','Plant Section Type','Tag / Equipment'];}data[AF.criteria]=assignmentCriteriaPayload(labels);data[AF.responsibility]=responsibilityFromData(data);data[AF.logicalTaskKey]=normalLogicalKeyFromAssignment(data);data[AF.activityLog]=initialActivity('Primary Assignment Created',`${recipient.name} received ${v182ScopeDescriptionForUnit(draft.mode,u)}.`,{kind:'assignment',assignedTo:recipient.email});return data;}
 function v182ExistingChild(root,mode,u){return assignmentChildren(idOf(root)).find(ch=>{if(mode==='Section Wise')return v18ScopeEq(scalar(ch[AF.plantSection]),u.section)&&!scalar(ch[AF.plantSectionType])&&!scalar(ch[AF.tagNo]);if(mode==='Section Type Wise')return v18ScopeEq(scalar(ch[AF.plantSection]),u.section)&&v18ScopeEq(scalar(ch[AF.plantSectionType]),u.type)&&!scalar(ch[AF.tagNo]);if(mode==='Tag Wise'){if(u.eq?.id)return scalar(ch[AF.equipmentRecordId])===String(u.eq.id);return !!u.tag&&v18ScopeEq(scalar(ch[AF.tagNo]),u.tag)&&v18ScopeEq(scalar(ch[AF.plantSection]),u.section)&&v18ScopeEq(scalar(ch[AF.plantSectionType]),u.type);}return false;});}
 function v18ChildData(root,drawing,recipient,draft,u){const data={[AF.projectCode]:scalar(root[AF.projectCode]),[AF.projectRecordId]:scalar(root[AF.projectRecordId]),[AF.drawingDocument]:drawing.name,[AF.drawingMasterId]:drawing.id,[AF.shortName]:drawing.short||'',[AF.primaryAssignment]:scalar(root[AF.primaryAssignment])||idOf(root),[AF.assignedFrom]:idOf(root),[AF.assignmentLevel]:num(root[AF.assignmentLevel])+1,[AF.assignedBy]:S.user||assignmentUser(root),[AF.assignedTo]:recipient.backendValue,[AF.assignedEmployeeName]:recipient.name,[AF.startDate]:toCreatorDate(draft.start),[AF.targetDate]:toCreatorDate(draft.target),[AF.endDate]:toCreatorDate(draft.end),[AF.priority]:draft.priority||'Medium',[AF.status]:'Not Started',[AF.progress]:0,[AF.remark]:draft.remark||'',[AF.activityLog]:initialActivity('Assignment Created',`${recipient.name} received ${v182ScopeDescriptionForUnit(draft.mode,u)}.`,{kind:'assignment',assignedTo:recipient.email})};let labels=[];if(draft.mode==='Section Wise'){data[AF.plantSection]=u.section;labels=['Plant Section'];}else if(draft.mode==='Section Type Wise'){data[AF.plantSection]=u.section;data[AF.plantSectionType]=u.type;labels=['Plant Section','Plant Section Type'];}else if(draft.mode==='Tag Wise'){const eq=u.eq||{};data[AF.plantSection]=u.section||eq.plantSection||'';data[AF.plantSectionType]=u.type||eq.plantSectionType||'';data[AF.tagNo]=u.tag||eq.tag||'';data[AF.equipmentName]=u.name||eq.name||'';data[AF.equipmentRecordId]=eq.id||'';data[AF.groupCode]=eq.groupCode||'';data[AF.department]=eq.department||'';data[AF.equipmentCategory]=eq.equipmentCategory||'';data[AF.equipmentType]=eq.equipmentType||'';labels=['Plant Section','Plant Section Type','Tag / Equipment'];}data[AF.criteria]=assignmentCriteriaPayload(labels);data[AF.responsibility]=responsibilityFromData(data);data[AF.logicalTaskKey]=normalLogicalKeyFromAssignment(data);return data;}
-async function createV18Assignment(){
-  const draft=v18CollectAssignDraft(),p=v18ProjectForCode(S.projectWorkspace.code),drawing=S.drawings.find(x=>x.id===draft.drawingId);
-  if(!drawing)throw new Error('Select Drawing / Design.');if(!draft.user)throw new Error('Select Assigned To.');if(!draft.start||!draft.target)throw new Error('Start Date and Target / Forecast Date are required.');if(draft.target<draft.start)throw new Error('Target / Forecast Date cannot be before Start Date.');if(draft.end&&draft.end<draft.start)throw new Error('Planned End Date cannot be before Start Date.');
-  const recipient=requireAssignmentRecipient(draft.user);
-  if(draft.mode==='Project Wise'){busy('Creating project-wide assignment…');try{let root=primaryAssignmentFor(p,drawing);if(root){closeModal();toast('A project-wide primary assignment already exists for this drawing. Opening the existing assignment.','warn');return openAssignment(idOf(root));}root=await v18EnsurePrimary(p,drawing,recipient,draft);await notifyCreatedAssignments([root]);closeModal();toast(`Project-wide assignment created for ${recipient.name}.`,'good');S.projectWorkspace.tab='designs';renderView();return;}finally{idle();}}
-  const units=v182SelectedUnits(draft);if(!units.length)throw new Error(`Select at least one ${v182ScopeLabel(draft.mode)}.`);if(units.length>CONFIG.MAX_BATCH)throw new Error(`Maximum ${CONFIG.MAX_BATCH} assignments can be created in one batch.`);
-  busy(`Creating ${units.length} ${draft.mode} assignment${units.length===1?'':'s'}…`);
-  try{const created=[],failures=[];let skipped=0;for(const u of units){if(v182ExistingScopedRoot(p,drawing,draft.mode,u)){skipped++;continue;}try{const data=v182ScopedRootData(p,drawing,recipient,draft,u),id=await addRecord(data);await updateRecord(id,{[AF.primaryAssignment]:id});const rec={ID:id,...data,[AF.primaryAssignment]:id};S.records.push(rec);S.assignments.push(rec);created.push(rec);}catch(err){failures.push({unit:u,error:err});console.error('V18.2 bulk assignment failed for scope',u,err);}}if(created.length)await notifyCreatedAssignments(created);if(!created.length&&failures.length)throw new Error(`No assignments were created. ${failures[0].error?.message||'Creator save failed.'}`);closeModal();const parts=[`${created.length} assignment${created.length===1?'':'s'} created for ${recipient.name}`];if(skipped)parts.push(`${skipped} already existed`);if(failures.length)parts.push(`${failures.length} failed`);toast(parts.join(' • '),failures.length?'warn':'good');S.projectWorkspace.tab='designs';renderView();}finally{idle();}
-}
+/* [V21 clean-up] older copy of createV18Assignment() removed - the newer copy below is the one that always ran */
 function v182SetSelection(mode,key,checked){const d=v182EnsureDraft(),field=v182SelectionKey(mode);if(!field)return;const set=new Set(d[field]||[]);checked?set.add(key):set.delete(key);d[field]=[...set];}
 function v182SyncSelectionUi(){const d=v182EnsureDraft(),n=v182SelectedValues(d).length,total=v182UnitsForMode(d.mode).length,btn=document.querySelector('[data-v18-create-assignment]');const count=$('v182SelectedCount'),summary=$('v182SummaryCount'),text=$('v182ScopeSummaryText'),label=$('v182CreateButtonText');if(count)count.textContent=`${n} selected`;if(summary)summary.textContent=d.mode==='Project Wise'?1:n;if(text)text.textContent=v182PreviewText(d);if(label)label.textContent=v182CreateLabel(d);if(btn)btn.disabled=!v182CanCreate(d);document.querySelectorAll('.v182-select-item').forEach(el=>{const cb=el.querySelector('.v182-check');if(cb)el.classList.toggle('selected',cb.checked)});const note=document.querySelector('.v182-batch-note');if(note&&n>CONFIG.MAX_BATCH){note.textContent=`${n} selected. Maximum ${CONFIG.MAX_BATCH} can be created in one batch.`;note.classList.add('warn')}else if(note){note.textContent=`Every selected ${v182ScopeLabel(d.mode).replace(/s$/,'')} becomes its own primary Design_Tracking responsibility and can be assigned further later.`;note.classList.remove('warn')}}
 function v182FilterScopeList(q){q=String(q||'').trim().toLowerCase();let visible=0;document.querySelectorAll('.v182-select-item').forEach(el=>{const show=!q||String(el.dataset.v182Search||'').includes(q);el.style.display=show?'grid':'none';if(show)visible++;});const c=$('v182VisibleCount');if(c)c.textContent=visible;}
@@ -3393,11 +3353,11 @@ function wireV182(){
   document.addEventListener('input',e=>{if(e.target.id==='v182ScopeSearch')v182FilterScopeList(e.target.value);});
 }
 
-function renderDetailTab(){if(S.detailTab==='activity')return renderActivityAlertsTab();if(S.detailTab==='dependency')return renderAssignmentDependencyTabV18();if(S.detailTab==='pds')return renderPdsWorkspaceTab();if(S.detailTab==='files')return renderFilesTab();if(S.detailTab==='revisions')return renderRevisionTab();if(S.detailTab==='delegate')return renderDelegateTab();return renderOverviewTab();}
-function renderAssignmentDependencyTabV18(){const a=S.current,parent=assignmentById(scalar(a[AF.assignedFrom])),children=assignmentChildren(idOf(a));return `<div class="tab-card"><div class="section-row" style="margin-top:0"><div><h2>Dependency</h2><p>Zoho-Projects-style predecessor and successor view, backed by the existing assignment hierarchy.</p></div></div><div class="table-wrap"><table><thead><tr><th>Direction</th><th>Drawing</th><th>Responsibility</th><th>Owner</th><th>Status</th></tr></thead><tbody>${parent?`<tr data-open-assignment="${h(idOf(parent))}"><td><span class="pill amber">Predecessor</span></td><td>${h(drawingForAssignment(parent).name)}</td><td>${h(scopeSummary(parent))}</td><td>${h(assignmentDisplayUser(parent))}</td><td>${statusPill(scalar(parent[AF.status]))}</td></tr>`:`<tr><td colspan="5" class="muted">No predecessor assignment.</td></tr>`}${children.map(c=>`<tr data-open-assignment="${h(idOf(c))}"><td><span class="pill blue">Successor</span></td><td>${h(drawingForAssignment(c).name)}</td><td>${h(scopeSummary(c))}</td><td>${h(assignmentDisplayUser(c))}</td><td>${statusPill(scalar(c[AF.status]))}</td></tr>`).join('')}</tbody></table></div><div class="notice warn" style="margin-top:12px">Cross-drawing Reference / Input Required / Must Follow / Vendor Input relationships need a persistent many-to-many backend relationship. V18 deliberately does not fake those links.</div></div>`;}
+/* [V21 clean-up] older copy of renderDetailTab() removed - the newer copy below is the one that always ran */
+/* [V21 clean-up] older copy of renderAssignmentDependencyTabV18() removed - the newer copy below is the one that always ran */
 
 // Override the old detail page only to add a Dependency tab; all old tabs and logic remain.
-function renderDetailPage(){if(!S.current){S.view='projects';return renderProjects()}const a=S.current,d=S.drawing||drawingForAssignment(a),path=familyPath(a);$("page").innerHTML=`<div class="detail-shell"><aside class="panel tree-panel"><div class="tree-head"><div class="strong">Assignment Structure</div><div class="tiny muted" style="margin:2px 0 9px">Expand people and responsibilities. Click a node for Quick View.</div><div class="tree-search"><input id="treeSearch" class="input" placeholder="Search person / scope…" value="${h(S.treeSearch||'')}"></div></div><div id="treeArea" class="tree-scroll">${renderTree()}</div></aside><section class="detail-main"><div class="detail-hero"><div class="crumbs"><button data-back>← Back</button><span>›</span><button class="btn link sm" data-project-open="${h(scalar(a[AF.projectCode]))}">Project ${h(scalar(a[AF.projectCode]))}</button><span>›</span><span>${h(d.short||d.name)}</span>${path.map(p=>`<span>›</span><button class="btn link sm" data-open-assignment="${h(idOf(p))}">${h(assignmentDisplayUser(p))}</button>`).join('')}</div><div class="detail-top"><div class="detail-title"><div class="doc-badge">${h(d.short||'DOC')}</div><div><h2>${h(d.name)}</h2><p>Project ${h(scalar(a[AF.projectCode]))} • ${h(assignmentDisplayUser(a))}'s responsibility</p></div></div><div class="detail-actions">${statusPill(scalar(a[AF.status]))}${currentRevision(a)?`<span class="pill purple">Current ${h(scalar(currentRevision(a)[AF.revision])||'R0')}</span>`:''}</div></div><div class="detail-meta"><span class="pill">Assigned by ${h(assignmentByDisplay(a))}</span><span class="pill">Level ${num(a[AF.assignmentLevel])}</span><span class="pill">Target ${h(displayDate(a[AF.targetDate]))}</span>${assignmentAlerts(a).length?`<span class="pill red">${assignmentAlerts(a).length} alert${assignmentAlerts(a).length===1?'':'s'}</span>`:''}</div></div><div class="subtabs"><button class="subtab ${S.detailTab==='overview'?'active':''}" data-detail-tab="overview">Overview</button><button class="subtab ${S.detailTab==='activity'?'active':''}" data-detail-tab="activity">Activity & Alerts</button><button class="subtab ${S.detailTab==='dependency'?'active':''}" data-detail-tab="dependency">Dependency</button>${isPdsDrawing(a)?`<button class="subtab ${S.detailTab==='pds'?'active':''}" data-detail-tab="pds">PDS Workspace</button>`:''}<button class="subtab ${S.detailTab==='files'?'active':''}" data-detail-tab="files">Design Files</button><button class="subtab ${S.detailTab==='revisions'?'active':''}" data-detail-tab="revisions">Revision History</button><button class="subtab ${S.detailTab==='delegate'?'active':''}" data-detail-tab="delegate">Assign Further</button></div><div id="detailTabBody">${renderDetailTab()}</div></section></div>`;}
+/* [V21 clean-up] older copy of renderDetailPage() removed - the newer copy below is the one that always ran */
 
 // Final view router: old screens remain available, Project workspace is added.
 function renderView(){document.querySelectorAll('.navtab').forEach(b=>b.classList.toggle('active',b.dataset.view===S.view));if(S.view==='home')renderHome();else if(S.view==='mine')renderMyWork();else if(S.view==='team')renderMyTeam();else if(S.view==='projects')renderProjects();else if(S.view==='project')renderProjectWorkspace();else if(S.view==='new')renderNewAssignment();else if(S.view==='detail')renderDetailPage();else if(S.view==='search')renderUniversalSearch();requestAnimationFrame(updateNotificationBell)}
@@ -3795,7 +3755,7 @@ function renderMyTeam(){
 }
 
 function renderOverviewTab(){const a=S.current,r=currentRevision(a);return `<div class="tab-card"><div class="scope-box"><div class="k">RESPONSIBILITY</div><div class="v">${h(scopeSummary(a))}</div></div><div class="summary"><div class="summary-item"><div class="k">ASSIGNED TO</div><div class="v">${h(assignmentDisplayUser(a))}</div></div><div class="summary-item"><div class="k">ASSIGNED BY</div><div class="v">${h(assignmentByDisplay(a))}</div></div><div class="summary-item"><div class="k">SCOPE LEVEL</div><div class="v">${h(scalar(a[AF.scopeLevel])||assignmentCriteria(a)||'—')}</div></div><div class="summary-item"><div class="k">PRIORITY</div><div class="v">${h(scalar(a[AF.priority])||'—')}</div></div><div class="summary-item"><div class="k">START DATE</div><div class="v">${h(displayDate(a[AF.startDate]))}</div></div><div class="summary-item"><div class="k">TARGET DATE</div><div class="v">${h(displayDate(a[AF.targetDate]))}</div></div><div class="summary-item"><div class="k">STATUS</div><div class="v">${statusPill(scalar(a[AF.status]))}</div></div><div class="summary-item"><div class="k">PROGRESS</div><div class="v">${num(a[AF.progress])}%</div></div></div><div class="v19-overview-grid"><div class="v19-info-card"><h3>Design execution</h3>${r?`<div class="exec-hero"><div class="exec-rev"><div class="rev-circle">${h(scalar(r[AF.revision])||'R0')}</div><div><h3>${h(scalar(r[AF.status])||'Not Started')}</h3><p>${h(scalar(r[AF.revisionDescription])||'No revision description')}</p></div></div><button class="btn sm primary" data-detail-tab="files">Open Design</button></div>`:`<div class="empty compact"><strong>No design revision started</strong><div style="margin-top:9px"><button class="btn sm primary" data-detail-tab="files">Start R0</button></div></div>`}</div><div class="v19-info-card"><h3>Readable record information</h3><div class="tiny muted">Project</div><div class="v19-human">${h(scalar(a[AF.projectCode])||'—')}</div><div class="tiny muted" style="margin-top:9px">Design</div><div class="v19-human">${h(drawingForAssignment(a).name)}</div><div class="tiny muted" style="margin-top:9px">Employee</div><div class="v19-human">${h(assignmentDisplayUser(a))}</div><div class="tiny muted" style="margin-top:9px">Remark</div><div>${h(scalar(a[AF.remark])||'—')}</div></div></div><div class="actions" style="margin-top:14px"><button class="btn" data-act="edit-assignment">Update Status / Progress</button><button class="btn" data-detail-tab="revisions">Revision History (${revisionsForAssignment(a).length})</button></div></div>`}
-function renderAssignmentDependencyTabV18(){return `<div class="tab-card"><div class="section-row" style="margin-top:0"><div><h2>Document Dependencies</h2><p>Reserved for real engineering predecessor / successor document references.</p></div></div><div class="empty compact"><strong>No legacy assignment hierarchy is used here</strong>Dependencies will represent actual document relationships such as Vendor GA → Piping GA or Layout → Foundation Drawing. The widget will not display Assigned_From_ID as an engineering dependency.</div></div>`}
+/* [V21 clean-up] older copy of renderAssignmentDependencyTabV18() removed - the newer copy below is the one that always ran */
 function renderDetailTab(){if(S.detailTab==='activity')return renderActivityAlertsTab();if(S.detailTab==='dependency')return renderAssignmentDependencyTabV18();if(S.detailTab==='pds')return renderPdsWorkspaceTab();if(S.detailTab==='files')return renderFilesTab();if(S.detailTab==='revisions')return renderRevisionTab();return renderOverviewTab()}
 function renderDetailPage(){
   if(!S.current){S.view='project';return renderView()}const a=S.current,d=S.drawing||drawingForAssignment(a),r=currentRevision(a);
@@ -3804,7 +3764,7 @@ function renderDetailPage(){
 function renderDetailDrawer(){
   const a=drawerAssignment(),d=$("detailDrawer"),b=$("drawerBackdrop");if(!a||!d||!b)return closeDetailDrawer();const dr=drawingForAssignment(a),r=currentRevision(a),alerts=assignmentAlerts(a);b.classList.add('open');d.classList.add('open');d.setAttribute('aria-hidden','false');$("drawerHead").innerHTML=`<div class="drawer-crumbs"><span class="drawer-crumb current">Project ${h(scalar(a[AF.projectCode]))}</span><span>›</span><span class="drawer-crumb current">${h(dr.name)}</span></div><div class="drawer-head-top"><div><div class="drawer-sub">${h(scalar(a[AF.scopeLevel])||assignmentCriteria(a)||'Design Work')}</div><div class="drawer-title">${h(dr.name)}</div><div class="drawer-sub">${h(scopeSummary(a))}</div></div><button class="drawer-close" data-drawer-close>×</button></div><div class="detail-meta" style="margin-top:10px"><span class="pill">${h(assignmentDisplayUser(a))}</span>${statusPill(scalar(a[AF.status]))}${r?`<span class="pill purple">${h(scalar(r[AF.revision])||'R0')}</span>`:''}${alerts.length?`<span class="pill red">${alerts.length} alert${alerts.length===1?'':'s'}</span>`:''}</div>`;const tabs=['overview','activity','alerts'];$("drawerTabs").innerHTML=tabs.map(t=>`<button class="drawer-tab ${S.drawer.tab===t?'active':''}" data-drawer-tab="${t}">${t==='overview'?'Overview':t==='activity'?'Activity':'Alerts'}</button>`).join('');if(S.drawer.tab==='activity')$("drawerBody").innerHTML=renderActivityTimeline(a);else if(S.drawer.tab==='alerts')$("drawerBody").innerHTML=renderAlertList(a);else $("drawerBody").innerHTML=`<div class="scope-box"><div class="k">RESPONSIBILITY</div><div class="v">${h(scopeSummary(a))}</div></div><div class="summary" style="grid-template-columns:1fr 1fr;margin-top:12px"><div class="summary-item"><div class="k">ASSIGNED TO</div><div class="v">${h(assignmentDisplayUser(a))}</div></div><div class="summary-item"><div class="k">SCOPE</div><div class="v">${h(scalar(a[AF.scopeLevel])||assignmentCriteria(a)||'—')}</div></div><div class="summary-item"><div class="k">TARGET</div><div class="v">${h(displayDate(a[AF.targetDate]))}</div></div><div class="summary-item"><div class="k">PROGRESS</div><div class="v">${num(a[AF.progress])}%</div></div></div>`;$("drawerActions").innerHTML=`<button class="btn primary" data-drawer-open-full="${h(idOf(a))}">Open Design Work</button>`
 }
-function renderProjectDependenciesV18(){return `<div class="section-row"><div><h2>Document Dependencies</h2><p>Engineering predecessor / successor references will appear here when a persistent document-dependency source is connected.</p></div></div><div class="empty"><strong>No fake dependency links</strong>The old Assigned_From_ID delegation hierarchy is intentionally removed from this new project-style UI. Actual document dependencies will be stored and shown separately.</div>`}
+/* [V21 clean-up] older copy of renderProjectDependenciesV18() removed - the newer copy below is the one that always ran */
 function renderProjectActivityV18(){const items=[];v18ProjectAssignments(S.projectWorkspace.code).forEach(a=>assignmentActivityTimeline(a).forEach(x=>items.push({...x,assignment:a})));const stamp=x=>{const d=new Date(x.time);return Number.isNaN(d.getTime())?0:d.getTime()};items.sort((a,b)=>stamp(b)-stamp(a));return `<div class="section-row"><div><h2>Project Activity Stream</h2><p>Design work, revision, file and workflow activity.</p></div></div>${items.length?`<div class="timeline">${items.slice(0,150).map(x=>`<div class="timeline-item"><div class="timeline-dot"></div><div class="timeline-card" data-open-assignment="${h(idOf(x.assignment))}"><div class="action">${h(x.action||'Activity')}${x.revision?` • ${h(x.revision)}`:''}</div><div class="meta">${h(personDisplay(x.actor)||'System')}${x.time?` • ${h(displayDateTime(x.time))}`:''} • ${h(drawingForAssignment(x.assignment).name)}</div>${x.detail?`<div class="detail">${h(x.detail)}</div>`:''}</div></div>`).join('')}</div>`:`<div class="empty"><strong>No activity recorded</strong>New actions will appear here.</div>`}`}
 
 
@@ -6463,6 +6423,33 @@ function updateAssignSummary(){
   if(b){b.disabled=!(items&&people);b.textContent=`Create ${items*people||""} Task${items*people===1?"":"s"}`}
   document.querySelectorAll(".v218-unit").forEach(l=>{const cb=l.querySelector("input");if(cb)l.classList.toggle("selected",cb.checked)});
 }
+/*
+  saveItems(label, items, rootId, code)
+  Saves a list of new tasks. When the V21 layer is present it uses the V21
+  outbox (survives closing the browser, skips records that already exist in
+  Zoho). Without V21 it falls back to a simple safe loop.
+  items = [{key, data}]   returns {created, skipped, failed:[{data,error}], stopped}
+*/
+async function saveItems(label,items,rootId,code){
+  const OB=window.MEGA_V21;
+  if(OB&&typeof OB.runBatch==="function")return OB.runBatch({label,items,rootId,project:code});
+  const created=[],failed=[];let skipped=0,stopped=false;
+  busy(`${label}: saving ${items.length} task${items.length===1?"":"s"}…`);
+  try{
+    for(let i=0;i<items.length;i++){
+      try{updateBusyProgress(i,items.length,"Saving tasks")}catch(_){}
+      try{const id=await addRecord(items[i].data);if(!id)throw new Error("Creator did not return the new record ID.");const rec={ID:id,...items[i].data};S.records.push(rec);S.assignments.push(rec);created.push(rec)}
+      catch(e){if(e&&e.code==="MEGA_RULE"){stopped=true;break}if(typeof v208IsDuplicateError==="function"&&v208IsDuplicateError(e))skipped++;else{failed.push({data:items[i].data,error:e});log("create task",e)}}
+      if(i%20===19)await sleep(20);
+    }
+  }finally{idle()}
+  return {created,skipped,failed,stopped};
+}
+// One clear sentence about what happened, for the toast message.
+function saveResultText(r,extraSkipped=0){
+  const names=uniq((r.created||[]).map(x=>sc(x[AF.assignedEmployeeName])));const sk=(r.skipped||0)+extraSkipped;
+  return `${r.created.length} task${r.created.length===1?"":"s"} created${names.length?` for ${names.join(", ")}`:""}${sk?` • ${sk} already existed`:""}${r.failed.length?` • ${r.failed.length} failed (kept in the top bar for Resume)`:""}${r.stopped?" • stopped because the connection was lost — the rest are kept: click Resume in the top bar":""}.`;
+}
 async function createAssign(){
   const a=syncAssign();if(!a)throw rule("Nothing to assign.");
   const parent=assignmentById(a.parentId);if(!parent)throw rule("Parent Design task is not available. Refresh the Project.");
@@ -6478,32 +6465,28 @@ async function createAssign(){
   if(!pairs.length)throw rule("All selected items are already assigned to the selected people.");
   const max=Number(CONFIG.MAX_BATCH)||5000;if(pairs.length>max)throw rule(`Maximum ${max} tasks can be created at once. Select fewer items.`);
   const draft={mode:a.mode===MODE_PDS?"Tag Wise":a.mode,start:a.start,target:a.target,end:a.end,priority:a.priority||"Medium",remark:a.remark||"",user:people[0].backendValue};
-  const rootId=sc(parent[AF.primaryAssignment])||idOf(parent),created=[],failed=[];
-  busy(`Creating ${pairs.length} task${pairs.length===1?"":"s"}…`);
-  try{
-    for(let i=0;i<pairs.length;i++){
-      const {u,r,plain}=pairs[i];try{updateBusyProgress(i,pairs.length,"Creating tasks")}catch(_){}
-      try{
-        let data;
-        if(a.mode===MODE_PDS){
-          data=v205PdsReadablePayload(p&&p.code?p:{code:a.code,id:""},drawing,r,draft,u);
-          data[AF.assignedFrom]=idOf(parent);data[AF.primaryAssignment]=rootId;data[AF.assignmentLevel]=num0(parent[AF.assignmentLevel])+1;
-          data[AF.logicalTaskKey]=`${sc(data[AF.logicalTaskKey])}::${N(idOf(parent))}`;
-        }else data=v211ScopeChildData(parent,drawing,r,draft,u);
-        if(!plain)data[AF.logicalTaskKey]=`${sc(data[AF.logicalTaskKey])}${suffix(r)}`;
-        if(AF.workKey)data[AF.workKey]=sc(data[AF.logicalTaskKey]).slice(0,240);
-        const id=await addRecord(data);if(!id)throw new Error("Creator did not return the new record ID.");
-        const rec={ID:id,...data};S.records.push(rec);S.assignments.push(rec);created.push(rec);
-      }catch(e){if(e&&e.code==="MEGA_RULE")throw e;if(typeof v208IsDuplicateError==="function"&&v208IsDuplicateError(e))skipped++;else{failed.push({u,r,e});log("create task",e)}}
-      if(i%20===19)await sleep(20);
-    }
-    try{updateBusyProgress(pairs.length,pairs.length,"Creating tasks")}catch(_){}
-    if(created.length){try{await notifyCreatedAssignments(created)}catch(e){log("email",e)}}
-  }finally{idle()}
-  if(!created.length&&failed.length)throw new Error(`No task was created. ${failed[0].e?.message||"Creator save failed."}`);
+  const rootId=sc(parent[AF.primaryAssignment])||idOf(parent);
+  // 1. build every task first (nothing is saved yet)
+  const items=[];
+  for(const {u,r,plain} of pairs){
+    let data;
+    if(a.mode===MODE_PDS){
+      data=v205PdsReadablePayload(p&&p.code?p:{code:a.code,id:""},drawing,r,draft,u);
+      data[AF.assignedFrom]=idOf(parent);data[AF.primaryAssignment]=rootId;data[AF.assignmentLevel]=num0(parent[AF.assignmentLevel])+1;
+      data[AF.logicalTaskKey]=`${sc(data[AF.logicalTaskKey])}::${N(idOf(parent))}`;
+    }else data=v211ScopeChildData(parent,drawing,r,draft,u);
+    if(!plain)data[AF.logicalTaskKey]=`${sc(data[AF.logicalTaskKey])}${suffix(r)}`;   // 2nd+ person on the same item gets a unique key
+    if(AF.workKey)data[AF.workKey]=sc(data[AF.logicalTaskKey]).slice(0,240);
+    items.push({key:sc(data[AF.workKey]||data[AF.logicalTaskKey]),data});
+  }
+  // 2. save them through the outbox
+  const label=`Assign ${a.mode===MODE_PDS?"PDS work":v19ScopeLabel(a.mode)} — ${drawing.short||drawing.name||"Design"}`;
+  const res=await saveItems(label,items,rootId,a.code);
+  // 3. emails (queued; never block the saved work)
+  if(res.created.length){try{await notifyCreatedAssignments(res.created)}catch(e){log("email",e)}}
+  if(!res.created.length&&res.failed.length&&!res.stopped)throw new Error(`No task was created. ${res.failed[0].error?.message||"Creator save failed."}`);
   V.expanded.add(String(idOf(parent)));V.assign=null;closeModal();
-  const names=uniq(created.map(x=>sc(x[AF.assignedEmployeeName])));
-  say(`${created.length} task${created.length===1?"":"s"} created for ${names.join(", ")}${skipped?` • ${skipped} already existed`:""}${failed.length?` • ${failed.length} failed (see console)`:""}.`,failed.length?"warn":"good");
+  say(saveResultText(res,skipped),res.failed.length||res.stopped?"warn":"good");
   try{renderView()}catch(_){}
 }
 try{
@@ -6548,26 +6531,29 @@ patch("v211CreateSubtask",()=>v211CreateSubtask,f=>{v211CreateSubtask=f},base=>a
   validDates(d);checkManage(parent,d.start,d.target,d.end,"add a subtask here");
   const drawing=drawingForAssignment(parent),rootId=sc(parent[AF.primaryAssignment])||idOf(parent),baseKey=`SUBTASK::${N(rootId)}::${N(idOf(parent))}::${N(d.name)}`;
   const taken=new Set((S.assignments||[]).map(x=>sc(x[AF.logicalTaskKey])));
-  const created=[];
-  busy(`Creating subtask for ${people.length} person${people.length===1?"":"s"}…`);
-  try{
-    for(let i=0;i<people.length;i++){
-      const r=people[i];
-      if(assignmentChildren(idOf(parent)).some(c=>N(sc(c[AF.designTitle]))===N(d.name)&&samePerson(c,r)&&sc(c[AF.status])!=="Cancelled")){say(`${r.name} already has subtask "${d.name}". Skipped.`);continue}
-      const data={
-        [AF.projectCode]:sc(parent[AF.projectCode]),[AF.projectRecordId]:sc(parent[AF.projectRecordId]),[AF.drawingDocument]:drawing.name,[AF.drawingMasterId]:drawing.id,[AF.shortName]:drawing.short||"",
-        [AF.primaryAssignment]:rootId,[AF.assignedFrom]:idOf(parent),[AF.assignmentLevel]:num0(parent[AF.assignmentLevel])+1,[AF.assignedBy]:S.user||(typeof v19CurrentUserReadable==="function"?v19CurrentUserReadable():""),[AF.assignedTo]:r.backendValue,[AF.assignedEmployeeName]:r.name,
-        [AF.criteria]:"Subtask",[AF.responsibility]:`${scopeSummary(parent)||v211NodeLabel(parent)} › ${d.name}`,[AF.designType]:"Subtask",[AF.designTitle]:d.name,[AF.startDate]:toCreatorDate(d.start),[AF.targetDate]:toCreatorDate(d.target),[AF.endDate]:toCreatorDate(d.end),[AF.priority]:d.priority,[AF.status]:"Not Started",[AF.progress]:0,[AF.remark]:d.remark
-      };
-      for(const fld of [AF.plantSection,AF.plantSectionType,AF.tagNo,AF.equipmentName,AF.equipmentCategory,AF.equipmentType,AF.equipmentRecordId,AF.groupCode,AF.department,AF.pdsRecordId]){if(fld&&sc(parent[fld]))data[fld]=sc(parent[fld])}
-      let key=baseKey;if(taken.has(key))key=`${baseKey}${suffix(r)}`;taken.add(key);
-      data[AF.logicalTaskKey]=key;if(AF.workKey)data[AF.workKey]=key.slice(0,240);
-      data[AF.activityLog]=initialActivity("Subtask Assigned",`${r.name} received subtask: ${d.name}.`,{kind:"subtask",assignedTo:r.email,parent:idOf(parent)});
-      const id=await addRecord(data);if(!id)throw new Error("Creator did not return the new record ID.");
-      const rec={ID:id,...data};S.records.push(rec);S.assignments.push(rec);created.push(rec);
-    }
-    if(created.length){try{await notifyCreatedAssignments(created)}catch(e){log("email",e)}}
-  }finally{idle()}
+  // 1. build one subtask per person (nothing is saved yet)
+  const items=[];
+  for(const r of people){
+    if(assignmentChildren(idOf(parent)).some(c=>N(sc(c[AF.designTitle]))===N(d.name)&&samePerson(c,r)&&sc(c[AF.status])!=="Cancelled")){say(`${r.name} already has subtask "${d.name}". Skipped.`);continue}
+    const data={
+      [AF.projectCode]:sc(parent[AF.projectCode]),[AF.projectRecordId]:sc(parent[AF.projectRecordId]),[AF.drawingDocument]:drawing.name,[AF.drawingMasterId]:drawing.id,[AF.shortName]:drawing.short||"",
+      [AF.primaryAssignment]:rootId,[AF.assignedFrom]:idOf(parent),[AF.assignmentLevel]:num0(parent[AF.assignmentLevel])+1,[AF.assignedBy]:S.user||(typeof v19CurrentUserReadable==="function"?v19CurrentUserReadable():""),[AF.assignedTo]:r.backendValue,[AF.assignedEmployeeName]:r.name,
+      [AF.criteria]:"Subtask",[AF.responsibility]:`${scopeSummary(parent)||v211NodeLabel(parent)} › ${d.name}`,[AF.designType]:"Subtask",[AF.designTitle]:d.name,[AF.startDate]:toCreatorDate(d.start),[AF.targetDate]:toCreatorDate(d.target),[AF.endDate]:toCreatorDate(d.end),[AF.priority]:d.priority,[AF.status]:"Not Started",[AF.progress]:0,[AF.remark]:d.remark
+    };
+    // the subtask inherits the scope of its parent (section, tag, equipment …)
+    for(const fld of [AF.plantSection,AF.plantSectionType,AF.tagNo,AF.equipmentName,AF.equipmentCategory,AF.equipmentType,AF.equipmentRecordId,AF.groupCode,AF.department,AF.pdsRecordId]){if(fld&&sc(parent[fld]))data[fld]=sc(parent[fld])}
+    let key=baseKey;if(taken.has(key))key=`${baseKey}${suffix(r)}`;taken.add(key);
+    data[AF.logicalTaskKey]=key;if(AF.workKey)data[AF.workKey]=key.slice(0,240);
+    data[AF.activityLog]=initialActivity("Subtask Assigned",`${r.name} received subtask: ${d.name}.`,{kind:"subtask",assignedTo:r.email,parent:idOf(parent)});
+    items.push({key:key.slice(0,240),data});
+  }
+  if(!items.length)return;
+  // 2. save through the outbox, 3. queue the emails
+  const res=await saveItems(`Subtask "${d.name}"`,items,rootId,sc(parent[AF.projectCode]));
+  const created=res.created;
+  if(created.length){try{await notifyCreatedAssignments(created)}catch(e){log("email",e)}}
+  if(!created.length&&res.failed.length&&!res.stopped)throw new Error(`Subtask was not created. ${res.failed[0].error?.message||"Creator save failed."}`);
+  if(res.failed.length||res.stopped)say(saveResultText(res),"warn");
   V.expanded.add(String(idOf(parent)));let g=parent,n=0;while(g&&n++<20){V.expanded.add(String(idOf(g)));const pid=sc(g[AF.assignedFrom]);g=pid?assignmentById(pid):null}
   closeModal();try{renderView()}catch(_){}
   if(created.length)say(`Subtask "${d.name}" assigned to ${created.map(x=>sc(x[AF.assignedEmployeeName])).join(", ")}.`,"good");
@@ -6850,6 +6836,582 @@ try{if(S.view==="project")renderView()}catch(_){}
 console.info(`[${BUILD}] loaded`);
 })()}catch(e){try{console.error("[V20.19] could not load",e)}catch(_){}}
 </script>
+<script id="megaV21">
+/* ======================================================================
+   V21 LAYER - SPEED + "NEVER LOSE / NEVER DOUBLE" RELIABILITY
+   ----------------------------------------------------------------------
+   No new Creator fields, forms, permissions or Deluge scripts are needed.
+   Everything below runs inside the widget and uses the browser's own
+   storage (localStorage) on the user's computer.
+
+   WHAT THIS LAYER ADDS
+   1. Instant first screen
+      - Projects, Designs and Plant Sections are saved on this computer.
+        The Projects screen is shown at once from the saved copy while the
+        live Zoho data loads in the background.
+      - The last 6 opened projects are saved too, so a project opens at
+        once and is then refreshed from Zoho.
+      - While a project is shown from the saved copy, SAVING IS PAUSED for
+        that project until the live data has arrived. This prevents any
+        decision being made on old data.
+   2. Load only what changed
+      - The background refresh (every 3 minutes, only while the tab is
+        visible) asks Zoho only for records changed since the last load
+        (Modified_Time). A full reload still runs every 15 minutes and on
+        the Refresh button, so deleted records also disappear.
+      - If Zoho does not accept the "changed since" query, the widget
+        switches back to the normal full reload automatically.
+   3. Outbox that survives closing the browser
+      - Bulk task creation is written to a job list on this computer
+        before it starts. Every saved task is ticked off. If the browser
+        closes or the internet drops halfway, the next time the widget
+        opens it shows "N tasks were not finished - Resume / Discard".
+      - Assignment emails are also queued. If an email fails it stays in
+        the queue with a "Send now" button instead of being lost.
+      - Parent progress that may not have been rolled up is re-checked
+        the next time the project is opened.
+   4. Duplicate check before saving
+      - Before a task is created, Zoho is asked once whether a record with
+        the same Work Key already exists (for example created a moment ago
+        by another person). If it exists, it is skipped, not doubled.
+      - For bulk jobs, one read fetches all existing keys of the design
+        first, so there is no extra call per task.
+   5. Field check at start-up
+      - The Design_Tracking form fields are read once. If a field the
+        widget needs is missing or renamed, admins see a clear warning
+        (top bar + System Health) instead of silently blank data.
+
+   SAFETY RULES OF THIS LAYER
+   - Every feature is wrapped in try/catch. If any part fails it is
+     skipped, written to the browser console as [V21], and the widget
+     keeps working exactly as before.
+   - Nothing here deletes data in Zoho.
+   - The saved copy on the computer never replaces live data: live data
+     always wins as soon as it arrives.
+   ====================================================================== */
+try{(function V21(){
+"use strict";
+const BUILD="V21.0";
+
+/* ---------- 0. Small safe helpers ---------- */
+const log=(...a)=>{try{console.warn("[V21]",...a)}catch(_){}};
+if(typeof S!=="object"||!S)return log("widget state S not found");
+const say=(m,t="warn")=>{try{if(typeof toast==="function")toast(m,t);else console.log(m)}catch(_){}};
+const sc=v=>{try{return typeof scalar==="function"?String(scalar(v)??""):(v==null?"":String(v))}catch(_){return v==null?"":String(v)}};
+const esc=s=>{try{return h(s)}catch(_){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}};
+const el=id=>{try{return document.getElementById(id)}catch(_){return null}};
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const num0=v=>{const x=parseFloat(sc(v));return isFinite(x)?x:0};
+const X=()=>(window.MEGA_V217&&typeof window.MEGA_V217==="object")?window.MEGA_V217:{};
+function rule(msg){const e=new Error(msg);e.code="MEGA_RULE";return e}
+const isRule=e=>!!e&&e.code==="MEGA_RULE";
+// patch(name, getter, setter, makeNew): replace a widget function only if it exists.
+function patch(label,get,set,make){
+  try{const base=get();if(typeof base!=="function")return log(`skipped ${label}: not found`);set(make(base))}
+  catch(e){log(`skipped ${label}:`,e)}
+}
+// Settings of this layer. Change numbers here only if needed.
+const CFG={
+  REFRESH_MS:180000,          // background refresh every 3 minutes
+  FULL_RELOAD_MS:15*60000,    // full project reload at least every 15 minutes
+  MASTER_CACHE_DAYS:7,        // saved Projects/Designs older than this are ignored
+  PROJECT_CACHE_HOURS:72,     // saved project data older than this is ignored
+  PROJECT_CACHE_MAX:6,        // how many projects are kept on this computer
+  PROJECT_CACHE_MAX_BYTES:2500000, // one project larger than this is not saved
+  LIVE_WAIT_MS:25000,         // how long a click waits for the live connection
+  EMAIL_TRIES:2               // email attempts before it stays in the outbox
+};
+const V=S.v21={live:false,liveAt:0,fromCache:false,cacheAt:0,stale:new Set(),applyingCache:false,
+  delta:{off:false,last:new Map(),full:new Map(),reason:""},batch:null,fields:{checked:false,missing:[],optional:[],error:""},jobs:[],mail:[],busyJob:false};
+
+/* ---------- 1. Storage on this computer (localStorage) ---------- */
+// All keys start with MEGA_V21::<app>:: so nothing else is touched.
+// The key uses the fixed app name from CONFIG (known before Zoho answers), so the saved copy can be read at once.
+const NS=()=>`MEGA_V21::${(typeof CONFIG==="object"&&CONFIG.APP_NAME)||"app"}::`;
+const LS={
+  get(k,def=null){try{const raw=localStorage.getItem(NS()+k);return raw==null?def:JSON.parse(raw)}catch(_){return def}},
+  set(k,v){try{localStorage.setItem(NS()+k,JSON.stringify(v));return true}catch(e){log("storage full or blocked",k,e);return false}},
+  del(k){try{localStorage.removeItem(NS()+k)}catch(_){}},
+  size(k){try{return (localStorage.getItem(NS()+k)||"").length}catch(_){return 0}}
+};
+
+/* ---------- 2. Instant first screen: saved masters ---------- */
+function saveMasters(){
+  try{
+    if(S.demo||!Array.isArray(S.projects)||!S.projects.length)return;
+    LS.set("masters",{v:1,at:Date.now(),projects:S.projects,drawings:S.drawings||[],plantSections:S.plantSections||[]});
+  }catch(e){log("save masters",e)}
+}
+function earlyPaint(){
+  // Runs once when the widget opens, before Zoho has answered.
+  try{
+    if(S.demo||V.live)return;
+    if(Array.isArray(S.projects)&&S.projects.length)return;       // live data already there
+    const m=LS.get("masters");if(!m||m.v!==1||!Array.isArray(m.projects)||!m.projects.length)return;
+    if(Date.now()-Number(m.at||0)>CFG.MASTER_CACHE_DAYS*86400000)return;
+    S.projects=m.projects;S.drawings=m.drawings||[];S.plantSections=m.plantSections||[];
+    try{S.plantSectionTypeMap=new Map();S.plantSections.forEach(x=>{if(x.type&&x.section)S.plantSectionTypeMap.set(nk(x.type),x.section)})}catch(_){}
+    V.fromCache=true;V.cacheAt=Number(m.at||0);
+    // hide the full-screen loader; a small "Updating" note is shown instead
+    try{while(typeof loadDepth==="number"&&loadDepth>0)idle()}catch(_){}
+    if(!S.view||S.view==="projects"||S.view==="home"){S.view="projects";renderView()}
+    drawBar();
+  }catch(e){log("early paint",e)}
+}
+// The live start-up calls startSystemAlertRefresh() right after the masters
+// have loaded. That is used as the "live data is here" signal.
+if(typeof CONFIG==="object")CONFIG.ALERT_REFRESH_MS=CFG.REFRESH_MS;
+patch("startSystemAlertRefresh",()=>startSystemAlertRefresh,f=>{startSystemAlertRefresh=f},base=>function(){
+  try{V.live=true;V.liveAt=Date.now();V.fromCache=false;saveMasters();drawBar();setTimeout(afterLive,0)}catch(e){log(e)}
+  return base.apply(this,arguments);
+});
+// Wait (max LIVE_WAIT_MS) until the live connection is ready.
+async function waitLive(){
+  if(V.live||S.demo)return true;
+  const t0=Date.now();
+  while(!V.live&&Date.now()-t0<CFG.LIVE_WAIT_MS)await wait(250);
+  return V.live;
+}
+
+/* ---------- 3. Saved project data (last 6 projects) ---------- */
+function projIndex(){const x=LS.get("projIndex",[]);return Array.isArray(x)?x:[]}
+function saveProject(code,rawRows){
+  try{
+    if(S.demo||!code)return;
+    const eq=(S.cache?.equipmentByProject?.get(code))||[];
+    const data={v:1,at:Date.now(),code,tracking:rawRows||[],equipment:eq};
+    let text="";try{text=JSON.stringify(data)}catch(_){return}
+    if(text.length>CFG.PROJECT_CACHE_MAX_BYTES){LS.del("proj::"+code);return}   // too large: skip, no harm
+    let idx=projIndex().filter(x=>x.code!==code);idx.unshift({code,at:data.at});
+    while(idx.length>CFG.PROJECT_CACHE_MAX){const old=idx.pop();LS.del("proj::"+old.code)}
+    if(!LS.set("proj::"+code,data)){ // storage full: drop the oldest and try once more
+      while(idx.length>1){const old=idx.pop();LS.del("proj::"+old.code)}
+      if(!LS.set("proj::"+code,data))idx=idx.filter(x=>x.code!==code);
+    }
+    LS.set("projIndex",idx);
+  }catch(e){log("save project",e)}
+}
+// Save the current screen data of a project (debounced: at most once every 2 seconds).
+const saveTimers=new Map();
+function scheduleSave(code){
+  code=String(code||"");if(!code||S.demo||V.stale.has(code))return;
+  clearTimeout(saveTimers.get(code));
+  saveTimers.set(code,setTimeout(()=>{try{if(V.stale.has(code))return;const rows=(S.records||[]).filter(r=>sc(r[AF.projectCode])===code);if(rows.length||typeof v208ProjectLoaded==="function"&&v208ProjectLoaded(code))saveProject(code,rows)}catch(e){log("save project",e)}},2000));
+}
+function applyProjectCache(code,force=false){
+  // Shows saved data at once. The normal live load still runs right after.
+  // force=true: apply even if the project was loaded before (the live start-up clears the screen data).
+  try{
+    if(S.demo||!code)return false;
+    const inMemory=(S.records||[]).some(r=>sc(r[AF.projectCode])===String(code));
+    if(!force&&typeof v208ProjectLoaded==="function"&&v208ProjectLoaded(code))return false;
+    if(force&&inMemory&&!V.stale.has(String(code)))return false;
+    const d=LS.get("proj::"+code);if(!d||d.v!==1||!Array.isArray(d.tracking))return false;
+    if(Date.now()-Number(d.at||0)>CFG.PROJECT_CACHE_HOURS*3600000)return false;
+    V.applyingCache=true;
+    try{v208ReplaceProjectTracking(code,d.tracking)}finally{V.applyingCache=false}
+    S.cache.trackingLoadedAt.set(code,0);                 // force the live reload
+    if(Array.isArray(d.equipment)&&d.equipment.length&&!(S.cache.equipmentByProject.get(code)||[]).length){
+      S.cache.equipmentByProject.set(code,d.equipment);S.cache.equipmentProjects?.add?.(code);mergeEquipmentRows(d.equipment);
+      S.cache.equipmentLoadedAt?.set?.(code,0);
+    }
+    V.stale.add(code);V.cacheAt=Number(d.at||0);drawBar();
+    return true;
+  }catch(e){log("apply project cache",e);V.applyingCache=false;return false}
+}
+// Every live load of a project's tracking goes through this function.
+patch("v208ReplaceProjectTracking",()=>v208ReplaceProjectTracking,f=>{v208ReplaceProjectTracking=f},base=>function(code,rawRows){
+  const out=base.apply(this,arguments);
+  if(!V.applyingCache){
+    try{
+      code=String(code||"");V.stale.delete(code);
+      V.delta.full.set(code,Date.now());V.delta.last.set(code,maxModified(rawRows));
+      drawBar();scheduleSave(code);
+      setTimeout(()=>repairParents(code),1500);
+    }catch(e){log(e)}
+  }
+  return out;
+});
+patch("v210LoadProjectData",()=>v210LoadProjectData,f=>{v210LoadProjectData=f},base=>async function(code){
+  const out=await base.apply(this,arguments);
+  try{code=String(code||"").trim();if(code&&!V.stale.has(code))scheduleSave(code)}catch(e){log(e)}
+  drawBar();return out;
+});
+patch("openProjectWorkspace",()=>openProjectWorkspace,f=>{openProjectWorkspace=f},base=>async function(code,tab){
+  try{
+    code=String(code||"").trim();
+    if(code&&!V.live&&!S.demo){
+      // Zoho is still connecting: show the saved copy of this project at once (read-only),
+      // then wait for the live connection before the normal open/load runs.
+      const shown=applyProjectCache(code,true);
+      if(shown){
+        try{S.projectWorkspace.code=code;S.projectWorkspace.tab=tab||"designs";S.view="project";S.previousView="projects";
+          if(typeof v209SetProjectState==="function")v209SetProjectState(code,{tracking:"cached",equipment:"cached"});renderView()}catch(e){log(e)}
+        await waitLive();
+        applyProjectCache(code,true);      // the live start-up cleared the screen data; show the saved copy again
+      }else{busy("Connecting to Zoho Creator…");try{await waitLive()}finally{idle()}}
+    }else if(code)applyProjectCache(code,false);
+  }catch(e){log("open project (cache)",e)}
+  return base.apply(this,arguments);
+});
+
+/* ---------- 4. Load only what changed (delta refresh) ---------- */
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function parseZohoTime(s){ // "12-Oct-2026 10:20:33" -> Date (server clock, no time zone change)
+  const m=String(s||"").trim().match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?/);if(!m)return null;
+  const mi=MON.findIndex(x=>x.toLowerCase()===m[2].toLowerCase());if(mi<0)return null;
+  return new Date(Number(m[3]),mi,Number(m[1]),Number(m[4]),Number(m[5]),Number(m[6]||0));
+}
+function fmtZohoTime(d){const p=n=>String(n).padStart(2,"0");return `${p(d.getDate())}-${MON[d.getMonth()]}-${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`}
+function rowModified(r){
+  try{const al=(typeof SYSTEM_ALIASES==="object"&&SYSTEM_ALIASES.modifiedTime)||["Modified_Time"];return pick(r,al,"")}catch(_){return sc(r?.Modified_Time)}
+}
+function maxModified(rows){let best=null;for(const r of rows||[]){const d=parseZohoTime(rowModified(r));if(d&&(!best||d>best))best=d}return best}
+async function deltaRefresh(code){
+  // returns true when the project is up to date
+  code=String(code||"");if(!code||S.demo)return true;
+  const lastFull=Number(V.delta.full.get(code)||0),since=V.delta.last.get(code);
+  if(V.delta.off||!since||Date.now()-lastFull>CFG.FULL_RELOAD_MS){await ensureTrackingForProject(code,true);return true}
+  const from=new Date(since.getTime()-5*60000);   // 5 minutes overlap, safe for slow saves
+  // Project_Code may be a text field or a lookup; the form that worked is remembered
+  const forms=V.delta.form?[V.delta.form]:[AF.projectCode,`${AF.projectCode}.Project_Code`];
+  let rows=null,lastErr=null;
+  for(const fld of forms){
+    const crit=`(${fld} == "${creatorCriteriaEscape(code)}" && Modified_Time >= "${fmtZohoTime(from)}")`;
+    try{rows=await fetchRecords(CONFIG.REPORTS.tracking,crit,5);V.delta.form=fld;break}catch(e){lastErr=e}
+  }
+  if(rows==null){V.delta.off=true;V.delta.reason=errorText(lastErr);log("changed-only refresh not accepted by Zoho; using full reload",lastErr);await ensureTrackingForProject(code,true);return true}
+  rows=(rows||[]).filter(r=>sc(r[AF.projectCode])===code||!sc(r[AF.projectCode]));
+  if(!rows.length)return true;
+  // merge changed rows by record ID
+  const adapted=rows.map(adaptRecord),byId=new Map(S.records.map(r=>[String(idOf(r)),r]));
+  for(const r of adapted)byId.set(String(idOf(r)),r);
+  S.records=[...byId.values()];S.assignments=S.records.filter(isAssignmentRecord);S.revisions=S.records.filter(isRevisionRecord);
+  const projRows=S.records.filter(r=>sc(r[AF.projectCode])===code);
+  S.cache.trackingByProject.set(code,projRows);S.cache.trackingLoadedAt.set(code,Date.now());
+  const mx=maxModified(rows);if(mx&&(!since||mx>since))V.delta.last.set(code,mx);
+  scheduleSave(code);
+  try{if(S.current){const fresh=S.assignments.find(a=>String(idOf(a))===String(idOf(S.current)));if(fresh)S.current=fresh}}catch(_){}
+  // repaint only when the user is not in the middle of a form
+  try{const modalOpen=!el("modalBackdrop")?.classList.contains("hidden");if(!modalOpen&&(S.view==="project"||S.view==="detail"))renderView()}catch(_){}
+  return true;
+}
+let tick=0;
+patch("silentAlertRefresh",()=>silentAlertRefresh,f=>{silentAlertRefresh=f},base=>async function(){
+  try{
+    if(S.demo||!navigator.onLine)return;
+    if(typeof document!=="undefined"&&document.hidden)return;
+    tick++;
+    const code=String(S.projectWorkspace?.code||"");
+    if(code&&typeof v208ProjectLoaded==="function"&&v208ProjectLoaded(code))await deltaRefresh(code);
+    if(S.cache?.myTrackingLoaded&&tick%3===0){try{await v208EnsureMyTracking(true)}catch(e){log("my work refresh",e)}}
+    try{updateNotificationBell()}catch(_){}
+  }catch(e){log("background refresh",e)}
+});
+
+/* ---------- 5. Duplicate check before every create ---------- */
+function keyOf(data){
+  const wk=AF.workKey&&sc(data?.[AF.workKey]).trim();if(wk)return {field:AF.workKey,value:wk};
+  const lk=AF.logicalTaskKey&&sc(data?.[AF.logicalTaskKey]).trim();if(lk)return {field:AF.logicalTaskKey,value:lk};
+  return null;
+}
+function dupError(row){
+  const e=new Error(`Already exists: this work was already created in Zoho${row?` (record ${idOf(row)})`:""}. It was not created twice.`);
+  e.code="MEGA_DUPLICATE";e.existing=row||null;return e;
+}
+function ingestRow(raw){ // put a row found in Zoho into the screen data
+  try{const r=adaptRecord(raw);if(!S.records.some(x=>String(idOf(x))===String(idOf(r)))){S.records.push(r);if(isAssignmentRecord(r))S.assignments.push(r);else if(isRevisionRecord(r))S.revisions.push(r)}}catch(_){}
+}
+patch("addRecord",()=>addRecord,f=>{addRecord=f},base=>async function(data){
+  if(!S.demo){
+    const code=sc(data?.[AF.projectCode]);
+    if(code&&V.stale.has(code))throw rule(`Project ${code} is still loading the latest data from Zoho. Nothing was saved. Please wait a few seconds and try again.`);
+    const k=keyOf(data),B=V.batch;
+    if(k){
+      if(B&&B.known){ // bulk job: keys were fetched once before the job started
+        const hit=B.known.get(k.value);if(hit)throw dupError(hit);
+      }else{
+        try{
+          const rows=await fetchRecords(CONFIG.REPORTS.tracking,`(${k.field} == "${creatorCriteriaEscape(k.value)}")`,1);
+          const hit=(rows||[]).find(r=>sc(r[k.field])===k.value);
+          if(hit){ingestRow(hit);throw dupError(hit)}
+        }catch(e){if(e&&e.code==="MEGA_DUPLICATE")throw e;log("duplicate check skipped (Zoho read failed)",e)}
+      }
+    }
+  }
+  const id=await base.apply(this,arguments);
+  try{scheduleSave(sc(data?.[AF.projectCode]))}catch(_){}
+  return id;
+});
+// Make the older code treat our duplicate error as "skipped".
+patch("v208IsDuplicateError",()=>v208IsDuplicateError,f=>{v208IsDuplicateError=f},base=>function(e){return (e&&e.code==="MEGA_DUPLICATE")||base.apply(this,arguments)});
+
+/* ---------- 6. Outbox: bulk jobs that survive closing the browser ---------- */
+// A job is stored as two keys: job::<id> (the task data, written once) and
+// done::<id> (small list of finished item numbers, written after each task).
+function jobList(){const x=LS.get("jobs",[]);return Array.isArray(x)?x:[]}
+function jobSave(job){LS.set("job::"+job.id,job);const l=jobList().filter(j=>j.id!==job.id);l.push({id:job.id,label:job.label,at:job.at,count:job.items.length,project:job.project||""});LS.set("jobs",l);V.jobs=l}
+function jobDone(id){const d=LS.get("done::"+id,{});return d&&typeof d==="object"?d:{}}
+function jobDrop(id){LS.del("job::"+id);LS.del("done::"+id);const l=jobList().filter(j=>j.id!==id);LS.set("jobs",l);V.jobs=l}
+function slim(rec){const r={...rec};try{if(AF.activityLog)delete r[AF.activityLog]}catch(_){}return r}
+async function prefetchKeys(rootId){
+  // One read: all records under this design. Returns Map(key -> row) or null.
+  if(S.demo||!rootId||!AF.primaryAssignment)return null;
+  try{
+    const rows=await fetchRecords(CONFIG.REPORTS.tracking,`(${AF.primaryAssignment} == "${creatorCriteriaEscape(String(rootId))}")`,20);
+    const m=new Map();
+    for(const r of rows||[]){for(const f of [AF.workKey,AF.logicalTaskKey]){const v=f&&sc(r[f]).trim();if(v)m.set(v,r)}}
+    return m;
+  }catch(e){log("key prefetch failed; checking one by one",e);return null}
+}
+/*
+  runBatch({label, items:[{key,data}], rootId, project, jobId})
+  - creates every item with addRecord, ticks each one off on this computer
+  - skips items that already exist in Zoho
+  - stops (and keeps the rest for Resume) if the internet is lost
+  returns {created:[records], skipped:Number, failed:[{data,error}], stopped:Boolean}
+*/
+async function runBatch({label,items,rootId,project,jobId}){
+  const job={id:jobId||`J${Date.now()}${Math.random().toString(36).slice(2,6)}`,label:String(label||"Create tasks"),at:Date.now(),rootId:String(rootId||""),project:String(project||""),items:(items||[]).map(x=>({key:x.key||"",data:x.data}))};
+  if(!jobId)jobSave(job);
+  const done=jobDone(job.id),created=[],failed=[];let skipped=0,stopped=false;
+  const todo=job.items.map((x,i)=>i).filter(i=>!done[i]);
+  V.batch={known:await prefetchKeys(job.rootId)};
+  busy(`${job.label}: saving ${todo.length} task${todo.length===1?"":"s"}…`);
+  try{
+    for(let n=0;n<todo.length;n++){
+      const i=todo[n],it=job.items[i];
+      try{updateBusyProgress(n,todo.length,"Saving tasks")}catch(_){}
+      try{
+        const id=await addRecord(it.data);
+        if(!id)throw new Error("Zoho did not return the new record ID.");
+        const rec={ID:id,...it.data};S.records.push(rec);S.assignments.push(rec);created.push(rec);
+        done[i]=String(id);LS.set("done::"+job.id,done);
+      }catch(e){
+        if(e&&e.code==="MEGA_DUPLICATE"){skipped++;done[i]="dup";LS.set("done::"+job.id,done);if(e.existing)ingestRow(e.existing);continue}
+        if(isRule(e)||(typeof navigator!=="undefined"&&navigator.onLine===false)){stopped=true;break}
+        failed.push({data:it.data,error:e});log("task save failed",e);
+      }
+      if(n%20===19)await wait(20);
+    }
+    try{updateBusyProgress(todo.length,todo.length,"Saving tasks")}catch(_){}
+  }finally{V.batch=null;idle()}
+  if(!stopped&&!failed.length)jobDrop(job.id);else V.jobs=jobList();
+  for(const c of new Set(created.map(r=>sc(r[AF.projectCode]))))scheduleSave(c);
+  drawBar();
+  return {created,skipped,failed,stopped,jobId:job.id};
+}
+async function resumeJob(id){
+  if(V.busyJob)return;V.busyJob=true;
+  try{
+    const job=LS.get("job::"+id);if(!job||!Array.isArray(job.items)){jobDrop(id);drawBar();return say("That job is no longer available.")}
+    if(!V.live&&!S.demo){say("Waiting for the Zoho connection…");await waitLive()}
+    const r=await runBatch({label:job.label,items:job.items,rootId:job.rootId,project:job.project,jobId:job.id});
+    if(r.created.length){try{await notifyCreatedAssignments(r.created)}catch(e){log(e)}}
+    say(`${job.label}: ${r.created.length} saved${r.skipped?` • ${r.skipped} already existed`:""}${r.failed.length?` • ${r.failed.length} failed`:""}${r.stopped?" • stopped (connection lost) — Resume again later":""}.`,r.failed.length||r.stopped?"warn":"good");
+    try{renderView()}catch(_){}
+  }finally{V.busyJob=false;drawBar()}
+}
+
+/* ---------- 7. Email outbox ---------- */
+// The older code sent emails "fire and forget": a failed email was only
+// logged. Now every email batch is queued first and removed only after it
+// was sent. Failed batches stay in the queue with a "Send now" button.
+function mailList(){const x=LS.get("mail",[]);return Array.isArray(x)?x:[]}
+function mailSet(l){LS.set("mail",l);V.mail=l}
+async function sendMailJob(job){
+  let last=null;
+  for(let i=0;i<CFG.EMAIL_TRIES;i++){
+    try{
+      if(typeof v208NotifyAssignmentsBase!=="function")throw new Error("Email sender is not available in this widget build.");
+      // the sender returns {sent, failed}; one job = one person, so failed>0 means this person's email failed
+      const r=await v208NotifyAssignmentsBase(job.records.map(x=>({...x})));
+      if(r&&typeof r==="object"&&Number(r.failed||0)>0)throw new Error("Email service reported a failure.");
+      return true;
+    }catch(e){last=e;log(`email try ${i+1} failed`,e);if(i<CFG.EMAIL_TRIES-1)await wait(2500*(i+1))}
+  }
+  job.error=String(last?.message||last||"unknown");return false;
+}
+async function flushMail(manual=false){
+  const list=mailList();if(!list.length)return;
+  let ok=0;const keep=[];
+  for(const job of list){if(await sendMailJob(job))ok++;else keep.push(job)}
+  mailSet(keep);drawBar();
+  if(manual||keep.length)say(`${ok} email batch${ok===1?"":"es"} sent${keep.length?` • ${keep.length} still waiting (they stay in the outbox)`:""}.`,keep.length?"warn":"good");
+}
+patch("notifyCreatedAssignments",()=>notifyCreatedAssignments,f=>{notifyCreatedAssignments=f},base=>async function(records){
+  try{
+    const recs=(records||[]).filter(Boolean).map(slim);if(!recs.length)return true;
+    // one queue entry per person, so a retry never sends the same email twice to the others
+    const groups=new Map();
+    for(const r of recs){let k="";try{k=String(assignmentRecipientFromRecord(r).email||"").toLowerCase()}catch(_){}k=k||sc(r[AF.assignedEmployeeName])||"?";if(!groups.has(k))groups.set(k,[]);groups.get(k).push(r)}
+    const jobs=[...groups.values()].map((rows,i)=>({id:`M${Date.now()}${i}${Math.random().toString(36).slice(2,6)}`,at:Date.now(),to:sc(rows[0][AF.assignedEmployeeName]),records:rows}));
+    mailSet(mailList().concat(jobs));drawBar();
+    // send in the background: the saved work is never blocked by email
+    setTimeout(async()=>{
+      for(const job of jobs){
+        try{const sent=await sendMailJob(job);const now=mailList();
+          if(sent)mailSet(now.filter(j=>j.id!==job.id));
+          else{mailSet(now.map(j=>j.id===job.id?job:j));say(`Work was saved, but the email to ${job.to||"the assignee"} could not be sent. It is kept in the outbox (top bar → Send now).`,"warn")}
+        }catch(e){log(e)}
+      }
+      drawBar();
+    },0);
+    return true;
+  }catch(e){log("email outbox",e);return base.apply(this,arguments)}
+});
+
+/* ---------- 8. Parent progress re-check ---------- */
+// Same rule as V20.17: parent progress = average of its non-cancelled children.
+function rollupPending(){const x=LS.get("rollup",[]);return Array.isArray(x)?x:[]}
+patch("updateRecord",()=>updateRecord,f=>{updateRecord=f},base=>async function(id,data){
+  if(!S.demo){
+    let rec=null;try{rec=(S.records||[]).find(x=>String(idOf(x))===String(id))||null}catch(_){}
+    const code=sc(rec?.[AF.projectCode]);
+    if(code&&V.stale.has(code))throw rule(`Project ${code} is still loading the latest data from Zoho. Nothing was saved. Please wait a few seconds and try again.`);
+    try{
+      if(rec&&data&&data[AF.progress]!==undefined&&sc(rec[AF.assignedFrom])){
+        const l=rollupPending();const pid=sc(rec[AF.assignedFrom]);
+        if(!l.includes(pid)){l.push(pid);LS.set("rollup",l.slice(-500))}
+      }
+    }catch(_){}
+  }
+  const out=await base.apply(this,arguments);
+  try{const r=(S.records||[]).find(x=>String(idOf(x))===String(id));if(r)scheduleSave(sc(r[AF.projectCode]))}catch(_){}
+  return out;
+});
+async function repairParents(code){
+  try{
+    if(S.demo||V.stale.has(String(code)))return;
+    const list=rollupPending();if(!list.length)return;
+    const keep=[];let fixed=0;
+    for(const pid of list){
+      const p=assignmentById(pid);
+      if(!p){keep.push(pid);continue}                        // other project, check later
+      if(sc(p[AF.projectCode])!==String(code)){keep.push(pid);continue}
+      const kids=assignmentChildren(idOf(p)).filter(k=>sc(k[AF.status])!=="Cancelled");
+      if(!kids.length)continue;
+      const avg=Math.round(kids.reduce((s,k)=>s+num0(k[AF.progress]),0)/kids.length);
+      if(num0(p[AF.progress])!==avg){
+        try{await updateRecord(idOf(p),{[AF.progress]:avg});p[AF.progress]=avg;fixed++;
+          const gp=sc(p[AF.assignedFrom]);if(gp&&!keep.includes(gp))keep.push(gp)}
+        catch(e){keep.push(pid);log("parent progress repair",e)}
+      }
+    }
+    LS.set("rollup",keep.slice(-500));
+    if(fixed){log(`${fixed} parent progress value(s) corrected`);try{renderView()}catch(_){}}
+  }catch(e){log("repair parents",e)}
+}
+
+/* ---------- 9. Field check at start-up ---------- */
+// Fields the widget cannot work without. All other AF fields are optional.
+const CORE=["projectCode","drawingDocument","drawingMasterId","assignedTo","assignedEmployeeName","assignedFrom","primaryAssignment","assignmentLevel","status","progress","startDate","targetDate","logicalTaskKey","designTitle","designType","criteria","responsibility","priority","revision","parentDesignId"];
+async function checkFields(){
+  const F=V.fields;if(F.checked||S.demo)return;F.checked=true;
+  try{
+    if(!ZOHO?.CREATOR?.META?.getFields){F.error="Zoho field list is not available in this SDK.";return}
+    const raw=await creatorReadCall(()=>ZOHO.CREATOR.META.getFields(withApp({form_link_name:CONFIG.FORMS.tracking})),"Check Design_Tracking fields",{retries:1,healthKey:"meta:v21-fields"});
+    const meta=(raw&&raw.code!=null)?assertResp(raw,"Get Design_Tracking fields"):raw;
+    const list=meta?.fields||meta?.data||[];
+    const have=new Set((Array.isArray(list)?list:[]).map(x=>nk(x?.link_name||x?.field_link_name||x?.api_name||x?.name||"")).filter(Boolean));
+    if(!have.size){F.error="Zoho returned an empty field list.";return}
+    const missCore=[],missOpt=[];
+    for(const [k,link] of Object.entries(AF)){
+      if(typeof link!=="string"||!link)continue;
+      if(!have.has(nk(link)))(CORE.includes(k)?missCore:missOpt).push(link);
+    }
+    F.missing=missCore;F.optional=missOpt;
+    if(missCore.length)log("Design_Tracking fields missing:",missCore);
+    drawBar();
+  }catch(e){F.error=errorText(e);log("field check",e)}
+}
+
+/* ---------- 10. Top status bar (cache / jobs / emails / setup) ---------- */
+function ensureBar(){
+  let b=el("v21Bar");if(b)return b;
+  const main=document.querySelector("main.app");if(!main)return null;
+  b=document.createElement("div");b.id="v21Bar";b.className="v21-bar";main.parentNode.insertBefore(b,main);return b;
+}
+const timeText=t=>{try{const d=new Date(t);return d.toLocaleString(undefined,{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}catch(_){return""}};
+function drawBar(){
+  try{
+    const b=ensureBar();if(!b)return;
+    const items=[];
+    if(V.fromCache&&!V.live)items.push(`<div class="v21-item info"><span class="v21-dot spin"></span><b>Showing saved data from ${esc(timeText(V.cacheAt))}.</b> Updating from Zoho…</div>`);
+    const code=String(S.projectWorkspace?.code||"");
+    if(code&&V.stale.has(code))items.push(`<div class="v21-item info"><span class="v21-dot spin"></span><b>Project ${esc(code)}: saved copy shown.</b> Loading the latest data — saving is paused for a few seconds. <button type="button" data-v21-reload="${esc(code)}">Retry now</button></div>`);
+    for(const j of V.jobs){
+      const left=Math.max(0,Number(j.count||0)-Object.keys(jobDone(j.id)).length);if(!left){continue}
+      items.push(`<div class="v21-item warn"><b>${left} task${left===1?"":"s"} not finished</b> — ${esc(j.label)} (${esc(timeText(j.at))}). <button type="button" data-v21-resume="${esc(j.id)}">Resume</button><button type="button" class="ghost" data-v21-discard="${esc(j.id)}">Discard</button></div>`);
+    }
+    const mails=V.mail.length;
+    if(mails)items.push(`<div class="v21-item warn"><b>${mails} email batch${mails===1?"":"es"} waiting in the outbox.</b> <button type="button" data-v21-mail>Send now</button><button type="button" class="ghost" data-v21-mail-drop>Discard</button></div>`);
+    let admin=true;try{const x=X();if(typeof x.isAdmin==="function")admin=x.isAdmin()}catch(_){}
+    if(admin&&V.fields.missing.length)items.push(`<div class="v21-item bad"><b>Setup problem:</b> these Design_Tracking fields are missing or renamed in Zoho: ${esc(V.fields.missing.join(", "))}. Related data will not be saved. Please check the form.</div>`);
+    b.innerHTML=items.join("");b.classList.toggle("hidden",!items.length);
+  }catch(e){log("status bar",e)}
+}
+try{
+  document.addEventListener("click",e=>{
+    const t=e.target;if(!t||!t.closest)return;let x;
+    if((x=t.closest("[data-v21-resume]"))){e.preventDefault();e.stopImmediatePropagation();const id=x.dataset.v21Resume;return (typeof guarded==="function"?guarded:(f=>f()))(()=>resumeJob(id))}
+    if((x=t.closest("[data-v21-discard]"))){e.preventDefault();e.stopImmediatePropagation();jobDrop(x.dataset.v21Discard);drawBar();return say("The unfinished job was discarded. Nothing was deleted in Zoho.","good")}
+    if(t.closest("[data-v21-mail]")){e.preventDefault();e.stopImmediatePropagation();return flushMail(true)}
+    if(t.closest("[data-v21-mail-drop]")){e.preventDefault();e.stopImmediatePropagation();mailSet([]);drawBar();return say("Waiting emails were discarded.","good")}
+    if((x=t.closest("[data-v21-reload]"))){e.preventDefault();e.stopImmediatePropagation();const c=x.dataset.v21Reload;return (typeof guarded==="function"?guarded:(f=>f()))(async()=>{await v210LoadProjectData(c,true);drawBar()})}
+  },true);
+}catch(e){log("bar events",e)}
+// Redraw the bar after every screen change.
+patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){const r=base.apply(this,arguments);drawBar();return r});
+
+/* ---------- 11. System Health: V21 section ---------- */
+patch("systemHealthHtml",()=>systemHealthHtml,f=>{systemHealthHtml=f},base=>function(){
+  let html="";try{html=base.apply(this,arguments)}catch(e){log(e)}
+  try{
+    const idx=projIndex(),F=V.fields;
+    const rows=[
+      ["Live connection",V.live?`Connected ${timeText(V.liveAt)}`:"Not yet connected"],
+      ["Saved projects on this computer",idx.length?idx.map(x=>`${x.code} (${timeText(x.at)})`).join(", "):"None"],
+      ["Changed-only refresh",V.delta.off?`Off — full reload used (${V.delta.reason||"not supported"})`:"On (every 3 min, full reload every 15 min)"],
+      ["Unfinished bulk jobs",String(V.jobs.length)],
+      ["Emails waiting in outbox",String(V.mail.length)],
+      ["Parent progress to re-check",String(rollupPending().length)],
+      ["Design_Tracking field check",F.error?`Not checked: ${F.error}`:!F.checked?"Pending":F.missing.length?`MISSING: ${F.missing.join(", ")}`:"All required fields found"],
+      ["Optional fields not found",F.optional.length?F.optional.join(", "):"None"]
+    ];
+    html+=`<div class="v21-health"><h3>Speed &amp; safety (${BUILD})</h3><table>${rows.map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table></div>`;
+  }catch(e){log(e)}
+  return html;
+});
+
+/* ---------- 12. Start-up ---------- */
+function afterLive(){
+  // runs once when the live connection is ready
+  try{V.jobs=jobList();V.mail=mailList()}catch(_){}
+  drawBar();
+  setTimeout(()=>{checkFields()},1500);
+  if(V.mail.length)setTimeout(()=>flushMail(false),5000);    // retry waiting emails quietly
+}
+try{
+  const css=`
+  .v21-bar{display:grid;gap:6px;max-width:1500px;margin:10px auto 0;padding:0 16px}.v21-bar.hidden{display:none}
+  .v21-item{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 12px;border-radius:11px;font-size:12px;border:1px solid}
+  .v21-item.info{background:#f5f9ff;border-color:#d6e4fb;color:#1d3a6b}.v21-item.warn{background:#fffaeb;border-color:#f7d58a;color:#7a4b00}.v21-item.bad{background:#fff1f0;border-color:#f5b5ae;color:#8a1c12}
+  .v21-item button{border:1px solid currentColor;background:#fff;color:inherit;border-radius:8px;padding:4px 10px;font:inherit;font-size:11px;font-weight:800;cursor:pointer}.v21-item button.ghost{border-color:transparent;background:transparent;text-decoration:underline}
+  .v21-dot{width:9px;height:9px;border-radius:50%;border:2px solid #9bb8e8;border-top-color:#1d5fd0}.v21-dot.spin{animation:v21spin .8s linear infinite}@keyframes v21spin{to{transform:rotate(360deg)}}
+  .v21-health{margin-top:14px;border:1px solid #e4e7ec;border-radius:12px;padding:12px}.v21-health h3{margin:0 0 8px;font-size:13px}.v21-health table{width:100%;border-collapse:collapse;font-size:11px}.v21-health td{padding:6px 8px;border-top:1px solid #f2f4f7;vertical-align:top}.v21-health td:first-child{color:#667085;width:42%}`;
+  const st=document.createElement("style");st.id="v21Styles";st.textContent=css;document.head.appendChild(st);
+}catch(e){log("styles",e)}
+// public API used by the V20.19 layer for bulk creation
+try{window.MEGA_V21={runBatch,keyOf,build:BUILD}}catch(_){}
+try{V.jobs=jobList();V.mail=mailList()}catch(_){}
+earlyPaint();
+// if the live start-up already finished before this layer loaded
+try{if(!V.live&&Array.isArray(S.employees)&&S.employees.length&&S.user){V.live=true;V.liveAt=Date.now();afterLive();saveMasters()}}catch(_){}
+try{const bd=el("buildBadge");if(bd)bd.textContent="V21";document.title="MEGA Engineering | Project Design Control V21"}catch(_){}
+drawBar();
+console.info(`[${BUILD}] loaded`);
+})()}catch(e){try{console.error("[V21] could not load",e)}catch(_){}}
+</script>
 </body>
 </html>
-  
