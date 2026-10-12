@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.1
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V21".
+   3. Paste this whole file and save. The badge at the top shows "V21.1".
 
  HOW THE CODE IS ORGANISED (top to bottom)
    STYLE block        All screen styles.
@@ -47,7 +47,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V21</title>
+<title>MEGA Engineering | Project Design Control V21.1</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -273,7 +273,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.1</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -6066,7 +6066,7 @@ const MS={
   open(id,btn){
     MS.close(true);const st=V.ms[id];if(!st)return;
     const pop=document.createElement("div");pop.className="v218-ms-pop";pop.dataset.v218Pop=id;
-    pop.innerHTML=`<input class="v218-ms-q" placeholder="Search…" autocomplete="off"><div class="v218-ms-acts"><button type="button" data-v218-ms-all>Select all shown</button><button type="button" data-v218-ms-none>Clear</button><button type="button" class="ok" data-v218-ms-done>Done</button></div><div class="v218-ms-list">${st.opts.length?st.opts.map(o=>`<label class="v218-ms-opt" data-q="${esc(N(o.l+" "+o.sub))}"><input type="checkbox" value="${esc(o.v)}" ${st.val.has(o.v)?"checked":""}><span>${esc(o.l)}${o.sub?`<small>${esc(o.sub)}</small>`:""}</span></label>`).join(""):`<div class="v218-ms-empty">No values available</div>`}</div>`;
+    pop.innerHTML=`<input class="v218-ms-q" placeholder="Search…" autocomplete="off"><div class="v218-ms-acts"><button type="button" data-v218-ms-all>Select all shown</button><button type="button" data-v218-ms-none>Clear</button><button type="button" class="ok" data-v218-ms-done>Done</button></div><div class="v218-ms-list">${st.opts.length?st.opts.map(o=>`<label class="v218-ms-opt" data-q="${esc(N(o.l+" "+o.sub))}"><input type="checkbox" value="${esc(o.v)}" ${st.val.has(o.v)?"checked":""}><span>${esc(o.l)}${o.sub&&!/^\d+$/.test(o.sub)?`<small>${esc(o.sub)}</small>`:""}</span>${o.sub&&/^\d+$/.test(o.sub)?`<em class="v218-ms-n" title="matching items">${esc(o.sub)}</em>`:""}</label>`).join(""):`<div class="v218-ms-empty">No values available</div>`}</div>`;
     document.body.appendChild(pop);V.msOpen=id;V.msBtn=btn;MS.place();
     setTimeout(()=>{try{pop.querySelector(".v218-ms-q").focus()}catch(_){}},0);
   },
@@ -6123,6 +6123,12 @@ const OPS={
   number:["=","<",">","Between","Is Empty"]
 };
 const NOVAL=["Is Empty","Is Not Empty"];
+// countValues(rows, getValues) -> [{v, l, sub:"<count>"}] sorted A-Z; used for "value (count)" lists
+function countValues(rows,getVals){
+  const m=new Map();
+  for(const r of rows){const seen=new Set();for(const v of getVals(r)){const k=N(v);if(!k||seen.has(k))continue;seen.add(k);const x=m.get(k);if(x)x.n++;else m.set(k,{v,n:1})}}
+  return [...m.values()].sort((a,b)=>a.v.localeCompare(b.v,undefined,{numeric:true})).map(x=>({v:x.v,l:x.v,sub:String(x.n)}));
+}
 const RS={
   st(id){return V.rs[id]||(V.rs[id]={on:{},op:{},v:{},v2:{},m:{},redraw:null})},
   vals(f,row){try{return arr(f.get(row))}catch(_){return[]}},
@@ -6150,15 +6156,26 @@ const RS={
   },
   filter(id,fields,rows){const on=fields.filter(f=>RS.st(id).on[f.k]);if(!on.length)return rows;return rows.filter(r=>on.every(f=>RS.pass(id,f,r)))},
   count(id,fields){const s=RS.st(id);return fields.filter(f=>s.on[f.k]).length},
-  // dependent lookups: values come only from rows that pass the fields above
+  // Values for one lookup list. The list only shows values that exist in the rows matching
+  // ALL the other active conditions (any order: pick a Section first or a Tag first).
+  // Returns [{v, l, sub:count}].
   options(id,fields,rows,f){
-    if(typeof f.opts==="function"){try{return uniq(f.opts())}catch(_){return[]}}
-    const idx=fields.indexOf(f),pre=fields.slice(0,idx).filter(x=>RS.st(id).on[x.k]);
-    const src=pre.length?rows.filter(r=>pre.every(x=>RS.pass(id,x,r))):rows;
-    const out=[];for(const r of src)for(const v of RS.vals(f,r))out.push(v);return uniq(out);
+    if(typeof f.opts==="function"){try{return uniq(f.opts()).map(v=>({v,l:v}))}catch(_){return[]}}
+    const others=fields.filter(x=>x!==f&&RS.st(id).on[x.k]);
+    const src=others.length?rows.filter(r=>others.every(x=>RS.pass(id,x,r))):rows;
+    return countValues(src,r=>RS.vals(f,r));
+  },
+  // Remove picked lookup values that no longer exist with the other conditions (repeat until stable).
+  prune(id,fields,rows){
+    const s=RS.st(id);
+    for(let pass=0;pass<4;pass++){let changed=false;
+      for(const f of fields){if(!s.on[f.k]||(f.t||"text")!=="lookup"||typeof f.opts==="function")continue;const sel=s.m[f.k]||[];if(!sel.length)continue;
+        const o=RS.options(id,fields,rows,f);const keep=sel.filter(v=>o.some(x=>N(x.v)===N(v)));if(keep.length!==sel.length){s.m[f.k]=keep;changed=true}}
+      if(!changed)break;}
   },
   html(id,fields,rows,{title="Search",note="",close=false}={}){
     const s=RS.st(id);
+    RS.prune(id,fields,rows);
     const body=fields.map(f=>{
       const t=f.t||"text",on=!!s.on[f.k],op=s.op[f.k]||OPS[t][0];
       let inner="";
@@ -6168,7 +6185,6 @@ const RS={
         if(!NOVAL.includes(op)){
           if(t==="lookup"){
             const opts=RS.options(id,fields,rows,f);
-            const keep=(s.m[f.k]||[]).filter(v=>opts.some(o=>N(o)===N(v)));if(keep.length!==(s.m[f.k]||[]).length)s.m[f.k]=keep;
             val=MS.html(`rs:${id}:${f.k}`,{options:opts,value:s.m[f.k]||[],placeholder:`Select ${f.l}…`,onChange:v=>{RS.st(id).m[f.k]=v;RS.redraw(id)}});
           }else if(t==="date"){
             val=`<input type="date" class="input" data-v218-rs-v="${esc(id)}|${esc(f.k)}" value="${esc(s.v[f.k]||"")}">${op==="Between"?`<input type="date" class="input" data-v218-rs-v2="${esc(id)}|${esc(f.k)}" value="${esc(s.v2[f.k]||"")}">`:""}`;
@@ -6193,10 +6209,14 @@ try{
     const t=e.target;if(!t||!t.dataset)return;
     if(t.dataset.v218RsOn){const [id,k]=split(t.dataset.v218RsOn),s=RS.st(id);s.on[k]=t.checked;if(!t.checked){delete s.m[k];delete s.v[k];delete s.v2[k];delete s.op[k]}return RS.redraw(id)}
     if(t.dataset.v218RsOp){const [id,k]=split(t.dataset.v218RsOp);RS.st(id).op[k]=t.value;return RS.redraw(id)}
-    if(t.dataset.v218RsV){const [id,k]=split(t.dataset.v218RsV);RS.st(id).v[k]=t.value;return RS.redraw(id)}
-    if(t.dataset.v218RsV2){const [id,k]=split(t.dataset.v218RsV2);RS.st(id).v2[k]=t.value;return RS.redraw(id)}
+    // typed values are only stored here; they are applied by the Search button or Enter
+    // (redrawing on blur would swallow the click on the Search button)
+    if(t.dataset.v218RsV){const [id,k]=split(t.dataset.v218RsV);RS.st(id).v[k]=t.value;if(t.type==="date")RS.redraw(id);return}
+    if(t.dataset.v218RsV2){const [id,k]=split(t.dataset.v218RsV2);RS.st(id).v2[k]=t.value;if(t.type==="date")RS.redraw(id);return}
   });
-  document.addEventListener("keydown",e=>{const t=e.target;if(e.key==="Enter"&&t&&t.dataset&&(t.dataset.v218RsV||t.dataset.v218RsV2)){e.preventDefault();t.blur()}});
+  document.addEventListener("input",e=>{const t=e.target;if(!t||!t.dataset)return;if(t.dataset.v218RsV){const [id,k]=split(t.dataset.v218RsV);RS.st(id).v[k]=t.value}else if(t.dataset.v218RsV2){const [id,k]=split(t.dataset.v218RsV2);RS.st(id).v2[k]=t.value}});
+  // Enter in a text box = click Search
+  document.addEventListener("keydown",e=>{const t=e.target;if(e.key==="Enter"&&t&&t.dataset&&(t.dataset.v218RsV||t.dataset.v218RsV2)){e.preventDefault();const [id]=split(t.dataset.v218RsV||t.dataset.v218RsV2);if(id==="tree")V.treePanel=false;if(id==="adv"&&window.innerWidth<1000)V.adv.panel=false;RS.redraw(id)}});
   document.addEventListener("click",e=>{
     const t=e.target;if(!t||!t.closest)return;
     const r=t.closest("[data-v218-rs-reset]");if(r){e.preventDefault();const id=r.dataset.v218RsReset,old=RS.st(id);V.rs[id]={on:{},op:{},v:{},v2:{},m:{},redraw:old.redraw};return RS.redraw(id)}
@@ -6303,17 +6323,22 @@ function assignFields(a){
   f.push(sec,typ,F("tag","Tag Number",v=>v.tag),F("name","Equipment Name",v=>v.name),F("group","Group Code",v=>v.group),F("dept","Department Code",v=>v.dept),F("category","Equipment Category",v=>v.category),F("etype","Equipment Type",v=>v.etype),F("subtype","Equipment Subtype",v=>v.subtype));
   return f;
 }
-/* dependent filters: a list only shows values that fit the filters ABOVE it
-   (PDS Name -> PDS Related To -> Plant Section -> Section Type -> Tag -> ...) */
-function fMatch(a,fields,u,upto){
-  const F=a.f||{},stop=upto==null?fields.length:upto;
-  for(let i=0;i<stop;i++){const f=fields[i],sel=F[f.k];if(!sel||!sel.length)continue;const vals=RS.vals(f,u);if(!vals.some(v=>sel.some(x=>N(x)===N(v))))return false}
+/* Dependent filters (Zoho style): every list only shows the values found in the items
+   that match ALL the OTHER filters you picked, in any order. Example: pick Plant Section
+   "Dehydration" and every other list (Section Type, Tag, Category …) shows only
+   Dehydration values; pick a Tag first and the Section list shows only that Tag's section.
+   The number next to each value = how many items have it. */
+function fMatch(a,fields,u,exceptKey){
+  const F=a.f||{};
+  for(const f of fields){if(f.k===exceptKey)continue;const sel=F[f.k];if(!sel||!sel.length)continue;const vals=RS.vals(f,u);if(!vals.some(v=>sel.some(x=>N(x)===N(v))))return false}
   return true;
 }
-function fOptions(a,fields,units,f){const idx=fields.indexOf(f),out=[];for(const u of units)if(fMatch(a,fields,u,idx))for(const v of RS.vals(f,u))out.push(v);return uniq(out)}
+function fOptions(a,fields,units,f){return countValues(units.filter(u=>fMatch(a,fields,u,f.k)),u=>RS.vals(f,u))}
 function fPrune(a,fields,units){
   a.f=a.f||{};
-  for(const f of fields){const sel=a.f[f.k];if(!sel||!sel.length)continue;const o=fOptions(a,fields,units,f);const keep=sel.filter(v=>o.some(x=>N(x)===N(v)));if(keep.length!==sel.length)a.f[f.k]=keep}
+  for(let pass=0;pass<4;pass++){let changed=false;
+    for(const f of fields){const sel=a.f[f.k];if(!sel||!sel.length)continue;const o=fOptions(a,fields,units,f);const keep=sel.filter(v=>o.some(x=>N(x.v)===N(v)));if(keep.length!==sel.length){a.f[f.k]=keep;changed=true}}
+    if(!changed)break;}
 }
 function unitLabel(a,u){
   if(a.mode===MODE_PDS){const g=u.group||{};return `${g.tag||g.name||"PDS Work"}${g.tag&&g.name?` — ${g.name}`:""} • ${u.typeLabel||""}`}
@@ -6349,7 +6374,7 @@ function existingFor(a,u){
   return out;
 }
 function visibleUnits(a){
-  const fields=assignFields(a),units=unitsFor(a);fPrune(a,fields,units);let rows=units.filter(u=>fMatch(a,fields,u,null));
+  const fields=assignFields(a),units=unitsFor(a);fPrune(a,fields,units);let rows=units.filter(u=>fMatch(a,fields,u,"\u0000"));
   const q=N(a.q);
   if(q)rows=rows.filter(u=>{const v=a._vc?.get(u.key)||unitView(a,u);return N([unitLabel(a,u),v.section,v.type,v.tag,v.name,v.category,v.etype,v.subtype,v.group,v.dept,...arr(v.pdsName)].join(" ")).includes(q)});
   return rows;
@@ -6392,7 +6417,10 @@ function drawAssign(){
       return `<label class="v218-unit ${on?"selected":""} ${ex.length?"assigned":""}"><input type="checkbox" class="v218-unit-check" value="${esc(u.key)}" ${on?"checked":""}><div class="v218-unit-main"><b>${esc(unitLabel(a,u))}</b><span>${esc(unitMeta(a,u))}</span></div><div class="v218-unit-side">${a.mode===MODE_PDS&&(u.statuses||[]).length?`<span class="pill">${esc(u.statuses.join(", "))}</span>`:""}${ex.length?`<span class="pill green" title="${esc(names.join(", "))}">Assigned: ${esc(names.slice(0,2).join(", "))}${names.length>2?` +${names.length-2}`:""}</span>`:`<span class="pill">New</span>`}</div></label>`;
     }).join("")+(rows.length>shown.length?`<button type="button" class="btn sm v218-more" data-v218-more>Show ${Math.min(300,rows.length-shown.length)} more (${rows.length-shown.length} hidden)</button>`:""):`<div class="empty compact"><strong>No matching ${esc(label)}</strong>Change or clear the Filters above, or check the Equipment Master data.</div>`;
     const fcount=fields.filter(f=>(a.f[f.k]||[]).length).length;
-    const filters=`<div class="v219-fbox"><div class="v219-fhead"><div><b>Filters</b><span>Pick one or more values in any list. Lists work top-down: choose a Plant Section and only its Section Types are listed; choose a Section Type and only its Tags are listed, and so on.</span></div>${fcount?`<button type="button" class="btn sm" data-v219-fclear>✕ Clear filters (${fcount})</button>`:""}</div><div class="v219-fgrid">${fields.map(f=>{const sel=a.f[f.k]||[];return `<div class="v219-f ${sel.length?"on":""}"><label>${esc(f.l)}${sel.length?` <b>${sel.length}</b>`:""}</label>${MS.html(`af:${f.k}`,{options:fOptions(a,fields,all,f),value:sel,placeholder:"All",onChange:v=>{a.f[f.k]=v;a.show=300;keepScroll(()=>{syncAssign();drawAssign()})}})}</div>`}).join("")}</div></div>`;
+    const filters=`<div class="v219-fbox"><div class="v219-fhead"><div><b>Filters</b><span>Pick values in any list, in any order. The other lists then show only matching values (number = items).</span></div>${fcount?`<button type="button" class="btn sm" data-v219-fclear>✕ Clear filters (${fcount})</button>`:""}</div><div class="v219-fgrid">${fields.map(f=>{const sel=a.f[f.k]||[];const o=fOptions(a,fields,all,f);
+      // the empty box already tells what is left: "Only: X" or "All 5 values"
+      const ph=!o.length?"No values":o.length===1?`Only: ${o[0].v}`:`All ${o.length} values`;
+      return `<div class="v219-f ${sel.length?"on":""}"><label>${esc(f.l)}${sel.length?` <b>${sel.length}</b>`:""}</label>${MS.html(`af:${f.k}`,{options:o,value:sel,placeholder:ph,onChange:v=>{a.f[f.k]=v;a.show=300;keepScroll(()=>{syncAssign();drawAssign()})}})}</div>`}).join("")}</div></div>`;
     openModal(a.mode===MODE_PDS?"Assign Tag + PDS Work":`Assign ${label}`,`${drawing.short?drawing.short+" — ":""}${drawing.name||""} • Project ${a.code}`,
     `<div class="v218-assign"><div class="notice good"><b>${esc(assignmentDisplayUser(parent))}</b> owns this Design. Select the ${esc(label)} work, then choose one or more people. One task is created for every person and every selected item.</div>
      ${filters}
@@ -6666,7 +6694,7 @@ patch("renderProjectDesignsV18",()=>renderProjectDesignsV18,f=>{renderProjectDes
   const vLabel=(VIEWS.find(v=>v.k===V.view)||VIEWS[0]).l,gLabel=(GROUPS.find(g=>g.k===V.group)||GROUPS[0]).l,n=RS.count("tree",tf());
   const active=tf().filter(f=>RS.st("tree").on[f.k]).map(f=>f.l);
   RS.st("tree").redraw=()=>renderView();
-  const drawer=V.treePanel?`<div class="v219-back" data-v219-close></div><aside class="v219-drawer">${RS.html("tree",tf(),everyone,{title:"Search",note:"Tick a field, choose a condition and pick one or more values. Lists depend on the fields above them.",close:true})}</aside>`:"";
+  const drawer=V.treePanel?`<div class="v219-back" data-v219-close></div><aside class="v219-drawer">${RS.html("tree",tf(),everyone,{title:"Search",note:"Tick a field, choose a condition and pick one or more values. Each list only shows values that match the other conditions.",close:true})}</aside>`:"";
   return `<div class="v211-core-note v212-main-note"><div><b>Main Designs</b><span>Click <b>+</b> to open a design and see every task and subtask under it. Hover a row and click <b>＋</b> to add a subtask, <b>⇄</b> to reassign. Use the view menu, Group By and the <b>filter icon</b> on the right to find work.</span></div><div class="v211-core-stats"><span class="pill brand">${all.length} Designs</span><span class="pill green">${assigned} Owned</span><span class="pill">${unassigned} Yet to Assign</span><span class="pill">${everyone.length} Tasks</span></div></div>
   <div class="v219-bar"><div class="v219-left"><button type="button" class="v219-dd-btn view" data-v219-dd="view">${esc(vLabel)} <span class="car">▾</span></button><button type="button" class="v219-dd-btn" data-v219-dd="group"><span class="gb">☰ Group By:</span> ${esc(gLabel)} <span class="car">▾</span></button><span class="v219-count">${on?`${matches.length} of ${everyone.length} tasks`:`${everyone.length} tasks`}</span>${active.length?`<span class="v219-active">Filtered by: ${esc(active.join(", "))}<button type="button" data-v219-clear title="Clear search filters">✕ Clear</button></span>`:""}</div>
   <div class="v219-right">${V.group==="design"?`<button type="button" class="btn sm" data-v218-expand-all>+ Expand all</button><button type="button" class="btn sm" data-v218-collapse-all>− Collapse all</button>`:""}<div class="view-switch"><button data-v18-view="list" class="active">List</button><button data-v18-view="kanban">Kanban</button><button data-v18-view="gantt">Gantt</button></div><button type="button" class="v219-icon ${n?"on":""}" data-v219-search title="Search / filter tasks">${FUNNEL}${n?`<i>${n}</i>`:""}</button></div></div>
@@ -6746,6 +6774,39 @@ function advRows(){
   if(V.adv.ds==="equip")return Array.isArray(S.equipment)?S.equipment:[];
   return (S.assignments||[]).filter(a=>{try{return !isRevisionRecord||!isRevisionRecord(a)}catch(_){return true}});
 }
+/*
+  serverLookup(text): find design work in ALL projects directly in Zoho (only matching
+  rows are downloaded). Used when someone searches a Tag / Equipment / task name and that
+  project is not loaded yet. Each text is asked at most once every 2 minutes.
+  Returns the number of new rows added to the screen data.
+*/
+const lookedUp=new Map();
+async function serverLookup(q){
+  q=String(q||"").trim();if(q.length<2||S.demo)return 0;
+  const key=q.toLowerCase(),hit=lookedUp.get(key);
+  let found;
+  if(hit&&Date.now()-hit.at<120000)found=hit.rows;          // asked recently: reuse the answer, no new Zoho call
+  else{
+    const e=creatorCriteriaEscape(q);
+    const crits=[`(${AF.tagNo} == "${e}")`,`(${AF.tagNo}.contains("${e}"))`,`(${AF.equipmentName}.contains("${e}"))`,`(${AF.designTitle}.contains("${e}"))`];
+    found=new Map();
+    // each query is independent: one that Zoho does not accept is simply skipped
+    await Promise.all(crits.map(async c=>{try{for(const r of await fetchRecords(CONFIG.REPORTS.tracking,c,3))found.set(String(idOf(r)),r)}catch(_){}}));
+    lookedUp.set(key,{at:Date.now(),rows:found});
+  }
+  if(!found.size)return 0;
+  const byId=new Map(S.records.map(r=>[String(idOf(r)),r]));let added=0;
+  for(const [id,r] of found){if(!byId.has(id)){byId.set(id,adaptRecord(r));added++}}
+  if(added){S.records=[...byId.values()];S.assignments=S.records.filter(isAssignmentRecord);S.revisions=S.records.filter(isRevisionRecord)}
+  return added;
+}
+// texts typed in Advanced Search (quick box + Tag / Equipment / Task conditions)
+function advTexts(id){const s=RS.st(id),out=[];if(V.adv.q.trim())out.push(V.adv.q.trim());for(const k of ["tag","name","task"])if(s.on[k]&&s.v[k])out.push(String(s.v[k]).trim());return out.filter(x=>x.length>=2)}
+async function advLookup(){
+  if(V.adv.ds==="equip")return;const texts=advTexts("advw");if(!texts.length)return;
+  V.adv.looking=true;try{let n=0;for(const t of texts)n+=await serverLookup(t);if(S.view==="v218search")renderAdv()}finally{V.adv.looking=false}
+  if(S.view==="v218search")renderAdv();
+}
 async function openAdv(){
   if(S.view!=="v218search")V.adv.back=S.view==="detail"?(S.previousView||"projects"):S.view;
   S.view="v218search";renderAdv();
@@ -6767,7 +6828,7 @@ function renderAdv(){
   try{
     document.querySelectorAll(".navtab").forEach(b=>b.classList.remove("active"));
     const ds=V.adv.ds,id=ds==="equip"?"adv":"advw",fields=ds==="equip"?equipFields():workFields(),rows=advRows();
-    RS.st(id).redraw=()=>{V.adv.show=200;renderAdv();if(ds!=="equip"){const pc=RS.st(id).on.project&&(RS.st(id).op.project||"Is")==="Is"?(RS.st(id).m.project||[]):[];if(pc.length)loadProjects(pc)}};
+    RS.st(id).redraw=()=>{V.adv.show=200;renderAdv();advLookup();if(ds!=="equip"){const pc=RS.st(id).on.project&&(RS.st(id).op.project||"Is")==="Is"?(RS.st(id).m.project||[]):[];if(pc.length)loadProjects(pc)}};
     let res=RS.filter(id,fields,rows);const q=V.adv.q.trim();
     if(q){try{res=res.filter(r=>textMatchesQuery(ds==="equip"?[r.project,r.tag,r.name,r.plantSection,r.plantSectionType,r.groupCode,r.department,r.equipmentCategory,r.equipmentType,EQX.subtype(r)]:[sc(r[AF.projectCode]),sc(r[AF.tagNo]),sc(r[AF.equipmentName]),sc(r[AF.plantSection]),sc(r[AF.plantSectionType]),v211NodeLabel(r),assignmentDisplayUser(r),sc(r[AF.status]),drawingForAssignment(r).name],q))}catch(e){log(e)}}
     const shown=res.slice(0,V.adv.show);
@@ -6775,26 +6836,43 @@ function renderAdv(){
     if(ds!=="equip"){
       let codes=[];try{codes=v18ProjectCodes()}catch(_){}
       const loaded=codes.filter(c=>typeof v208ProjectLoaded==="function"&&v208ProjectLoaded(c));
-      loadedNote=`<div class="notice ${loaded.length<codes.length?"warn":"good"} v218-adv-note">Searching design work of <b>${loaded.length}</b> of <b>${codes.length}</b> projects. Tick <b>Project Code</b> in Search and pick projects to include them${loaded.length<codes.length?`, or <button type="button" class="btn sm" data-v218-adv-loadall>Load all ${codes.length} projects</button>`:""}.</div>`;
+      loadedNote=`<div class="notice ${loaded.length<codes.length?"warn":"good"} v218-adv-note">${V.adv.looking?`<span class="v218-mini-spin"></span> Searching all projects in Zoho…`:`<b>${loaded.length}</b> of <b>${codes.length}</b> projects loaded. Tag / equipment / task search also checks <b>all projects</b> in Zoho.`}${loaded.length<codes.length?` <button type="button" class="btn sm" data-v218-adv-loadall>Load all ${codes.length} projects</button>`:""}</div>`;
     }else if(!S.cache?.equipmentFullLoaded){loadedNote=`<div class="notice warn v218-adv-note">Equipment data is loading… <button type="button" class="btn sm" data-v218-adv-loadeq>Load now</button></div>`}
     const head=ds==="equip"?["Project","Tag Number","Equipment Name","Plant Section","Section Type","Category","Type","Subtype","Group","Department",""]:["Project","Design","Task / Subtask","Assigned To","Status","Plant Section","Section Type","Tag","Target","Progress",""];
     const tr=ds==="equip"?shown.map(e=>{const v=eqView(e);return `<tr><td>${esc(v.project)}</td><td><b>${esc(v.tag)}</b></td><td>${esc(v.name)}</td><td>${esc(v.section)}</td><td>${esc(v.type)}</td><td>${esc(v.category)}</td><td>${esc(v.etype)}</td><td>${esc(v.subtype)}</td><td>${esc(v.group)}</td><td>${esc(v.dept)}</td><td><button class="btn sm" data-v218-adv-eq="${esc(v.tag||v.name)}">Work</button></td></tr>`}).join(""):shown.map(a=>`<tr><td>${esc(sc(a[AF.projectCode]))}</td><td>${esc(drawingForAssignment(a).name||"")}</td><td><div class="v218-link" data-v211-open-node="${esc(idOf(a))}"><b>${esc(v211NodeLabel(a))}</b></div><div class="v211-task-sub">L${num0(a[AF.assignmentLevel])}</div></td><td>${esc(assignmentDisplayUser(a))}</td><td>${statusPill(sc(a[AF.status]))}</td><td>${esc(sc(a[AF.plantSection]))}</td><td>${esc(sc(a[AF.plantSectionType]))}</td><td>${esc(sc(a[AF.tagNo]))}</td><td>${esc(displayDate(a[AF.targetDate]))}</td><td>${num0(a[AF.progress])}%</td><td><button class="btn sm" data-v211-open-node="${esc(idOf(a))}">Open</button></td></tr>`).join("");
-    const panel=V.adv.panel?`<aside class="v218-adv-side">${RS.html(id,fields,rows,{title:"Search",note:"Tick a field, choose the condition and value. Lookups depend on the fields above them.",close:true})}</aside>`:"";
+    const panel=V.adv.panel?`<aside class="v218-adv-side">${RS.html(id,fields,rows,{title:"Search",note:"Tick a field, choose the condition and value. Each list only shows values that match the other conditions.",close:true})}</aside>`:"";
     el("page").innerHTML=`<div class="v218-adv"><div class="section-row"><div><h2>Advanced Search</h2><p>Search like a Zoho Creator report: tick fields, choose conditions, pick one or more values.</p></div><div class="actions"><button class="btn" data-v218-adv-back>← Back</button></div></div>
       <div class="v218-adv-bar"><div class="view-switch"><button data-v218-adv-ds="work" class="${ds!=="equip"?"active":""}">Design Work</button><button data-v218-adv-ds="equip" class="${ds==="equip"?"active":""}">Equipment / Tag</button></div><input id="v218AdvQ" class="input" placeholder="Quick search in results…" value="${esc(V.adv.q)}"><span class="pill brand">${res.length} result${res.length===1?"":"s"}</span>${V.adv.panel?"":`<button class="btn sm soft" data-v218-adv-panel>⚲ Search${RS.count(id,fields)?` (${RS.count(id,fields)})`:""}</button>`}<button class="btn sm" data-v218-rs-reset="${id}">Reset</button></div>
       ${loadedNote}
       <div class="v218-adv-grid ${V.adv.panel?"":"no-panel"}"><div class="task-list-panel v218-adv-table-wrap"><table class="task-table v218-adv-table"><thead><tr>${head.map(x=>`<th>${esc(x)}</th>`).join("")}</tr></thead><tbody>${tr||`<tr><td colspan="${head.length}"><div class="empty compact"><strong>No matching records</strong>Change the Search conditions.</div></td></tr>`}</tbody></table>${res.length>shown.length?`<div style="padding:10px"><button class="btn sm" data-v218-adv-more>Show 200 more (${res.length-shown.length} hidden)</button></div>`:""}</div>${panel}</div></div>`;
   }catch(e){log("advanced search",e);S.view=V.adv.back||"projects";try{renderView()}catch(_){}say("Advanced Search could not be shown.")}
 }
+// Top search box: show tasks and subtasks too (the older search showed only top-level work).
+patch("universalSearchResults",()=>universalSearchResults,f=>{universalSearchResults=f},base=>function(q){
+  const z=base.apply(this,arguments);
+  try{
+    const have=new Set((z.assignments||[]).map(a=>String(idOf(a))));
+    const extra=(S.assignments||[]).filter(a=>sc(a[AF.assignedFrom])&&!have.has(String(idOf(a)))&&textMatchesQuery([sc(a[AF.projectCode]),sc(a[AF.tagNo]),sc(a[AF.equipmentName]),sc(a[AF.plantSection]),sc(a[AF.plantSectionType]),sc(a[AF.designType]),sc(a[AF.designTitle]),sc(a[AF.status]),assignmentDisplayUser(a),scopeSummary(a)],q));
+    z.assignments=(z.assignments||[]).concat(extra);
+  }catch(e){log("search tasks",e)}
+  return z;
+});
+// Top search box: after the normal search, also look the text up in ALL projects in Zoho.
+patch("openUniversalSearch",()=>openUniversalSearch,f=>{openUniversalSearch=f},base=>async function(q){
+  const out=await base.apply(this,arguments);
+  try{const n=await serverLookup(q);if(n&&S.view==="search"&&String(S.globalSearch||"").trim()===String(q||"").trim())renderView()}catch(e){log("all-project lookup",e)}
+  return out;
+});
 patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){
   if(S.view==="v218search"){try{return renderAdv()}catch(e){log(e);S.view="projects"}}
   return base.apply(this,arguments);
 });
 try{
   const box=document.querySelector(".top-search");
+  try{const gi=el("globalSearch");if(gi)gi.placeholder="Search tag, project, drawing, person…"}catch(_){}
   if(box&&!box.querySelector("[data-v218-adv]")){const b=document.createElement("button");b.type="button";b.className="v218-adv-btn";b.setAttribute("data-v218-adv","1");b.title="Advanced Search (Zoho report style)";b.textContent="⚲ Filters";box.appendChild(b)}
   let aq=null;
-  document.addEventListener("input",e=>{const t=e.target;if(t&&t.id==="v218AdvQ"){clearTimeout(aq);aq=setTimeout(()=>{V.adv.q=t.value;V.adv.show=200;renderAdv();refocus("v218AdvQ")},300)}});
+  document.addEventListener("input",e=>{const t=e.target;if(t&&t.id==="v218AdvQ"){clearTimeout(aq);aq=setTimeout(()=>{V.adv.q=t.value;V.adv.show=200;renderAdv();refocus("v218AdvQ");clearTimeout(V.adv.lt);V.adv.lt=setTimeout(()=>{advLookup().then(()=>refocus("v218AdvQ"))},700)},300)}});
   document.addEventListener("click",e=>{
     const t=e.target;if(!t||!t.closest)return;let b;
     if(t.closest("[data-v218-adv]")){e.preventDefault();return run(openAdv)}
@@ -6818,7 +6896,10 @@ try{
   .modal.v218-wide{width:min(1320px,100%)}.v218-assign{display:grid;gap:12px}.v218-assign-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;align-items:start}.v218-assign-grid.no-panel{grid-template-columns:1fr}.v218-assign-side{position:sticky;top:0}.v218-tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.v218-tools .input{flex:1;min-width:200px}.v218-meta{display:flex;gap:8px;align-items:center;font-size:10px;color:#667085;margin:8px 0}.v218-units{display:grid;gap:6px;max-height:52vh;overflow:auto;padding:2px}.v218-unit{display:grid;grid-template-columns:22px 1fr auto;gap:9px;align-items:center;border:1px solid #e5e7eb;border-radius:11px;padding:9px 10px;background:#fff;cursor:pointer}.v218-unit.selected{border-color:#d780aa;background:#fff8fb}.v218-unit.assigned{background:#f9fafb}.v218-unit-main b{display:block;font-size:12px;color:#172033}.v218-unit-main span{display:block;font-size:10px;color:#667085;margin-top:2px}.v218-unit-side{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;max-width:280px}.v218-more{margin:6px auto}.v218-span2{grid-column:span 2}.v218-summary{border:1px dashed #d780aa;background:#fff8fb;border-radius:12px;padding:10px 13px;font-size:12px;color:#344054}
   .v218-toolbar{flex-wrap:wrap;gap:10px}.v218-filters{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}.v218-filter{display:grid;gap:3px;min-width:190px}.v218-filter label{font-size:9px;font-weight:900;color:#667085;text-transform:uppercase;letter-spacing:.04em}
   .v218-cell{display:flex;gap:7px;align-items:flex-start;padding-left:calc(var(--d,0)*24px)}.v218-tog{width:20px;height:20px;flex:0 0 20px;border:1px solid #98a2b3;border-radius:4px;background:#fff;color:#344054;font-weight:900;font-size:13px;line-height:16px;padding:0;cursor:pointer;margin-top:2px}.v218-tog:hover{border-color:#c42770;color:#c42770}.v218-tog-sp{width:20px;flex:0 0 20px}.v218-name-wrap{min-width:0;flex:1}.v218-link{cursor:pointer}.v218-link:hover{color:#c42770;text-decoration:underline}.v218-add{opacity:0;border:1px solid #e4e7ec;background:#fff;border-radius:6px;color:#c42770;font-weight:900;cursor:pointer;width:24px;height:22px;flex:0 0 auto}.v218-tr:hover .v218-add{opacity:1}.v218-child{background:#fcfcfd}.v218-child td{border-top-color:#f2f4f7}.v218-dim{opacity:.55}.v218-tree-table th:first-child{min-width:380px}.v218-tree-table th:last-child{min-width:300px}
-  .top-search{position:relative}.top-search #globalSearch{padding-right:112px}.v218-adv-btn{position:absolute;right:34px;top:50%;transform:translateY(-50%);border:1px solid #ffffff55;background:#ffffff22;color:#fff;border-radius:999px;padding:4px 10px;font-size:10px;font-weight:900;cursor:pointer;white-space:nowrap}.v218-adv-btn:hover{background:#ffffff38}
+  .topbar .top-search{position:relative;flex:0 1 400px!important;max-width:400px;width:auto!important;margin-left:auto}.top-search #globalSearch{height:36px!important;min-height:0!important;padding:0 86px 0 14px!important;font-size:12px!important;border-radius:10px!important}.top-search .search-mark{font-size:13px}
+  .v218-ms-opt span{flex:1;min-width:0}.v218-ms-n{font-style:normal;font-size:10px;font-weight:800;color:#667085;background:#f2f4f7;border-radius:999px;padding:1px 7px;align-self:center}
+  .v218-mini-spin{display:inline-block;width:10px;height:10px;border:2px solid #f0c6da;border-top-color:#c42770;border-radius:50%;animation:v21spin .8s linear infinite;vertical-align:-1px;margin-right:4px}@keyframes v21spin{to{transform:rotate(360deg)}}
+  .v218-adv-note{font-size:11px!important;padding:7px 11px!important;border-radius:10px!important}.v218-adv-btn{position:absolute;right:30px;top:50%;transform:translateY(-50%);border:1px solid #ffffff55;background:#ffffff22;color:#fff;border-radius:999px;padding:3px 8px;font-size:9px;font-weight:900;cursor:pointer;white-space:nowrap}.v218-adv-btn:hover{background:#ffffff38}
   .v218-adv{display:grid;gap:12px}.v218-adv-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.v218-adv-bar .input{flex:1;min-width:220px}.v218-adv-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:12px;align-items:start}.v218-adv-grid.no-panel{grid-template-columns:1fr}.v218-adv-side{position:sticky;top:10px}.v218-adv-table-wrap{overflow:auto;max-height:72vh}.v218-adv-table th{position:sticky;top:0;background:#fafafa;z-index:1}.v218-adv-note{margin:0}
   .v219-fbox{border:1px solid #ead6df;background:#fffafc;border-radius:14px;padding:12px}.v219-fhead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px}.v219-fhead b{display:block;font-size:13px;color:#172033}.v219-fhead span{display:block;font-size:10px;color:#667085;margin-top:2px;max-width:760px}.v219-fgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.v219-f{display:grid;gap:4px;min-width:0}.v219-f label{font-size:10px;font-weight:900;color:#475467}.v219-f label b{display:inline-grid;place-items:center;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:#c42770;color:#fff;font-size:9px}.v219-f.on .v218-ms-btn{border-color:#c42770;background:#fff8fb}
   .v219-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 10px}.v219-left,.v219-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.v219-dd-btn{border:1px solid #e4e7ec;background:#fff;border-radius:9px;padding:7px 11px;font:inherit;font-size:12px;font-weight:800;color:#344054;cursor:pointer;display:inline-flex;gap:6px;align-items:center}.v219-dd-btn.view{color:#c42770;border-color:#f0c6da;background:#fff8fb}.v219-dd-btn .gb{color:#c42770}.v219-dd-btn .car{font-size:9px;color:#98a2b3}.v219-count{font-size:11px;color:#667085}.v219-active{display:inline-flex;gap:6px;align-items:center;font-size:11px;color:#7f1747;background:#f7edf2;border:1px solid #edd5df;border-radius:999px;padding:4px 6px 4px 10px}.v219-active button{border:0;background:#fff;border-radius:999px;padding:2px 8px;font-size:10px;font-weight:900;color:#a71958;cursor:pointer}
@@ -6891,7 +6972,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V21(){
 "use strict";
-const BUILD="V21.0";
+const BUILD="V21.1";
 
 /* ---------- 0. Small safe helpers ---------- */
 const log=(...a)=>{try{console.warn("[V21]",...a)}catch(_){}};
@@ -7408,7 +7489,7 @@ try{V.jobs=jobList();V.mail=mailList()}catch(_){}
 earlyPaint();
 // if the live start-up already finished before this layer loaded
 try{if(!V.live&&Array.isArray(S.employees)&&S.employees.length&&S.user){V.live=true;V.liveAt=Date.now();afterLive();saveMasters()}}catch(_){}
-try{const bd=el("buildBadge");if(bd)bd.textContent="V21";document.title="MEGA Engineering | Project Design Control V21"}catch(_){}
+try{const bd=el("buildBadge");if(bd)bd.textContent="V21.1";document.title="MEGA Engineering | Project Design Control V21.1"}catch(_){}
 drawBar();
 console.info(`[${BUILD}] loaded`);
 })()}catch(e){try{console.error("[V21] could not load",e)}catch(_){}}
