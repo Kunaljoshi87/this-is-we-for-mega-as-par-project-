@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.1
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.2
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V21.1".
+   3. Paste this whole file and save. The badge at the top shows "V21.2".
 
  HOW THE CODE IS ORGANISED (top to bottom)
    STYLE block        All screen styles.
@@ -28,6 +28,11 @@
                       changed-only refresh, outbox for bulk jobs and
                       emails, duplicate check before saving, field check
                       at start-up, top status bar, System Health section.
+                      V21.2: work is assigned directly by scope (no separate
+                      Design Owner step - the main design task is created
+                      automatically), frozen project header + tabs, last
+                      opened task highlighted, short load line (details in
+                      System Health), empty-project read fix.
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -47,7 +52,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V21.1</title>
+<title>MEGA Engineering | Project Design Control V21.2</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -273,7 +278,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.1</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.2</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -6310,7 +6315,11 @@ function refocus(id){const i=el(id);if(i){i.focus();try{const n=i.value.length;i
 
 /* ---------- 5. Assign Scope / Tag / PDS work (multi-select + search) ---------- */
 const MODE_PDS="PDS";
+const PROJECT_MODES=["Project Wise",""];
+const isProjectMode=m=>!m||m==="Project Wise";
 function unitsFor(a){
+  // Project-level designs have one work item: the whole design for this project
+  if(isProjectMode(a.mode))return [{key:"PROJECT",section:"",type:"",tag:"",name:"",tagCount:0}];
   if(a.mode===MODE_PDS){try{return v205PdsAllUnits(a.code)}catch(e){log("pds units",e);return[]}}
   try{return v211ScopeUnits(a.mode)||[]}catch(e){log("scope units",e);return[]}
 }
@@ -6324,6 +6333,7 @@ function unitView(a,u){
   return {eq:null,project:a.code,section:u.section||"",type:u.type||"",tag:"",name:"",pdsName:"",pdsRelated:"",group:"",dept:"",category:"",etype:"",subtype:"",status:[]};
 }
 function assignFields(a){
+  if(isProjectMode(a.mode))return [];            // nothing to filter for a project-level design
   const get=u=>{a._vc=a._vc||new Map();if(!a._vc.has(u.key))a._vc.set(u.key,unitView(a,u));return a._vc.get(u.key)};
   const F=(k,l,fn)=>({k,l,t:"lookup",get:u=>fn(get(u))});
   const sec=F("section","Plant Section Name",v=>v.section),typ=F("sectionType","Plant Section Type",v=>v.type);
@@ -6352,6 +6362,7 @@ function fPrune(a,fields,units){
     if(!changed)break;}
 }
 function unitLabel(a,u){
+  if(isProjectMode(a.mode))return `Whole design — Project ${a.code}`;
   if(a.mode===MODE_PDS){const g=u.group||{};return `${g.tag||g.name||"PDS Work"}${g.tag&&g.name?` — ${g.name}`:""} • ${u.typeLabel||""}`}
   try{return v211ScopeUnitLabel(a.mode,u)}catch(_){return u.key}
 }
@@ -6363,6 +6374,7 @@ function unitMeta(a,u){
 }
 function matchScope(a,ch,u){
   const c=N(sc(ch[AF.criteria]));
+  if(isProjectMode(a.mode))return c==="project"&&!sc(ch[AF.plantSection])&&!sc(ch[AF.tagNo]);
   if(a.mode==="Section Wise")return sc(ch[AF.plantSection])===u.section&&c==="plantsection";
   if(a.mode==="Section Type Wise")return sc(ch[AF.plantSection])===u.section&&sc(ch[AF.plantSectionType])===u.type&&c==="plantsectiontype";
   if(a.mode==="Tag Wise")return sc(ch[AF.tagNo])===u.tag&&(!u.eq?.id||sc(ch[AF.equipmentRecordId])===String(u.eq.id));
@@ -6374,13 +6386,18 @@ function matchScope(a,ch,u){
   }
   return false;
 }
+function assignDrawing(a){
+  const parent=a.parentId?assignmentById(a.parentId):null;
+  return parent?drawingForAssignment(parent):(S.drawings||[]).find(d=>String(d.id)===String(a.drawingId))||{id:a.drawingId,name:"Design",short:""};
+}
 function existingFor(a,u){
-  const parent=assignmentById(a.parentId);if(!parent)return[];
-  const out=assignmentChildren(idOf(parent)).filter(ch=>sc(ch[AF.status])!=="Cancelled"&&matchScope(a,ch,u));
+  const parent=a.parentId?assignmentById(a.parentId):null;
+  const out=parent?assignmentChildren(idOf(parent)).filter(ch=>sc(ch[AF.status])!=="Cancelled"&&matchScope(a,ch,u)):[];
   try{
-    const p=v18ProjectForCode(a.code),d=drawingForAssignment(parent);let legacy=null;
+    const p=v18ProjectForCode(a.code),d=assignDrawing(a);let legacy=null;
     if(a.mode===MODE_PDS)legacy=v205PdsExistingWork(p,d,u);else if(typeof v19ExistingWork==="function")legacy=v19ExistingWork(p,d,a.mode,u);
-    if(legacy&&!out.includes(legacy))out.push(legacy);
+    // the main design task itself is not "existing work" for an item
+    if(legacy&&!out.includes(legacy)&&!(typeof v211IsDesignOwnerRoot==="function"&&v211IsDesignOwnerRoot(legacy)))out.push(legacy);
   }catch(_){}
   return out;
 }
@@ -6396,19 +6413,66 @@ async function openAssign(parentId){
   if(num0(parent[AF.assignmentLevel])>0)return v211OpenSubtaskModal(parentId);
   let pds=false;try{pds=isPdsDrawing(parent)||v205IsPdsDrawingMaster(drawing)}catch(_){}
   const mode=pds?MODE_PDS:v211ScopeModeForDrawing(drawing);
-  if(!pds&&!["Section Wise","Section Type Wise","Tag Wise"].includes(mode)){if(mode!=="Project Wise")say("Drawing Type scope is not configured for this design. A normal subtask is used.");return v211OpenSubtaskModal(parentId)}
   checkManage(parent,"","","","assign work under this design");
   busy(pds?"Loading Tag + PDS data…":`Loading ${v19ScopeLabel(mode)}…`);
   try{
-    await ensureEquipmentForProject(code);
+    if(!isProjectMode(mode)||pds)await ensureEquipmentForProject(code);
     if(pds&&!Array.isArray(S.pds?.summary))await ensurePdsData("all");
   }finally{idle()}
   const fresh=!V.assign||V.assign.parentId!==String(parentId);
   if(fresh){
-    V.assign={parentId:String(parentId),code,mode,q:"",f:{},sel:new Set(),users:[],priority:sc(parent[AF.priority])||"Medium",start:iso(parent[AF.startDate])>todayIso()?iso(parent[AF.startDate]):todayIso(),target:iso(parent[AF.targetDate])||"",end:"",remark:"",show:300,panel:true};
+    V.assign={parentId:String(parentId),drawingId:String(drawing.id||""),code,mode:isProjectMode(mode)&&!pds?"Project Wise":mode,q:"",f:{},sel:new Set(isProjectMode(mode)&&!pds?["PROJECT"]:[]),users:[],priority:sc(parent[AF.priority])||"Medium",start:iso(parent[AF.startDate])>todayIso()?iso(parent[AF.startDate]):todayIso(),target:iso(parent[AF.targetDate])||"",end:"",remark:"",show:300,panel:true};
   }
   V.assign._vc=null;
   drawAssign();
+}
+/*
+  openAssignDrawing(drawingId)
+  Assign work on a design directly - there is no separate "Design Owner" step any more.
+  If the design already has its main task, the normal screen opens. If not, the screen opens
+  without it, and the main design task is created automatically when the first work is saved
+  (owned by the person who assigns, i.e. the manager).
+*/
+async function openAssignDrawing(drawingId){
+  const code=S.projectWorkspace.code;if(!code)return say("Open a Project first.");
+  const drawing=(S.drawings||[]).find(d=>String(d.id)===String(drawingId));if(!drawing)return say("Design not found in the Design Master.");
+  const root=v211DesignRoot(code,drawing);if(root)return openAssign(idOf(root));
+  const x=X();if(typeof x.isManager==="function"&&!x.isManager())throw (typeof x.deny==="function"?x.deny("assign work on a design"):rule("You do not have permission to assign work."));
+  let pds=false;try{pds=v205IsPdsDrawingMaster(drawing)}catch(_){}
+  let mode=pds?MODE_PDS:v211ScopeModeForDrawing(drawing);if(!pds&&isProjectMode(mode))mode="Project Wise";
+  busy(pds?"Loading Tag + PDS data…":`Loading ${v19ScopeLabel(mode)}…`);
+  try{if(mode!=="Project Wise")await ensureEquipmentForProject(code);if(pds&&!Array.isArray(S.pds?.summary))await ensurePdsData("all")}finally{idle()}
+  if(!V.assign||V.assign.parentId||V.assign.drawingId!==String(drawing.id)||V.assign.code!==code){
+    V.assign={parentId:"",drawingId:String(drawing.id),code,mode,q:"",f:{},sel:new Set(mode==="Project Wise"?["PROJECT"]:[]),users:[],priority:"Medium",start:todayIso(),target:"",end:"",remark:"",show:300,panel:true};
+  }
+  V.assign._vc=null;drawAssign();
+}
+// Creates the main design task (Level 0) silently, owned by the person who is assigning.
+async function ensureRootFor(a){
+  if(a.parentId){const p=assignmentById(a.parentId);if(p)return p}
+  const code=a.code,drawing=assignDrawing(a),existing=v211DesignRoot(code,drawing);if(existing){a.parentId=String(idOf(existing));return existing}
+  const x=X();let me=null;try{me=typeof x.actor==="function"?x.actor():null}catch(_){}
+  const owner=requireAssignmentRecipient(me?(me.email||me.name):(S.user||""));
+  const p=v18ProjectForCode(code),key=`DESIGN_ROOT::${N(code)}::${N(drawing.id||drawing.short||drawing.name)}`;
+  const data={[AF.projectCode]:code,[AF.projectRecordId]:p?.id||"",[AF.drawingDocument]:drawing.name,[AF.drawingMasterId]:drawing.id,[AF.shortName]:drawing.short||"",
+    [AF.assignmentLevel]:0,[AF.assignedBy]:S.user||"",[AF.assignedTo]:owner.backendValue,[AF.assignedEmployeeName]:owner.name,
+    [AF.criteria]:"Design Owner",[AF.responsibility]:`${drawing.name} • Main design • Project ${code}`,[AF.designType]:drawing.name,[AF.designTitle]:drawing.name,
+    [AF.logicalTaskKey]:key,[AF.startDate]:toCreatorDate(a.start),[AF.targetDate]:toCreatorDate(a.target),[AF.endDate]:toCreatorDate(a.end),[AF.priority]:a.priority||"Medium",[AF.status]:"Not Started",[AF.progress]:0,[AF.remark]:"",
+    [AF.activityLog]:initialActivity("Design Created",`Main design task created by ${owner.name} while assigning work.`,{kind:"design-root"})};
+  if(AF.workKey)data[AF.workKey]=key.slice(0,240);
+  let id="";
+  busy("Creating the design…");
+  try{
+    try{id=await addRecord(data)}
+    catch(e){ // another person created it a moment ago: use theirs
+      if(e&&e.code==="MEGA_DUPLICATE"&&e.existing){const r=adaptRecord(e.existing);if(!assignmentById(idOf(r))){S.records.push(r);S.assignments.push(r)}a.parentId=String(idOf(r));return r}
+      throw e;
+    }
+    if(!id)throw new Error("Zoho did not return the new design task ID.");
+    try{await updateRecord(id,{[AF.primaryAssignment]:id})}catch(e){log("root primary id",e)}
+  }finally{idle()}
+  const rec={ID:id,...data,[AF.primaryAssignment]:id};S.records.push(rec);S.assignments.push(rec);a.parentId=String(id);
+  return rec;
 }
 function syncAssign(){
   const a=V.assign;if(!a)return null;
@@ -6419,10 +6483,10 @@ function syncAssign(){
 function drawAssign(){
   const a=V.assign;if(!a)return;
   try{
-    const parent=assignmentById(a.parentId);if(!parent){closeModal();return say("Design task not found. Refresh the Project.")}
-    const drawing=drawingForAssignment(parent),fields=assignFields(a),all=unitsFor(a),rows=visibleUnits(a),shown=rows.slice(0,a.show);
+    const parent=a.parentId?assignmentById(a.parentId):null;if(a.parentId&&!parent){closeModal();return say("Design task not found. Refresh the Project.")}
+    const drawing=assignDrawing(a),fields=assignFields(a),all=unitsFor(a),rows=visibleUnits(a),shown=rows.slice(0,a.show);
     for(const k of [...a.sel])if(!all.some(u=>u.key===k))a.sel.delete(k);
-    const people=a.users.length,items=a.sel.size,label=a.mode===MODE_PDS?"Tag + PDS Type":v19ScopeLabel(a.mode);
+    const people=a.users.length,items=a.sel.size,label=a.mode===MODE_PDS?"Tag + PDS Type":isProjectMode(a.mode)?"Design":v19ScopeLabel(a.mode);
     const list=shown.length?shown.map(u=>{
       const ex=existingFor(a,u),on=a.sel.has(u.key),names=uniq(ex.map(x=>assignmentDisplayUser(x)));
       return `<label class="v218-unit ${on?"selected":""} ${ex.length?"assigned":""}"><input type="checkbox" class="v218-unit-check" value="${esc(u.key)}" ${on?"checked":""}><div class="v218-unit-main"><b>${esc(unitLabel(a,u))}</b><span>${esc(unitMeta(a,u))}</span></div><div class="v218-unit-side">${a.mode===MODE_PDS&&(u.statuses||[]).length?`<span class="pill">${esc(u.statuses.join(", "))}</span>`:""}${ex.length?`<span class="pill green" title="${esc(names.join(", "))}">Assigned: ${esc(names.slice(0,2).join(", "))}${names.length>2?` +${names.length-2}`:""}</span>`:`<span class="pill">New</span>`}</div></label>`;
@@ -6432,15 +6496,15 @@ function drawAssign(){
       // the empty box already tells what is left: "Only: X" or "All 5 values"
       const ph=!o.length?"No values":o.length===1?`Only: ${o[0].v}`:`All ${o.length} values`;
       return `<div class="v219-f ${sel.length?"on":""}"><label>${esc(f.l)}${sel.length?` <b>${sel.length}</b>`:""}</label>${MS.html(`af:${f.k}`,{options:o,value:sel,placeholder:ph,onChange:v=>{a.f[f.k]=v;a.show=300;keepScroll(()=>{syncAssign();drawAssign()})}})}</div>`}).join("")}</div></div>`;
-    openModal(a.mode===MODE_PDS?"Assign Tag + PDS Work":`Assign ${label}`,`${drawing.short?drawing.short+" — ":""}${drawing.name||""} • Project ${a.code}`,
-    `<div class="v218-assign"><div class="notice good"><b>${esc(assignmentDisplayUser(parent))}</b> owns this Design. Select the ${esc(label)} work, then choose one or more people. One task is created for every person and every selected item.</div>
-     <div class="v218-assign-grid v219-side-layout">
+    openModal(a.mode===MODE_PDS?"Assign Tag + PDS Work":isProjectMode(a.mode)?"Assign Design Work":`Assign ${label}`,`${drawing.short?drawing.short+" — ":""}${drawing.name||""} • Project ${a.code}`,
+    `<div class="v218-assign"><div class="notice good">${isProjectMode(a.mode)?"Choose one or more people for this design. One task is created for every person.":`Select the ${esc(label)} work, then choose one or more people. One task is created for every person and every selected item.`}</div>
+     <div class="v218-assign-grid ${fields.length?"v219-side-layout":"no-panel"}">
       <div class="v218-assign-left">
         <div class="v218-tools"><input id="v218Q" class="input" placeholder="Quick search: tag, equipment, section…" value="${esc(a.q)}"><button type="button" class="btn sm" data-v218-sel-all>Select all ${rows.length} results</button><button type="button" class="btn sm" data-v218-sel-none>Clear</button></div>
         <div class="v218-meta"><span class="pill brand" id="v218SelCount">${items} selected</span><span>${rows.length} shown • ${all.length} available${fcount?` • ${fcount} filter${fcount===1?"":"s"} on`:""}</span></div>
         <div class="v218-units">${list}</div>
       </div>
-      <aside class="v219-fside">${filters}</aside>
+      ${fields.length?`<aside class="v219-fside">${filters}</aside>`:""}
      </div>
      <div class="v181-form-section"><div class="v181-form-section-head"><div><b>Assign selected work</b><span> • you can choose 2, 3 or more people</span></div></div><div class="v181-form-section-body"><div class="v18-assign-grid">
       <div class="field v218-span2"><label>Assigned To * <span class="tiny muted">(multi-select)</span></label>${MS.html("v218Users",{options:peopleOptions(),value:a.users,placeholder:"Select one or more employees…",onChange:v=>{a.users=v;updateAssignSummary()}})}</div>
@@ -6491,10 +6555,12 @@ function saveResultText(r,extraSkipped=0){
 }
 async function createAssign(){
   const a=syncAssign();if(!a)throw rule("Nothing to assign.");
-  const parent=assignmentById(a.parentId);if(!parent)throw rule("Parent Design task is not available. Refresh the Project.");
   if(!a.sel.size)throw rule("Select at least one item.");
   const people=recipients(a.users);if(!people.length)throw rule("Select at least one person in Assigned To.");
-  validDates(a);checkManage(parent,a.start,a.target,a.end,"assign work under this design");
+  validDates(a);
+  if(a.parentId&&!assignmentById(a.parentId))throw rule("Parent Design task is not available. Refresh the Project.");
+  if(a.parentId)checkManage(assignmentById(a.parentId),a.start,a.target,a.end,"assign work under this design");
+  const parent=await ensureRootFor(a);         // creates the main design task if this design has none yet
   const drawing=drawingForAssignment(parent),p=v18ProjectForCode(a.code),units=unitsFor(a).filter(u=>a.sel.has(u.key));
   const pairs=[];let skipped=0;
   for(const u of units){
@@ -6653,7 +6719,7 @@ function nodeRow(a,depth,drawing,index,flat=false){
   if(isRoot){
     let pds=false;try{pds=v205IsPdsDrawingMaster(drawing)}catch(_){}
     const mode=v211ScopeModeForDrawing(drawing);
-    scopeBtn=mode==="Project Wise"&&!pds?"":`<button class="btn sm soft" data-v211-assign-further="${esc(id)}">${pds?"Assign PDS":"Assign Scope"}</button>`;
+    scopeBtn=`<button class="btn sm soft" data-v211-assign-further="${esc(id)}">${pds?"Assign PDS":(mode==="Project Wise"||!mode)?"Assign":"Assign Scope"}</button>`;
   }
   const dname=drawing.short?`${drawing.short} — ${drawing.name}`:(drawing.name||"");
   const label=isRoot?dname:shortLabel(a,drawing);
@@ -6662,10 +6728,10 @@ function nodeRow(a,depth,drawing,index,flat=false){
   const sub=flat?`${esc(isRoot?"Main Design":dname)}${isRoot?"":` • L${level}`}${where?` • ${esc(where)}`:""}`
     :(isRoot?`Main Design${desc?` • ${desc} task${desc===1?"":"s"}`:""}`:`L${level}${where?` • ${esc(where)}`:""}${nk2?` • ${nk2} subtask${nk2===1?"":"s"}`:""}`);
   const d=flat?0:Math.min(depth,10);
-  const row=`<tr class="v218-tr ${isRoot&&!flat?"v218-root":"v218-child"} ${dim?"v218-dim":""} ${overdueA(a)?"v219-late":""}" data-v218-node="${esc(id)}">
+  const row=`<tr class="v218-tr ${isRoot&&!flat?"v218-root":"v218-child"} ${dim?"v218-dim":""} ${overdueA(a)?"v219-late":""} ${String(V.focusId||"")===id?"v219-current":""}" data-v218-node="${esc(id)}">
     <td><div class="v218-cell" style="--d:${d}">${children.length?`<button type="button" class="v218-tog" data-v218-toggle="${esc(id)}" title="${open?"Collapse":"Expand"}">${open?"−":"+"}</button>`:`<span class="v218-tog-sp"></span>`}${isRoot&&!flat?`<span class="v211-seq">${index+1}</span>`:""}<div class="v218-name-wrap"><div class="v211-task-name v218-link" data-v211-open-node="${esc(id)}" title="Open">${esc(label)}</div><div class="v211-task-sub">${isRoot&&!flat?esc(sub):sub}</div></div>${can?`<button type="button" class="v218-add" data-v211-add-subtask="${esc(id)}" title="Add subtask under this task">＋</button>`:""}</div></td>
     <td>${isRoot?v211ScopeBadge(drawing):`<span class="scope-tag">${esc(level===1?(sc(a[AF.criteria])||"Scope"):"Subtask")}</span>`}</td>
-    <td class="v19-human"><div class="v212-owner-main">${esc(assignmentDisplayUser(a))}</div><div class="v211-task-sub">${isRoot?"Design Owner":`by ${esc(personDisplay(a[AF.assignedBy])||sc(a[AF.assignedBy])||"—")}`}</div></td>
+    <td class="v19-human"><div class="v212-owner-main">${esc(assignmentDisplayUser(a))}</div><div class="v211-task-sub">${isRoot?"Lead":`by ${esc(personDisplay(a[AF.assignedBy])||sc(a[AF.assignedBy])||"—")}`}</div></td>
     <td>${statusPill(sc(a[AF.status]))}</td>
     <td class="${overdueA(a)?"v219-late-date":""}">${esc(displayDate(a[AF.targetDate]))}</td>
     <td><div class="v211-progress"><span>${num0(a[AF.progress])}%</span>${progressBar(num0(a[AF.progress]))}</div></td>
@@ -6685,6 +6751,9 @@ function notAssignedHint(){
     return `<div class="v219-hint"><b>Found in Equipment Master, but no task is assigned for it yet:</b>${hits.map(e=>`<div>• ${esc(e.tag||"—")} — ${esc(e.name||"")} <span>(${esc([e.plantSection,e.plantSectionType].filter(Boolean).join(" › "))})</span></div>`).join("")}<div class="v219-hint-tip">To assign it: close Search, click <b>Assign Scope / Assign PDS</b> on the design and pick this tag.</div></div>`;
   }catch(e){log("hint",e);return""}
 }
+// who may start work on a design, and the button word for each kind of design
+function canAssign(){try{const x=X();return typeof x.isManager!=="function"||x.isManager()}catch(_){return true}}
+function assignWord(d){let pds=false;try{pds=v205IsPdsDrawingMaster(d)}catch(_){}const m=v211ScopeModeForDrawing(d);return pds?"Assign PDS":(!m||m==="Project Wise")?"Assign":"Assign Scope"}
 const FUNNEL=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z"/></svg>`;
 let designsBase=null;
 patch("renderProjectDesignsV18",()=>renderProjectDesignsV18,f=>{renderProjectDesignsV18=f},base=>{designsBase=base;return safeDraw("renderProjectDesignsV18",base,function(b){
@@ -6701,7 +6770,7 @@ patch("renderProjectDesignsV18",()=>renderProjectDesignsV18,f=>{renderProjectDes
     const rows=all.filter(x=>x.root?(V.view!=="unassigned"&&(!on||nodeVisible(x.root))):showUnassigned);
     body=rows.length?rows.map(({drawing,root,index})=>{
       if(root)return nodeRow(root,0,drawing,index);
-      return `<tr class="v211-unassigned"><td><div class="v218-cell" style="--d:0"><span class="v218-tog-sp"></span><span class="v211-seq">${index+1}</span><div><div class="v211-task-name">${esc(drawing.short?`${drawing.short} — ${drawing.name}`:drawing.name)}</div><div class="v211-task-sub">Main Design • Owner not assigned</div></div></div></td><td>${v211ScopeBadge(drawing)}</td><td><span class="pill">Unassigned</span></td><td><span class="pill">Not Started</span></td><td>—</td><td>0%</td><td><button class="btn primary sm" data-v211-assign-owner="${esc(drawing.id)}">Assign Design Owner</button></td></tr>`;
+      return `<tr class="v211-unassigned"><td><div class="v218-cell" style="--d:0"><span class="v218-tog-sp"></span><span class="v211-seq">${index+1}</span><div><div class="v211-task-name">${esc(drawing.short?`${drawing.short} — ${drawing.name}`:drawing.name)}</div><div class="v211-task-sub">Main Design • no work assigned yet</div></div></div></td><td>${v211ScopeBadge(drawing)}</td><td><span class="pill">Unassigned</span></td><td><span class="pill">Not Started</span></td><td>—</td><td>0%</td><td>${canAssign()?`<button class="btn primary sm" data-v219-assign-drawing="${esc(drawing.id)}">${assignWord(drawing)}</button>`:`<span class="tiny muted">Waiting for manager</span>`}</td></tr>`;
     }).join(""):empty(on?"No task matches this view / filter":"No Design Master rows found");
   }else{
     const list=matches.slice().sort((p,q)=>(iso(p[AF.targetDate])||"9999").localeCompare(iso(q[AF.targetDate])||"9999"));
@@ -6718,8 +6787,7 @@ patch("renderProjectDesignsV18",()=>renderProjectDesignsV18,f=>{renderProjectDes
   const active=tf().filter(f=>RS.st("tree").on[f.k]).map(f=>f.l);
   RS.st("tree").redraw=()=>renderView();
   const drawer=V.treePanel?`<div class="v219-back" data-v219-close></div><aside class="v219-drawer">${RS.html("tree",tf(),everyone,{title:"Search",note:"Tick a field, choose a condition and pick one or more values. Each list only shows values that match the other conditions.",close:true})}</aside>`:"";
-  return `<div class="v211-core-note v212-main-note"><div><b>Main Designs</b><span>Click <b>+</b> to open a design and see every task and subtask under it. Hover a row and click <b>＋</b> to add a subtask, <b>⇄</b> to reassign. Use the view menu, Group By and the <b>filter icon</b> on the right to find work.</span></div><div class="v211-core-stats"><span class="pill brand">${all.length} Designs</span><span class="pill green">${assigned} Owned</span><span class="pill">${unassigned} Yet to Assign</span><span class="pill">${everyone.length} Tasks</span></div></div>
-  <div class="v219-bar"><div class="v219-left"><button type="button" class="v219-dd-btn view" data-v219-dd="view">${esc(vLabel)} <span class="car">▾</span></button><button type="button" class="v219-dd-btn" data-v219-dd="group"><span class="gb">☰ Group By:</span> ${esc(gLabel)} <span class="car">▾</span></button><span class="v219-count">${on?`${matches.length} of ${everyone.length} tasks`:`${everyone.length} tasks`}</span>${active.length?`<span class="v219-active">Filtered by: ${esc(active.join(", "))}<button type="button" data-v219-clear title="Clear search filters">✕ Clear</button></span>`:""}</div>
+  return `<div class="v219-bar"><div class="v219-left"><button type="button" class="v219-dd-btn view" data-v219-dd="view">${esc(vLabel)} <span class="car">▾</span></button><button type="button" class="v219-dd-btn" data-v219-dd="group"><span class="gb">☰ Group By:</span> ${esc(gLabel)} <span class="car">▾</span></button><span class="v219-count">${all.length} designs • ${assigned} with work • ${on?`${matches.length} of ${everyone.length} tasks`:`${everyone.length} tasks`}</span>${active.length?`<span class="v219-active">Filtered by: ${esc(active.join(", "))}<button type="button" data-v219-clear title="Clear search filters">✕ Clear</button></span>`:""}</div>
   <div class="v219-right">${V.group==="design"?`<button type="button" class="btn sm" data-v218-expand-all>+ Expand all</button><button type="button" class="btn sm" data-v218-collapse-all>− Collapse all</button>`:""}<div class="view-switch"><button data-v18-view="list" class="active">List</button><button data-v18-view="kanban">Kanban</button><button data-v18-view="gantt">Gantt</button></div><button type="button" class="v219-icon ${n?"on":""}" data-v219-search title="Search / filter tasks">${FUNNEL}${n?`<i>${n}</i>`:""}</button></div></div>
   <div class="task-list-panel v211-task-panel"><table class="task-table v211-task-table v214-main-table v218-tree-table"><thead><tr><th>${V.group==="design"?"Design / Task":"Task"}</th><th>Scope</th><th>Assigned To</th><th>Status</th><th>Target</th><th>Progress</th><th>Action</th></tr></thead><tbody>${body}</tbody></table></div>${drawer}`;
 })});
@@ -6759,6 +6827,83 @@ patch("renderDelegateTab",()=>renderDelegateTab,f=>{renderDelegateTab=f},base=>s
   const html=b(),a=S.current;if(!a)return html;
   return html.replace('<button class="btn primary" data-detail-tab="pds">Open PDS Assignment</button>',`<button class="btn primary" data-v211-assign-further="${esc(idOf(a))}">Assign Tag + PDS Work</button>`);
 }));
+
+/* ---------- 7b. Simple project page (V21.2) ----------
+   - "+ Assign Design" lets you pick a design and assign its work directly
+     (no separate "Design Owner" step).
+   - The design / task you worked on last is highlighted when you come back.
+   - The long "safe mode" box becomes one short line; the details are in
+     System Health (● button).
+*/
+patch("openV18AssignModal",()=>openV18AssignModal,f=>{openV18AssignModal=f},base=>async function(){
+  try{return drawPicker()}catch(e){log("design picker",e);return base.apply(this,arguments)}
+});
+function drawPicker(){
+  const code=S.projectWorkspace.code;if(!code)return say("Open a Project first.");
+  if(!canAssign())return say("Only a manager can assign design work.");
+  const rows=v211ActiveDrawings().map(d=>{
+    const root=v211DesignRoot(code,d),n=root?allDesc(root).length:0;
+    return `<button type="button" class="v219-pick-row" data-v219-assign-drawing="${esc(d.id)}" data-q="${esc(N(`${d.short} ${d.name}`))}"><span class="v219-pick-main"><b>${esc(d.short?`${d.short} — ${d.name}`:d.name)}</b><small>${root?`${n} task${n===1?"":"s"} assigned`:"No work assigned yet"}</small></span>${v211ScopeBadge(d)}</button>`;
+  }).join("")||`<div class="empty compact"><strong>No designs in the Design Master</strong></div>`;
+  openModal("Assign Design Work",`Project ${code} • choose a design, then choose the work and people`,
+    `<input id="v219PickQ" class="input" placeholder="Search design name or short code…" autocomplete="off"><div class="v219-pick">${rows}</div>`,
+    `<button class="btn" data-modal="close">Cancel</button>`);
+  setTimeout(()=>{try{el("v219PickQ").focus()}catch(_){}},0);
+}
+// remember the design / task being worked on, so it can be highlighted in the list
+patch("openAssignment",()=>openAssignment,f=>{openAssignment=f},base=>async function(id){
+  try{
+    V.focusId=String(id||"");V.focusPending=true;
+    let g=assignmentById(id),n=0;while(g&&n++<20){const pid=sc(g[AF.assignedFrom]);if(pid)V.expanded.add(pid);g=pid?assignmentById(pid):null}
+  }catch(_){}
+  return base.apply(this,arguments);
+});
+// one short line instead of the big "Project opened in safe mode" box
+patch("v209ProjectLoadBanner",()=>v209ProjectLoadBanner,f=>{v209ProjectLoadBanner=f},base=>function(code){
+  try{
+    const s=v209ProjectState(code)||{};
+    if(s.equipment==="loading"||s.tracking==="loading")return `<div class="v219-strip info"><span class="v218-mini-spin"></span> Loading project data…</div>`;
+    const bad=[];if(s.tracking==="error")bad.push("design work");if(s.equipment==="error")bad.push("equipment");
+    if(bad.length)return `<div class="v219-strip warn">⚠ ${esc(bad.join(" and "))} could not load — showing what is available. <button type="button" data-v209-retry-project="${esc(code)}">Retry</button><button type="button" class="ghost" data-v219-health>Details</button></div>`;
+    return "";
+  }catch(e){log("load line",e);return base.apply(this,arguments)}
+});
+// System Health: project load details (moved here from the project page)
+patch("systemHealthHtml",()=>systemHealthHtml,f=>{systemHealthHtml=f},base=>function(){
+  let html="";try{html=base.apply(this,arguments)}catch(e){log(e)}
+  try{
+    const code=String(S.projectWorkspace?.code||"");if(!code)return html;
+    const s=v209ProjectState(code)||{};
+    const rows=[["Project",code],["Design work",`${s.tracking||"—"}${s.trackingRows!=null?` (${s.trackingRows} rows)`:""}`],["Design work error",s.trackingError||"none"],["Equipment",`${s.equipment||"—"}${s.equipmentRows!=null?` (${s.equipmentRows} rows)`:""}`],["Equipment error",s.equipmentError||"none"]];
+    html+=`<div class="v21-health"><h3>Open project data</h3><table>${rows.map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table></div>`;
+  }catch(e){log(e)}
+  return html;
+});
+/* Frozen project header: the tabs (Dashboard … Activity) stay at the top while scrolling.
+   After scrolling down, the big title row hides and only the tabs + project code stay. */
+function stickyTop(){
+  try{
+    const tb=document.querySelector(".topbar");let off=0;
+    if(tb){const cs=getComputedStyle(tb);if(cs.position==="sticky"||cs.position==="fixed")off=tb.getBoundingClientRect().height}
+    document.documentElement.style.setProperty("--v219-top",off+"px");
+    const tabs=document.querySelector(".project-tabs");if(tabs&&S.projectWorkspace?.code)tabs.setAttribute("data-v219-code",`${S.projectWorkspace.code}`);
+  }catch(_){}
+}
+try{
+  let stuck=false;
+  window.addEventListener("scroll",()=>{try{const y=window.scrollY||document.documentElement.scrollTop||0;
+    const want=S.view==="project"&&(stuck?y>60:y>160);   // two limits so the page does not jump back and forth
+    if(want!==stuck){stuck=want;document.body.classList.toggle("v219-stuck",stuck)}}catch(_){}},{passive:true});
+  window.addEventListener("resize",stickyTop);
+}catch(e){log("sticky header",e)}
+try{
+  document.addEventListener("click",e=>{
+    const t=e.target;if(!t||!t.closest)return;let b;
+    if((b=t.closest("[data-v219-assign-drawing]"))){e.preventDefault();e.stopImmediatePropagation();const id=b.dataset.v219AssignDrawing;return run(()=>openAssignDrawing(id))}
+    if(t.closest("[data-v219-health]")){e.preventDefault();e.stopImmediatePropagation();try{openSystemHealthModal()}catch(err){log(err)}return}
+  },true);
+  document.addEventListener("input",e=>{const t=e.target;if(!t||t.id!=="v219PickQ")return;const q=N(t.value);document.querySelectorAll(".v219-pick-row").forEach(r=>{r.style.display=!q||String(r.dataset.q||"").includes(q)?"":"none"})});
+}catch(e){log("project page events",e)}
 
 /* ---------- 8. Advanced Search (universal, Zoho Creator report style) ---------- */
 function workFields(){
@@ -6887,6 +7032,9 @@ patch("openUniversalSearch",()=>openUniversalSearch,f=>{openUniversalSearch=f},b
   return out;
 });
 patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){
+  setTimeout(stickyTop,0);
+  if(S.view!=="project")document.body.classList.remove("v219-stuck");
+  if(S.view==="project"&&V.focusPending){setTimeout(()=>{try{const r=document.querySelector(".v219-current");if(r){r.scrollIntoView({block:"center"});V.focusPending=false}}catch(_){}},60)}
   if(S.view==="v218search"){try{return renderAdv()}catch(e){log(e);S.view="projects"}}
   return base.apply(this,arguments);
 });
@@ -6927,6 +7075,12 @@ try{
   .v219-side-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px;align-items:start}.v219-fside{position:sticky;top:0;max-height:70vh;overflow:auto;border-radius:14px}.v219-fside .v219-fgrid{grid-template-columns:1fr!important;gap:8px}.v219-fside .v219-fhead{flex-direction:column;gap:6px;margin-bottom:8px}.v219-fside .v219-fhead span{max-width:none}.v219-side-layout .v218-units{max-height:60vh}
   @media(max-width:1000px){.v219-side-layout{grid-template-columns:1fr}.v219-fside{position:static;max-height:none}}
   .v219-hint{margin:12px auto 0;max-width:620px;text-align:left;border:1px dashed #f0c6da;background:#fff8fb;border-radius:12px;padding:10px 12px;font-size:12px;color:#344054}.v219-hint b{display:block;margin-bottom:4px;color:#7f1747}.v219-hint span{color:#667085}.v219-hint-tip{margin-top:6px;color:#667085;font-size:11px}
+  .project-top{position:sticky;top:var(--v219-top,0px);z-index:45;background:#fff;box-shadow:0 6px 14px -10px rgba(16,24,40,.35)}
+  /* scrolled down: the header becomes one slim row (title + buttons stay usable), tabs below it */
+  body.v219-stuck .project-top .project-top-main{padding-top:6px!important;padding-bottom:6px!important;min-height:0!important}body.v219-stuck .project-top .project-heading p,body.v219-stuck .project-top .project-icon{display:none!important}body.v219-stuck .project-top .project-heading h2{font-size:15px!important;margin:0!important}body.v219-stuck .project-top .project-top-main .btn{padding-top:5px!important;padding-bottom:5px!important;font-size:11px!important}
+  .v219-current td{background:#fff3c4!important}.v219-current td:first-child{box-shadow:inset 4px 0 0 #f59e0b}.v219-current .v211-task-name{color:#7a4b00}
+  .v219-strip{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px;padding:7px 12px;border-radius:10px;font-size:12px;border:1px solid}.v219-strip.info{background:#f5f9ff;border-color:#d6e4fb;color:#1d3a6b}.v219-strip.warn{background:#fffaeb;border-color:#f7d58a;color:#7a4b00}.v219-strip button{border:1px solid currentColor;background:#fff;color:inherit;border-radius:8px;padding:3px 9px;font:inherit;font-size:11px;font-weight:800;cursor:pointer}.v219-strip button.ghost{border-color:transparent;background:transparent;text-decoration:underline}
+  .v219-pick{display:grid;gap:6px;margin-top:10px;max-height:60vh;overflow:auto}.v219-pick-row{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid #e4e7ec;background:#fff;border-radius:11px;padding:10px 12px;cursor:pointer;font:inherit}.v219-pick-row:hover{border-color:#c42770;background:#fff8fb}.v219-pick-main b{display:block;font-size:13px;color:#172033}.v219-pick-main small{display:block;font-size:10px;color:#667085;margin-top:2px}
   .v219-fbox{border:1px solid #ead6df;background:#fffafc;border-radius:14px;padding:12px}.v219-fhead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:10px}.v219-fhead b{display:block;font-size:13px;color:#172033}.v219-fhead span{display:block;font-size:10px;color:#667085;margin-top:2px;max-width:760px}.v219-fgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.v219-f{display:grid;gap:4px;min-width:0}.v219-f label{font-size:10px;font-weight:900;color:#475467}.v219-f label b{display:inline-grid;place-items:center;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:#c42770;color:#fff;font-size:9px}.v219-f.on .v218-ms-btn{border-color:#c42770;background:#fff8fb}
   .v219-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 10px}.v219-left,.v219-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.v219-dd-btn{border:1px solid #e4e7ec;background:#fff;border-radius:9px;padding:7px 11px;font:inherit;font-size:12px;font-weight:800;color:#344054;cursor:pointer;display:inline-flex;gap:6px;align-items:center}.v219-dd-btn.view{color:#c42770;border-color:#f0c6da;background:#fff8fb}.v219-dd-btn .gb{color:#c42770}.v219-dd-btn .car{font-size:9px;color:#98a2b3}.v219-count{font-size:11px;color:#667085}.v219-active{display:inline-flex;gap:6px;align-items:center;font-size:11px;color:#7f1747;background:#f7edf2;border:1px solid #edd5df;border-radius:999px;padding:4px 6px 4px 10px}.v219-active button{border:0;background:#fff;border-radius:999px;padding:2px 8px;font-size:10px;font-weight:900;color:#a71958;cursor:pointer}
   .v219-icon{position:relative;width:36px;height:34px;border:1px solid #e4e7ec;border-radius:9px;background:#fff;color:#c42770;cursor:pointer;display:grid;place-items:center}.v219-icon:hover,.v219-icon.on{border-color:#c42770;background:#fff8fb}.v219-icon i{position:absolute;top:-6px;right:-6px;min-width:17px;height:17px;border-radius:999px;background:#c42770;color:#fff;font-style:normal;font-size:9px;font-weight:900;display:grid;place-items:center;padding:0 4px}
@@ -6998,7 +7152,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V21(){
 "use strict";
-const BUILD="V21.1";
+const BUILD="V21.2";
 
 /* ---------- 0. Small safe helpers ---------- */
 const log=(...a)=>{try{console.warn("[V21]",...a)}catch(_){}};
@@ -7214,6 +7368,25 @@ patch("silentAlertRefresh",()=>silentAlertRefresh,f=>{silentAlertRefresh=f},base
     if(S.cache?.myTrackingLoaded&&tick%3===0){try{await v208EnsureMyTracking(true)}catch(e){log("my work refresh",e)}}
     try{updateNotificationBell()}catch(_){}
   }catch(e){log("background refresh",e)}
+});
+
+/* ---------- 4b. Fix: a project with no design work yet showed "Designs: error" ----------
+   The older reader tried two Zoho queries. For a project with no records the first one
+   correctly answered "empty", but the second (lookup-style) query failed and its error
+   replaced the good empty answer. Now: any query that succeeds wins, and an empty project
+   is a normal empty project, not an error. */
+patch("v208FetchTrackingForProject",()=>v208FetchTrackingForProject,f=>{v208FetchTrackingForProject=f},base=>async function(code){
+  code=String(code||"").trim();if(!code)return[];
+  if(S.demo)return base.apply(this,arguments);
+  let report;try{report=await v208DiscoverTrackingReportLink()}catch(e){return base.apply(this,arguments)}
+  const e1=creatorCriteriaEscape(code),tries=[`(${AF.projectCode} == "${e1}")`,`(${AF.projectCode}.Project_Code == "${e1}")`];
+  let emptyOk=false,lastErr=null;
+  for(const c of tries){
+    try{const rows=await fetchRecords(report,c,CONFIG.MAX_REPORT_PAGES);if(rows&&rows.length)return rows;emptyOk=true}
+    catch(e){lastErr=e}
+  }
+  if(emptyOk)return [];                         // the project simply has no design work yet
+  try{return await base.apply(this,arguments)}catch(e){throw lastErr||e}
 });
 
 /* ---------- 5. Duplicate check before every create ---------- */
@@ -7515,7 +7688,7 @@ try{V.jobs=jobList();V.mail=mailList()}catch(_){}
 earlyPaint();
 // if the live start-up already finished before this layer loaded
 try{if(!V.live&&Array.isArray(S.employees)&&S.employees.length&&S.user){V.live=true;V.liveAt=Date.now();afterLive();saveMasters()}}catch(_){}
-try{const bd=el("buildBadge");if(bd)bd.textContent="V21.1";document.title="MEGA Engineering | Project Design Control V21.1"}catch(_){}
+try{const bd=el("buildBadge");if(bd)bd.textContent="V21.2";document.title="MEGA Engineering | Project Design Control V21.2"}catch(_){}
 drawBar();
 console.info(`[${BUILD}] loaded`);
 })()}catch(e){try{console.error("[V21] could not load",e)}catch(_){}}
