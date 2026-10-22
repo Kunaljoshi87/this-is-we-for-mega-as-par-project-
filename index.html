@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.2
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.3
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V21.2".
+   3. Paste this whole file and save. The badge at the top shows "V21.3".
 
  HOW THE CODE IS ORGANISED (top to bottom)
    STYLE block        All screen styles.
@@ -28,11 +28,13 @@
                       changed-only refresh, outbox for bulk jobs and
                       emails, duplicate check before saving, field check
                       at start-up, top status bar, System Health section.
-                      V21.2: work is assigned directly by scope (no separate
+                      V21.3: work is assigned directly by scope (no separate
                       Design Owner step - the main design task is created
                       automatically), frozen project header + tabs, last
                       opened task highlighted, short load line (details in
                       System Health), empty-project read fix.
+                      V21.3: only Active designs (Design Master Status),
+                      compact top bars and rows so more designs fit.
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -52,7 +54,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V21.2</title>
+<title>MEGA Engineering | Project Design Control V21.3</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -278,7 +280,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.2</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.3</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -6729,7 +6731,7 @@ function nodeRow(a,depth,drawing,index,flat=false){
     :(isRoot?`Main Design${desc?` • ${desc} task${desc===1?"":"s"}`:""}`:`L${level}${where?` • ${esc(where)}`:""}${nk2?` • ${nk2} subtask${nk2===1?"":"s"}`:""}`);
   const d=flat?0:Math.min(depth,10);
   const row=`<tr class="v218-tr ${isRoot&&!flat?"v218-root":"v218-child"} ${dim?"v218-dim":""} ${overdueA(a)?"v219-late":""} ${String(V.focusId||"")===id?"v219-current":""}" data-v218-node="${esc(id)}">
-    <td><div class="v218-cell" style="--d:${d}">${children.length?`<button type="button" class="v218-tog" data-v218-toggle="${esc(id)}" title="${open?"Collapse":"Expand"}">${open?"−":"+"}</button>`:`<span class="v218-tog-sp"></span>`}${isRoot&&!flat?`<span class="v211-seq">${index+1}</span>`:""}<div class="v218-name-wrap"><div class="v211-task-name v218-link" data-v211-open-node="${esc(id)}" title="Open">${esc(label)}</div><div class="v211-task-sub">${isRoot&&!flat?esc(sub):sub}</div></div>${can?`<button type="button" class="v218-add" data-v211-add-subtask="${esc(id)}" title="Add subtask under this task">＋</button>`:""}</div></td>
+    <td><div class="v218-cell" style="--d:${d}">${children.length?`<button type="button" class="v218-tog" data-v218-toggle="${esc(id)}" title="${open?"Collapse":"Expand"}">${open?"−":"+"}</button>`:`<span class="v218-tog-sp"></span>`}${isRoot&&!flat?`<span class="v211-seq">${index+1}</span>`:""}<div class="v218-name-wrap"><div class="v211-task-name v218-link" data-v211-open-node="${esc(id)}" title="Open">${esc(label)}</div><div class="v211-task-sub">${isRoot&&!flat?esc(sub):sub}${isRoot&&!flat&&!drawingIsActive(drawing)?` <span class="pill amber">Inactive design</span>`:""}</div></div>${can?`<button type="button" class="v218-add" data-v211-add-subtask="${esc(id)}" title="Add subtask under this task">＋</button>`:""}</div></td>
     <td>${isRoot?v211ScopeBadge(drawing):`<span class="scope-tag">${esc(level===1?(sc(a[AF.criteria])||"Scope"):"Subtask")}</span>`}</td>
     <td class="v19-human"><div class="v212-owner-main">${esc(assignmentDisplayUser(a))}</div><div class="v211-task-sub">${isRoot?"Lead":`by ${esc(personDisplay(a[AF.assignedBy])||sc(a[AF.assignedBy])||"—")}`}</div></td>
     <td>${statusPill(sc(a[AF.status]))}</td>
@@ -6827,6 +6829,21 @@ patch("renderDelegateTab",()=>renderDelegateTab,f=>{renderDelegateTab=f},base=>s
   const html=b(),a=S.current;if(!a)return html;
   return html.replace('<button class="btn primary" data-detail-tab="pds">Open PDS Assignment</button>',`<button class="btn primary" data-v211-assign-further="${esc(idOf(a))}">Assign Tag + PDS Work</button>`);
 }));
+
+/* ---------- 7a. Only ACTIVE designs (Design Master "Status" = Active) ----------
+   The list shows only designs whose Status in All_Drawing_Types is "Active".
+   A design that is not active but already has work in this project is still shown
+   (marked "Inactive") so no existing work disappears. If the master has no Status
+   field, the older "Active" yes/no field is used as before. */
+function drawingStatus(d){try{return sc(pick(d?.raw||{},["Status","Drawing_Status","Design_Status"],"")).trim()}catch(_){return""}}
+function drawingIsActive(d){const st=drawingStatus(d);return !st||N(st)==="active"}
+patch("v211ActiveDrawings",()=>v211ActiveDrawings,f=>{v211ActiveDrawings=f},base=>function(){
+  const all=base.apply(this,arguments);
+  try{
+    const code=S.projectWorkspace?.code||"";
+    return all.filter(d=>drawingIsActive(d)||(code&&v211DesignRoot(code,d)));
+  }catch(e){log("active designs",e);return all}
+});
 
 /* ---------- 7b. Simple project page (V21.2) ----------
    - "+ Assign Design" lets you pick a design and assign its work directly
@@ -7075,6 +7092,14 @@ try{
   .v219-side-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px;align-items:start}.v219-fside{position:sticky;top:0;max-height:70vh;overflow:auto;border-radius:14px}.v219-fside .v219-fgrid{grid-template-columns:1fr!important;gap:8px}.v219-fside .v219-fhead{flex-direction:column;gap:6px;margin-bottom:8px}.v219-fside .v219-fhead span{max-width:none}.v219-side-layout .v218-units{max-height:60vh}
   @media(max-width:1000px){.v219-side-layout{grid-template-columns:1fr}.v219-fside{position:static;max-height:none}}
   .v219-hint{margin:12px auto 0;max-width:620px;text-align:left;border:1px dashed #f0c6da;background:#fff8fb;border-radius:12px;padding:10px 12px;font-size:12px;color:#344054}.v219-hint b{display:block;margin-bottom:4px;color:#7f1747}.v219-hint span{color:#667085}.v219-hint-tip{margin-top:6px;color:#667085;font-size:11px}
+  /* compact layout (V21.3): small top bars, slim project header, denser rows */
+  .topbar-inner{padding:7px 18px!important;gap:12px!important}.logo{width:34px!important;height:34px!important;font-size:14px!important;border-radius:10px!important}.brand small{font-size:8px!important}.brand h1{font-size:15px!important}
+  .app{padding-top:8px!important}
+  .navbar{margin-bottom:8px!important;gap:8px!important}.navtabs{padding:2px!important;border-radius:10px!important;gap:2px!important}.navtab{padding:5px 11px!important;font-size:12px!important;border-radius:8px!important}.nav-actions{gap:6px!important}.nav-actions .btn{padding:4px 10px!important;font-size:12px!important;min-height:0!important;height:30px!important}.nav-actions .btn.icon{width:30px!important;padding:0!important}
+  .project-top-main{padding:7px 14px!important;flex-direction:row!important;align-items:center!important}.project-top .project-heading p,.project-top .project-icon{display:none!important}.project-top .project-heading h2{font-size:15px!important;margin:0!important}.project-top-main .btn{padding:5px 10px!important;font-size:12px!important}
+  .project-tab{padding:7px 12px!important;font-size:12.5px!important}
+  .v219-bar{margin:2px 0 6px!important}.v219-dd-btn{padding:5px 10px!important}.v219-icon{height:30px!important;width:32px!important}.v219-right .view-switch button{padding:5px 11px!important}.v219-right .btn{padding:4px 9px!important}
+  .v218-tree-table td{padding:5px 10px!important}.v218-tree-table th{padding:7px 10px!important}.v218-tree-table .btn.sm{padding:3px 8px!important;font-size:11px!important}.v218-tree-table .v211-seq{width:22px;height:22px;font-size:9px}.v218-tree-table .pill{padding:2px 7px}
   .project-top{position:sticky;top:var(--v219-top,0px);z-index:45;background:#fff;box-shadow:0 6px 14px -10px rgba(16,24,40,.35)}
   /* scrolled down: the header becomes one slim row (title + buttons stay usable), tabs below it */
   body.v219-stuck .project-top .project-top-main{padding-top:6px!important;padding-bottom:6px!important;min-height:0!important}body.v219-stuck .project-top .project-heading p,body.v219-stuck .project-top .project-icon{display:none!important}body.v219-stuck .project-top .project-heading h2{font-size:15px!important;margin:0!important}body.v219-stuck .project-top .project-top-main .btn{padding-top:5px!important;padding-bottom:5px!important;font-size:11px!important}
@@ -7152,7 +7177,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V21(){
 "use strict";
-const BUILD="V21.2";
+const BUILD="V21.3";
 
 /* ---------- 0. Small safe helpers ---------- */
 const log=(...a)=>{try{console.warn("[V21]",...a)}catch(_){}};
@@ -7688,7 +7713,7 @@ try{V.jobs=jobList();V.mail=mailList()}catch(_){}
 earlyPaint();
 // if the live start-up already finished before this layer loaded
 try{if(!V.live&&Array.isArray(S.employees)&&S.employees.length&&S.user){V.live=true;V.liveAt=Date.now();afterLive();saveMasters()}}catch(_){}
-try{const bd=el("buildBadge");if(bd)bd.textContent="V21.2";document.title="MEGA Engineering | Project Design Control V21.2"}catch(_){}
+try{const bd=el("buildBadge");if(bd)bd.textContent="V21.3";document.title="MEGA Engineering | Project Design Control V21.3"}catch(_){}
 drawBar();
 console.info(`[${BUILD}] loaded`);
 })()}catch(e){try{console.error("[V21] could not load",e)}catch(_){}}
