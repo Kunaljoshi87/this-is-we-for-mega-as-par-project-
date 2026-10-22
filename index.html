@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.5
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.6
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V21.5".
+   3. Paste this whole file and save. The badge at the top shows "V21.6".
 
  HOW THE CODE IS ORGANISED (top to bottom)
    STYLE block        All screen styles.
@@ -54,7 +54,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V21.5</title>
+<title>MEGA Engineering | Project Design Control V21.6</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -280,7 +280,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.5</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.6</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -6946,11 +6946,6 @@ function simpleLayout(){
       if(acts){acts.classList.add("v219-topacts");inner.appendChild(acts)}
       nav.style.display="none";
     }
-    const pt=document.querySelector(".project-top");
-    if(pt&&!pt.dataset.v219Simple){
-      const main=pt.querySelector(".project-top-main"),tabs=pt.querySelector(".project-tabs"),head=main&&main.querySelector(".project-heading");
-      if(main&&tabs&&head){head.after(tabs);pt.dataset.v219Simple="1"}
-    }
   }catch(e){log("simple layout",e)}
 }
 /* Frozen project header: the tabs (Dashboard … Activity) stay at the top while scrolling.
@@ -7163,12 +7158,18 @@ try{
   .app{padding:8px 14px 30px!important;max-width:none!important}
   .project-top-main{gap:10px!important;padding:5px 10px!important;flex-wrap:nowrap!important}
   .project-top-main .project-heading{flex:0 1 auto;min-width:0;gap:8px!important}.project-top-main .project-heading>div:last-child{min-width:0}
-  .project-top .project-heading h2{max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .project-top-main .project-tabs{flex:1 1 auto;border-top:0!important;padding:0!important;min-width:0}.project-top-main .project-tab{padding:6px 9px!important;font-size:12px!important}
+  .project-top .project-heading h2{font-size:13.5px!important;font-weight:800;max-width:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.project-top-main .project-heading{flex:1 1 auto}
+  /* tabs stay on their own row below the project name; no scrollbar line */
+  .project-tabs{scrollbar-width:none}.project-tabs::-webkit-scrollbar{display:none}.project-tab{padding:6px 12px!important;font-size:12.5px!important}
+  .project-top-main .project-heading .btn{white-space:nowrap}
   .project-top-main .actions{display:flex;gap:6px;flex:0 0 auto}.project-top-main .actions .btn{height:30px;padding:0 10px!important;font-size:12px!important;white-space:nowrap}
   body.v219-inproject .v219-topacts #refreshBtn{display:none}   /* the project bar has its own Refresh */
+  /* all action buttons in the list have the same size */
+  .v218-tree-table td:last-child .btn{height:28px!important;min-width:96px;padding:0 10px!important;font-size:11.5px!important;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap}
+  .v218-tree-table td:last-child .btn[data-v217-reassign]{min-width:32px;width:32px;padding:0!important}
+  .v218-tree-table td:last-child .btn.primary{min-width:112px}
   .v218-tree-table td{padding:4px 10px!important}.v218-tree-table .v211-task-name{font-size:12.5px}.v218-tree-table .v211-task-sub{font-size:9px;margin-top:1px}.v211-row-actions{gap:6px!important}.v218-tree-table .btn.sm{height:26px;padding:0 9px!important}
-  @media(max-width:1250px){.topbar-inner{flex-wrap:wrap}.project-top-main{flex-wrap:wrap!important}.project-top .project-heading h2{max-width:240px}}
+  @media(max-width:1250px){.topbar-inner{flex-wrap:wrap}.project-top-main{flex-wrap:wrap!important}}
   /* compact layout (V21.3): small top bars, slim project header, denser rows */
   .topbar-inner{padding:7px 18px!important;gap:12px!important}.logo{width:34px!important;height:34px!important;font-size:14px!important;border-radius:10px!important}.brand small{font-size:8px!important}.brand h1{font-size:15px!important}
   .app{padding-top:8px!important}
@@ -7255,7 +7256,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V21(){
 "use strict";
-const BUILD="V21.5";
+const BUILD="V21.6";
 
 /* ---------- 0. Small safe helpers ---------- */
 const log=(...a)=>{try{console.warn("[V21]",...a)}catch(_){}};
@@ -7791,7 +7792,7 @@ try{V.jobs=jobList();V.mail=mailList()}catch(_){}
 earlyPaint();
 // if the live start-up already finished before this layer loaded
 try{if(!V.live&&Array.isArray(S.employees)&&S.employees.length&&S.user){V.live=true;V.liveAt=Date.now();afterLive();saveMasters()}}catch(_){}
-try{const bd=el("buildBadge");if(bd)bd.textContent="V21.5";document.title="MEGA Engineering | Project Design Control V21.5"}catch(_){}
+try{const bd=el("buildBadge");if(bd)bd.textContent="V21.6";document.title="MEGA Engineering | Project Design Control V21.6"}catch(_){}
 drawBar();
 console.info(`[${BUILD}] loaded`);
 })()}catch(e){try{console.error("[V21] could not load",e)}catch(_){}}
