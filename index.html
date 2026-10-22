@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.4
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.5
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V21.4".
+   3. Paste this whole file and save. The badge at the top shows "V21.5".
 
  HOW THE CODE IS ORGANISED (top to bottom)
    STYLE block        All screen styles.
@@ -54,7 +54,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V21.4</title>
+<title>MEGA Engineering | Project Design Control V21.5</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -280,7 +280,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.4</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.5</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -6931,6 +6931,28 @@ patch("systemHealthHtml",()=>systemHealthHtml,f=>{systemHealthHtml=f},base=>func
   }catch(e){log(e)}
   return html;
 });
+/* ---------- Simple layout (V21.5) ----------
+   1. One top bar: logo, Projects / My Work / Dashboard, search, alerts, person,
+      Refresh / Health / Setup - all in one row (the separate navigation row is gone).
+   2. Project bar: back button, project name, the tabs and the project buttons in one row.
+   3. Smaller logo, smaller "connected" dot, denser rows -> more designs on screen. */
+function simpleLayout(){
+  try{
+    const inner=document.querySelector(".topbar-inner"),nav=document.querySelector("main.app .navbar");
+    if(inner&&nav&&!inner.querySelector(".navbar")){
+      const brand=inner.querySelector(".brand");
+      const tabs=nav.querySelector(".navtabs"),acts=nav.querySelector(".nav-actions");
+      if(tabs&&brand){tabs.classList.add("v219-topnav");brand.after(tabs)}
+      if(acts){acts.classList.add("v219-topacts");inner.appendChild(acts)}
+      nav.style.display="none";
+    }
+    const pt=document.querySelector(".project-top");
+    if(pt&&!pt.dataset.v219Simple){
+      const main=pt.querySelector(".project-top-main"),tabs=pt.querySelector(".project-tabs"),head=main&&main.querySelector(".project-heading");
+      if(main&&tabs&&head){head.after(tabs);pt.dataset.v219Simple="1"}
+    }
+  }catch(e){log("simple layout",e)}
+}
 /* Frozen project header: the tabs (Dashboard … Activity) stay at the top while scrolling.
    After scrolling down, the big title row hides and only the tabs + project code stay. */
 function stickyTop(){
@@ -7084,7 +7106,7 @@ patch("openUniversalSearch",()=>openUniversalSearch,f=>{openUniversalSearch=f},b
   return out;
 });
 patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){
-  setTimeout(stickyTop,0);
+  setTimeout(()=>{simpleLayout();stickyTop();try{document.body.classList.toggle("v219-inproject",S.view==="project")}catch(_){}},0);
   if(S.view!=="project")document.body.classList.remove("v219-stuck");
   if(S.view==="project"&&V.focusPending){setTimeout(()=>{try{const r=document.querySelector(".v219-current");if(r){r.scrollIntoView({block:"center"});V.focusPending=false}}catch(_){}},60)}
   if(S.view==="v218search"){try{return renderAdv()}catch(e){log(e);S.view="projects"}}
@@ -7127,6 +7149,26 @@ try{
   .v219-side-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px;align-items:start}.v219-fside{position:sticky;top:0;max-height:70vh;overflow:auto;border-radius:14px}.v219-fside .v219-fgrid{grid-template-columns:1fr!important;gap:8px}.v219-fside .v219-fhead{flex-direction:column;gap:6px;margin-bottom:8px}.v219-fside .v219-fhead span{max-width:none}.v219-side-layout .v218-units{max-height:60vh}
   @media(max-width:1000px){.v219-side-layout{grid-template-columns:1fr}.v219-fside{position:static;max-height:none}}
   .v219-hint{margin:12px auto 0;max-width:620px;text-align:left;border:1px dashed #f0c6da;background:#fff8fb;border-radius:12px;padding:10px 12px;font-size:12px;color:#344054}.v219-hint b{display:block;margin-bottom:4px;color:#7f1747}.v219-hint span{color:#667085}.v219-hint-tip{margin-top:6px;color:#667085;font-size:11px}
+  /* simple layout (V21.5): one top bar, one project bar, evenly spaced buttons */
+  .topbar-inner{max-width:none!important;padding:6px 14px!important;gap:10px!important;flex-wrap:nowrap}
+  .brand{min-width:0!important;display:flex;align-items:center;gap:6px}.brand small{display:none!important}.brand h1{font-size:13px!important;white-space:nowrap;display:flex;align-items:center;gap:6px}#buildBadge{font-size:8px!important;padding:2px 5px!important}
+  .logo{width:28px!important;height:28px!important;font-size:11px!important;border-radius:8px!important;flex:0 0 auto}
+  .v219-topnav{width:auto!important;background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;gap:2px!important;overflow:visible!important}
+  .v219-topnav .navtab{color:#ffffffc8!important;padding:5px 10px!important;font-size:12px!important}.v219-topnav .navtab.active{background:#ffffff26!important;color:#fff!important}.v219-topnav .navtab:hover{background:#ffffff18!important;color:#fff!important}
+  .topbar .top-search{margin-left:auto}
+  .notification-bell{width:30px!important;height:30px!important;font-size:14px!important;border-radius:9px!important}
+  .connection-pill{padding:0!important;width:12px;height:12px;border:0!important;background:transparent!important;justify-content:center}.connection-pill #connectionText{display:none}.connection-pill .dot{width:9px!important;height:9px!important}
+  .session{padding:5px 10px!important;font-size:11px!important;max-width:200px!important}
+  .v219-topacts{display:flex;gap:6px!important}.v219-topacts .btn{height:30px!important;padding:0 10px!important;font-size:12px!important;background:#ffffff15!important;color:#fff!important;border:1px solid #ffffff35!important;box-shadow:none!important}.v219-topacts .btn.icon{width:30px!important;padding:0!important}
+  .app{padding:8px 14px 30px!important;max-width:none!important}
+  .project-top-main{gap:10px!important;padding:5px 10px!important;flex-wrap:nowrap!important}
+  .project-top-main .project-heading{flex:0 1 auto;min-width:0;gap:8px!important}.project-top-main .project-heading>div:last-child{min-width:0}
+  .project-top .project-heading h2{max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .project-top-main .project-tabs{flex:1 1 auto;border-top:0!important;padding:0!important;min-width:0}.project-top-main .project-tab{padding:6px 9px!important;font-size:12px!important}
+  .project-top-main .actions{display:flex;gap:6px;flex:0 0 auto}.project-top-main .actions .btn{height:30px;padding:0 10px!important;font-size:12px!important;white-space:nowrap}
+  body.v219-inproject .v219-topacts #refreshBtn{display:none}   /* the project bar has its own Refresh */
+  .v218-tree-table td{padding:4px 10px!important}.v218-tree-table .v211-task-name{font-size:12.5px}.v218-tree-table .v211-task-sub{font-size:9px;margin-top:1px}.v211-row-actions{gap:6px!important}.v218-tree-table .btn.sm{height:26px;padding:0 9px!important}
+  @media(max-width:1250px){.topbar-inner{flex-wrap:wrap}.project-top-main{flex-wrap:wrap!important}.project-top .project-heading h2{max-width:240px}}
   /* compact layout (V21.3): small top bars, slim project header, denser rows */
   .topbar-inner{padding:7px 18px!important;gap:12px!important}.logo{width:34px!important;height:34px!important;font-size:14px!important;border-radius:10px!important}.brand small{font-size:8px!important}.brand h1{font-size:15px!important}
   .app{padding-top:8px!important}
@@ -7154,6 +7196,7 @@ try{
 
 try{const bd=el("buildBadge");if(bd)bd.textContent=BUILD;document.title=`MEGA Engineering | Project Design Control ${BUILD}`}catch(_){}
 try{if(S.view==="project")renderView()}catch(_){}
+try{simpleLayout();setTimeout(simpleLayout,500)}catch(_){}   // one top bar from the first screen
 console.info(`[${BUILD}] loaded`);
 })()}catch(e){try{console.error("[V20.19] could not load",e)}catch(_){}}
 </script>
@@ -7212,7 +7255,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V21(){
 "use strict";
-const BUILD="V21.4";
+const BUILD="V21.5";
 
 /* ---------- 0. Small safe helpers ---------- */
 const log=(...a)=>{try{console.warn("[V21]",...a)}catch(_){}};
@@ -7748,7 +7791,7 @@ try{V.jobs=jobList();V.mail=mailList()}catch(_){}
 earlyPaint();
 // if the live start-up already finished before this layer loaded
 try{if(!V.live&&Array.isArray(S.employees)&&S.employees.length&&S.user){V.live=true;V.liveAt=Date.now();afterLive();saveMasters()}}catch(_){}
-try{const bd=el("buildBadge");if(bd)bd.textContent="V21.4";document.title="MEGA Engineering | Project Design Control V21.4"}catch(_){}
+try{const bd=el("buildBadge");if(bd)bd.textContent="V21.5";document.title="MEGA Engineering | Project Design Control V21.5"}catch(_){}
 drawBar();
 console.info(`[${BUILD}] loaded`);
 })()}catch(e){try{console.error("[V21] could not load",e)}catch(_){}}
