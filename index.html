@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.3
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.4
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V21.3".
+   3. Paste this whole file and save. The badge at the top shows "V21.4".
 
  HOW THE CODE IS ORGANISED (top to bottom)
    STYLE block        All screen styles.
@@ -54,7 +54,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V21.3</title>
+<title>MEGA Engineering | Project Design Control V21.4</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -280,7 +280,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.3</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.4</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -6835,8 +6835,42 @@ patch("renderDelegateTab",()=>renderDelegateTab,f=>{renderDelegateTab=f},base=>s
    A design that is not active but already has work in this project is still shown
    (marked "Inactive") so no existing work disappears. If the master has no Status
    field, the older "Active" yes/no field is used as before. */
-function drawingStatus(d){try{return sc(pick(d?.raw||{},["Status","Drawing_Status","Design_Status"],"")).trim()}catch(_){return""}}
-function drawingIsActive(d){const st=drawingStatus(d);return !st||N(st)==="active"}
+// Reads the Status field of a Design Master row (any field whose name contains "Status").
+function drawingStatus(d){
+  try{
+    const r=d?.raw||{};let v=pick(r,["Status","Drawing_Status","Design_Status","Document_Status"],"");
+    if(!v)for(const k of Object.keys(r)){if(/status/i.test(k)){v=sc(r[k]);if(v)break}}
+    return sc(v).trim();
+  }catch(_){return""}
+}
+// true when at least one design in the master has a Status value (then the Status rule is used)
+function statusInUse(){try{return (S.drawings||[]).some(d=>!!drawingStatus(d))}catch(_){return false}}
+// Active = Status is "Active". A design with an empty Status is NOT active when the master uses Status.
+function drawingIsActive(d){const st=drawingStatus(d);if(!st)return !statusInUse();return N(st)==="active"}
+/* Reload the Design Master (All_Drawing_Types) so a new design marked Active appears
+   without closing the widget: on the Refresh button, and when a project is opened
+   (at most once every 5 minutes). */
+let drawingsAt=0;
+async function reloadDrawings(force=false){
+  if(S.demo)return;
+  if(!force&&Date.now()-drawingsAt<5*60000)return;
+  drawingsAt=Date.now();
+  try{
+    const rows=await fetchRecords(CONFIG.REPORTS.drawings);
+    const list=(rows||[]).map(adaptDrawing).filter(x=>x.name).sort((a,b)=>a.name.localeCompare(b.name));
+    if(list.length){S.drawings=list;try{v208CacheMasters()}catch(_){}if(S.view==="project")renderView()}
+  }catch(e){log("design master reload",e)}
+}
+patch("refreshData",()=>refreshData,f=>{refreshData=f},base=>async function(){
+  const out=await base.apply(this,arguments);
+  await reloadDrawings(true);
+  return out;
+});
+patch("openProjectWorkspace",()=>openProjectWorkspace,f=>{openProjectWorkspace=f},base=>async function(){
+  const out=await base.apply(this,arguments);
+  reloadDrawings(false);
+  return out;
+});
 patch("v211ActiveDrawings",()=>v211ActiveDrawings,f=>{v211ActiveDrawings=f},base=>function(){
   const all=base.apply(this,arguments);
   try{
@@ -6891,7 +6925,8 @@ patch("systemHealthHtml",()=>systemHealthHtml,f=>{systemHealthHtml=f},base=>func
   try{
     const code=String(S.projectWorkspace?.code||"");if(!code)return html;
     const s=v209ProjectState(code)||{};
-    const rows=[["Project",code],["Design work",`${s.tracking||"—"}${s.trackingRows!=null?` (${s.trackingRows} rows)`:""}`],["Design work error",s.trackingError||"none"],["Equipment",`${s.equipment||"—"}${s.equipmentRows!=null?` (${s.equipmentRows} rows)`:""}`],["Equipment error",s.equipmentError||"none"]];
+    const act=(S.drawings||[]).filter(drawingIsActive).length;
+    const rows=[["Design Master (All_Drawing_Types)",`${act} active of ${(S.drawings||[]).length} designs — ${statusInUse()?"Status field found: only Status = Active is shown":"Status field NOT found in the report: all designs are shown"}`],["Project",code],["Design work",`${s.tracking||"—"}${s.trackingRows!=null?` (${s.trackingRows} rows)`:""}`],["Design work error",s.trackingError||"none"],["Equipment",`${s.equipment||"—"}${s.equipmentRows!=null?` (${s.equipmentRows} rows)`:""}`],["Equipment error",s.equipmentError||"none"]];
     html+=`<div class="v21-health"><h3>Open project data</h3><table>${rows.map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table></div>`;
   }catch(e){log(e)}
   return html;
@@ -7177,7 +7212,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V21(){
 "use strict";
-const BUILD="V21.3";
+const BUILD="V21.4";
 
 /* ---------- 0. Small safe helpers ---------- */
 const log=(...a)=>{try{console.warn("[V21]",...a)}catch(_){}};
@@ -7713,7 +7748,7 @@ try{V.jobs=jobList();V.mail=mailList()}catch(_){}
 earlyPaint();
 // if the live start-up already finished before this layer loaded
 try{if(!V.live&&Array.isArray(S.employees)&&S.employees.length&&S.user){V.live=true;V.liveAt=Date.now();afterLive();saveMasters()}}catch(_){}
-try{const bd=el("buildBadge");if(bd)bd.textContent="V21.3";document.title="MEGA Engineering | Project Design Control V21.3"}catch(_){}
+try{const bd=el("buildBadge");if(bd)bd.textContent="V21.4";document.title="MEGA Engineering | Project Design Control V21.4"}catch(_){}
 drawBar();
 console.info(`[${BUILD}] loaded`);
 })()}catch(e){try{console.error("[V21] could not load",e)}catch(_){}}
