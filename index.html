@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.6
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.7
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V21.6".
+   3. Paste this whole file and save. The badge at the top shows "V21.7".
 
  HOW THE CODE IS ORGANISED (top to bottom)
    STYLE block        All screen styles.
@@ -35,6 +35,11 @@
                       System Health), empty-project read fix.
                       V21.3: only Active designs (Design Master Status),
                       compact top bars and rows so more designs fit.
+                      V21.7: Projects list comes from the All_Projects report
+                      (proper code, name, client, status); Completed projects
+                      are hidden. If that report cannot be read, the old list
+                      is shown. New simple look for the Assign screen (style
+                      only - same logic).
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -54,7 +59,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V21.6</title>
+<title>MEGA Engineering | Project Design Control V21.7</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -280,7 +285,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.6</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.7</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -6489,39 +6494,49 @@ function drawAssign(){
     const drawing=assignDrawing(a),fields=assignFields(a),all=unitsFor(a),rows=visibleUnits(a),shown=rows.slice(0,a.show);
     for(const k of [...a.sel])if(!all.some(u=>u.key===k))a.sel.delete(k);
     const people=a.users.length,items=a.sel.size,label=a.mode===MODE_PDS?"Tag + PDS Type":isProjectMode(a.mode)?"Design":v19ScopeLabel(a.mode);
+    /* ---- V21.7: new look only. Every id / class / data-attribute used by the logic is unchanged. ---- */
     const list=shown.length?shown.map(u=>{
       const ex=existingFor(a,u),on=a.sel.has(u.key),names=uniq(ex.map(x=>assignmentDisplayUser(x)));
-      return `<label class="v218-unit ${on?"selected":""} ${ex.length?"assigned":""}"><input type="checkbox" class="v218-unit-check" value="${esc(u.key)}" ${on?"checked":""}><div class="v218-unit-main"><b>${esc(unitLabel(a,u))}</b><span>${esc(unitMeta(a,u))}</span></div><div class="v218-unit-side">${a.mode===MODE_PDS&&(u.statuses||[]).length?`<span class="pill">${esc(u.statuses.join(", "))}</span>`:""}${ex.length?`<span class="pill green" title="${esc(names.join(", "))}">Assigned: ${esc(names.slice(0,2).join(", "))}${names.length>2?` +${names.length-2}`:""}</span>`:`<span class="pill">New</span>`}</div></label>`;
-    }).join("")+(rows.length>shown.length?`<button type="button" class="btn sm v218-more" data-v218-more>Show ${Math.min(300,rows.length-shown.length)} more (${rows.length-shown.length} hidden)</button>`:""):`<div class="empty compact"><strong>No matching ${esc(label)}</strong>Change or clear the Filters above, or check the Equipment Master data.</div>`;
+      const st=a.mode===MODE_PDS&&(u.statuses||[]).length?`<span class="v217a-tag">${esc(u.statuses.join(", "))}</span>`:"";
+      const who=ex.length?`<span class="v217a-tag done" title="${esc(names.join(", "))}">✓ ${esc(names.slice(0,2).join(", "))}${names.length>2?` +${names.length-2}`:""}</span>`:`<span class="v217a-tag new">New</span>`;
+      return `<label class="v218-unit ${on?"selected":""} ${ex.length?"assigned":""}"><input type="checkbox" class="v218-unit-check" value="${esc(u.key)}" ${on?"checked":""}><div class="v218-unit-main"><b>${esc(unitLabel(a,u))}</b><span>${esc(unitMeta(a,u))}</span></div><div class="v218-unit-side">${st}${who}</div></label>`;
+    }).join("")+(rows.length>shown.length?`<button type="button" class="btn sm v218-more" data-v218-more>Show ${Math.min(300,rows.length-shown.length)} more (${rows.length-shown.length} hidden)</button>`:""):`<div class="v217a-empty"><b>No matching ${esc(label)}</b><span>Clear the filters or the search.</span></div>`;
     const fcount=fields.filter(f=>(a.f[f.k]||[]).length).length;
-    const filters=`<div class="v219-fbox"><div class="v219-fhead"><div><b>Filters</b><span>Pick values in any list, in any order. The other lists then show only matching values (number = items).</span></div>${fcount?`<button type="button" class="btn sm" data-v219-fclear>✕ Clear filters (${fcount})</button>`:""}</div><div class="v219-fgrid">${fields.map(f=>{const sel=a.f[f.k]||[];const o=fOptions(a,fields,all,f);
+    const filters=`<div class="v219-fbox"><div class="v219-fhead"><div><b>Filters</b><span>Use any list, in any order.</span></div>${fcount?`<button type="button" class="btn sm" data-v219-fclear>✕ Clear (${fcount})</button>`:""}</div><div class="v219-fgrid">${fields.map(f=>{const sel=a.f[f.k]||[];const o=fOptions(a,fields,all,f);
       // the empty box already tells what is left: "Only: X" or "All 5 values"
       const ph=!o.length?"No values":o.length===1?`Only: ${o[0].v}`:`All ${o.length} values`;
       return `<div class="v219-f ${sel.length?"on":""}"><label>${esc(f.l)}${sel.length?` <b>${sel.length}</b>`:""}</label>${MS.html(`af:${f.k}`,{options:o,value:sel,placeholder:ph,onChange:v=>{a.f[f.k]=v;a.show=300;keepScroll(()=>{syncAssign();drawAssign()})}})}</div>`}).join("")}</div></div>`;
+    const proj=isProjectMode(a.mode)&&a.mode!==MODE_PDS;
     openModal(a.mode===MODE_PDS?"Assign Tag + PDS Work":isProjectMode(a.mode)?"Assign Design Work":`Assign ${label}`,`${drawing.short?drawing.short+" — ":""}${drawing.name||""} • Project ${a.code}`,
-    `<div class="v218-assign"><div class="notice good">${isProjectMode(a.mode)?"Choose one or more people for this design. One task is created for every person.":`Select the ${esc(label)} work, then choose one or more people. One task is created for every person and every selected item.`}</div>
-     <div class="v218-assign-grid ${fields.length?"v219-side-layout":"no-panel"}">
-      <div class="v218-assign-left">
-        <div class="v218-tools"><input id="v218Q" class="input" placeholder="Quick search: tag, equipment, section…" value="${esc(a.q)}"><button type="button" class="btn sm" data-v218-sel-all>Select all ${rows.length} results</button><button type="button" class="btn sm" data-v218-sel-none>Clear</button></div>
-        <div class="v218-meta"><span class="pill brand" id="v218SelCount">${items} selected</span><span>${rows.length} shown • ${all.length} available${fcount?` • ${fcount} filter${fcount===1?"":"s"} on`:""}</span></div>
+    `<div class="v218-assign v217a">
+     <section class="v217a-card">
+      <div class="v217a-head"><span class="v217a-no">1</span><div class="v217a-ht"><b>${proj?"Work":`Select ${esc(label)}`}</b><span>${proj?"One task for the whole design.":"Tick the items to assign. Use search or filters to find them."}</span></div><span class="v217a-count" id="v218SelCount">${items} selected</span></div>
+      <div class="v218-assign-grid ${fields.length?"v219-side-layout":"no-panel"}">
+       <div class="v218-assign-left">
+        ${proj?"":`<div class="v218-tools"><div class="v217a-search"><span>⌕</span><input id="v218Q" class="input" placeholder="Search tag, equipment, section…" value="${esc(a.q)}"></div><button type="button" class="btn sm" data-v218-sel-all>☑ Select all (${rows.length})</button><button type="button" class="btn sm" data-v218-sel-none>Clear</button></div>
+        <div class="v218-meta"><span>Showing <b>${rows.length}</b> of ${all.length}${fcount?` • ${fcount} filter${fcount===1?"":"s"} on`:""}</span></div>`}
         <div class="v218-units">${list}</div>
+       </div>
+       ${fields.length?`<aside class="v219-fside">${filters}</aside>`:""}
       </div>
-      ${fields.length?`<aside class="v219-fside">${filters}</aside>`:""}
-     </div>
-     <div class="v181-form-section"><div class="v181-form-section-head"><div><b>Assign selected work</b><span> • you can choose 2, 3 or more people</span></div></div><div class="v181-form-section-body"><div class="v18-assign-grid">
-      <div class="field v218-span2"><label>Assigned To * <span class="tiny muted">(multi-select)</span></label>${MS.html("v218Users",{options:peopleOptions(),value:a.users,placeholder:"Select one or more employees…",onChange:v=>{a.users=v;updateAssignSummary()}})}</div>
-      <div class="field"><label>Priority</label><select id="v218Priority">${PRIORITIES.map(x=>`<option ${x===a.priority?"selected":""}>${esc(x)}</option>`).join("")}</select></div>
-      <div class="field"><label>Start Date *</label><input id="v218Start" type="date" value="${esc(a.start)}"></div>
-      <div class="field"><label>Target Date *</label><input id="v218Target" type="date" value="${esc(a.target)}"></div>
-      <div class="field"><label>Planned End</label><input id="v218End" type="date" value="${esc(a.end)}"></div>
-      <div class="field v218-span2"><label>Remark / Instruction</label><input id="v218Remark" value="${esc(a.remark)}" placeholder="Optional instruction"></div>
-     </div></div></div>
-     <div class="v218-summary" id="v218Summary">${summaryText(items,people)}</div></div>`,
-    `<button class="btn" data-modal="close">Cancel</button><button class="btn primary" data-v218-create ${items&&people?"":"disabled"} id="v218CreateBtn">Create ${items*people||""} Task${items*people===1?"":"s"}</button>`);
+     </section>
+     <section class="v217a-card v181-form-section">
+      <div class="v217a-head"><span class="v217a-no">2</span><div class="v217a-ht"><b>Assign to</b><span>Choose one or more people. Each person gets their own task.</span></div></div>
+      <div class="v217a-form">
+       <div class="field v217a-people"><label>Assigned To <i>*</i></label>${MS.html("v218Users",{options:peopleOptions(),value:a.users,placeholder:"Select people…",onChange:v=>{a.users=v;updateAssignSummary()}})}</div>
+       <div class="field"><label>Priority</label><select id="v218Priority">${PRIORITIES.map(x=>`<option ${x===a.priority?"selected":""}>${esc(x)}</option>`).join("")}</select></div>
+       <div class="field"><label>Start Date <i>*</i></label><input id="v218Start" type="date" value="${esc(a.start)}"></div>
+       <div class="field"><label>Target Date <i>*</i></label><input id="v218Target" type="date" value="${esc(a.target)}"></div>
+       <div class="field"><label>Planned End</label><input id="v218End" type="date" value="${esc(a.end)}"></div>
+       <div class="field v217a-remark"><label>Remark / Instruction</label><input id="v218Remark" value="${esc(a.remark)}" placeholder="Optional instruction for the team"></div>
+      </div>
+     </section></div>`,
+    `<div class="v218-summary v217a-sum" id="v218Summary">${summaryText(items,people)}</div><button class="btn" data-modal="close">Cancel</button><button class="btn primary" data-v218-create ${items&&people?"":"disabled"} id="v218CreateBtn">Create ${items*people||""} Task${items*people===1?"":"s"}</button>`);
     wide(true);
   }catch(e){log("assign modal",e);say("The assign screen could not be drawn. The old screen is used.");try{V.assign=null;return v211OpenAssignScopeBase&&v211OpenAssignScopeBase(a.parentId)}catch(_){}}
 }
-function summaryText(items,people){return `<b>${items}</b> item${items===1?"":"s"} × <b>${people}</b> person${people===1?"":"s"} = <b>${items*people}</b> task${items*people===1?"":"s"} will be created${people>1?" (one for each person)":""}. Items already assigned to the same person are skipped.`}
+// V21.7: short summary shown next to the Create button (same numbers as before).
+function summaryText(items,people){const n=items*people;return `<span><b>${items}</b> item${items===1?"":"s"} × <b>${people}</b> ${people===1?"person":"people"}</span><span class="v217a-eq">= <b>${n}</b> task${n===1?"":"s"}</span><small>Already assigned items are skipped.</small>`}
 function updateAssignSummary(){
   const a=V.assign;if(!a)return;const items=a.sel.size,people=(a.users||[]).length,b=el("v218CreateBtn"),s=el("v218Summary"),c=el("v218SelCount");
   if(c)c.textContent=`${items} selected`;if(s)s.innerHTML=summaryText(items,people);
@@ -7191,7 +7206,47 @@ try{
   .v219-back{position:fixed;inset:0;background:#10182822;z-index:300}.v219-drawer{position:fixed;top:0;right:0;bottom:0;width:min(360px,94vw);z-index:301;background:#fff;box-shadow:-12px 0 40px rgba(16,24,40,.18);display:flex;flex-direction:column;animation:v219in .18s ease-out}.v219-drawer .v218-rs{border:0;border-radius:0;max-height:none;height:100%}@keyframes v219in{from{transform:translateX(30px);opacity:.4}to{transform:none;opacity:1}}
   .v219-grp td{background:#f9fafb;font-size:12px;padding:9px 12px}.v219-grp-btn{border:0;background:none;color:#475467;cursor:pointer;font-size:12px;margin-right:6px}.v219-grp-n{margin-left:8px;font-size:10px;font-weight:900;color:#667085;background:#eef0f3;border-radius:999px;padding:2px 7px}.v219-late-date{color:#d92d20;font-weight:800}
   @media(max-width:1000px){.v219-fgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-  @media(max-width:1000px){.v218-assign-grid,.v218-adv-grid{grid-template-columns:1fr}.v218-assign-side,.v218-adv-side{position:static}.v218-span2{grid-column:auto}.v218-adv-btn{position:static;transform:none;margin-left:6px}}`;
+  @media(max-width:1000px){.v218-assign-grid,.v218-adv-grid{grid-template-columns:1fr}.v218-assign-side,.v218-adv-side{position:static}.v218-span2{grid-column:auto}.v218-adv-btn{position:static;transform:none;margin-left:6px}}
+  /* ===== V21.7 Assign screen: clean, simple look (style only) ===== */
+  .v217a{gap:12px}
+  .v217a .notice{display:none}
+  .v217a-card{border:1px solid #e4e7ec;border-radius:14px;background:#fff;padding:12px 14px;margin:0!important;box-shadow:none}
+  .v217a-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .v217a-no{flex:none;width:24px;height:24px;border-radius:50%;background:#c42770;color:#fff;font-size:12px;font-weight:900;display:grid;place-items:center}
+  .v217a-ht{flex:1;min-width:0}.v217a-ht b{display:block;font-size:13px;color:#101828}.v217a-ht span{display:block;font-size:11px;color:#667085;margin-top:1px}
+  .v217a-count{flex:none;font-size:11px;font-weight:800;color:#c42770;background:#fdf0f6;border:1px solid #f3c6dc;border-radius:999px;padding:4px 11px}
+  .v217a .v218-assign-grid,.v217a .v219-side-layout{grid-template-columns:minmax(0,1fr) 270px;gap:14px}
+  .v217a .v218-assign-grid.no-panel{grid-template-columns:1fr}
+  .v217a .v218-tools{gap:6px;flex-wrap:nowrap}
+  .v217a-search{flex:1;min-width:180px;position:relative}.v217a-search span{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#98a2b3;font-size:14px;pointer-events:none}
+  .v217a-search .input{width:100%;height:34px;padding-left:30px!important;border-radius:9px}
+  .v217a .v218-tools .btn{height:34px;white-space:nowrap}
+  .v217a .v218-meta{margin:7px 0 6px;font-size:11px}.v217a .v218-meta b{color:#101828}
+  .v217a .v218-units{gap:0;border:1px solid #eaecf0;border-radius:10px;max-height:44vh;padding:0;background:#fff}
+  .v217a .v218-unit{grid-template-columns:18px minmax(0,1fr) auto;gap:10px;border:0;border-bottom:1px solid #f2f4f7;border-radius:0;padding:7px 11px;min-height:40px}
+  .v217a .v218-unit:last-child{border-bottom:0}
+  .v217a .v218-unit:hover{background:#fafbfc}
+  .v217a .v218-unit.selected{background:#fdf2f8;box-shadow:inset 3px 0 0 #c42770}
+  .v217a .v218-unit.assigned b{color:#475467}
+  .v217a .v218-unit input{width:16px;height:16px;accent-color:#c42770;margin:0}
+  .v217a .v218-unit-main{min-width:0;display:flex;align-items:baseline;gap:8px}
+  .v217a .v218-unit-main b{flex:none;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+  .v217a .v218-unit-main span{margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
+  .v217a .v218-unit-side{flex-wrap:nowrap;max-width:300px}
+  .v217a-tag{display:inline-block;font-size:10px;font-weight:800;padding:2px 8px;border-radius:999px;background:#f2f4f7;color:#475467;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+  .v217a-tag.new{background:#eff8ff;color:#175cd3}.v217a-tag.done{background:#ecfdf3;color:#067647}
+  .v217a .v218-more{display:block;margin:8px auto}
+  .v217a-empty{padding:26px 12px;text-align:center;color:#667085;font-size:12px}.v217a-empty b{display:block;color:#344054;font-size:13px;margin-bottom:3px}
+  .v217a .v219-fside{top:0;max-height:52vh}
+  .v217a .v219-fbox{background:#f9fafb;border-color:#eaecf0;border-radius:12px;padding:10px}
+  .v217a .v219-fhead b{font-size:12px}.v217a .v219-fhead span{font-size:10px}
+  .v217a-form{display:grid;grid-template-columns:minmax(220px,2fr) repeat(4,minmax(120px,1fr));gap:10px;align-items:end}
+  .v217a-form .field{margin:0;min-width:0}.v217a-form label{font-size:11px;font-weight:800;color:#344054}.v217a-form label i{color:#d92d20;font-style:normal}
+  .v217a-form select,.v217a-form input{height:36px;width:100%}
+  .v217a-remark{grid-column:1/-1}
+  #modalFoot .v217a-sum{margin-right:auto;border:0;background:transparent;padding:0;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:12px;color:#344054}
+  #modalFoot .v217a-sum b{color:#101828}.v217a-sum .v217a-eq b{color:#c42770;font-size:14px}.v217a-sum small{color:#98a2b3;font-size:10px}
+  @media(max-width:1000px){.v217a .v218-assign-grid,.v217a .v219-side-layout{grid-template-columns:1fr}.v217a-form{grid-template-columns:1fr 1fr}.v217a-people{grid-column:1/-1}.v217a .v218-tools{flex-wrap:wrap}.v217a .v218-unit-main{display:block}.v217a .v218-unit-main b{max-width:none}}`;
   const old=document.getElementById("v218Styles");if(old)old.remove();const st=document.createElement("style");st.id="v218Styles";st.textContent=css;document.head.appendChild(st);
 }catch(e){log("styles",e)}
 
@@ -7256,7 +7311,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V21(){
 "use strict";
-const BUILD="V21.6";
+const BUILD="V21.7";
 
 /* ---------- 0. Small safe helpers ---------- */
 const log=(...a)=>{try{console.warn("[V21]",...a)}catch(_){}};
@@ -7748,6 +7803,94 @@ try{
 // Redraw the bar after every screen change.
 patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){const r=base.apply(this,arguments);drawBar();return r});
 
+/* ---------- 10b. Projects list from the "All_Projects" report (V21.7) ----------
+   WHY: the old list was built from All_Associated_Projects + every code found in
+   Design_Tracking. That showed junk codes (e.g. "RJHI02", "Others"), missing
+   names ("—") and finished projects.
+   NOW: the list shows only projects that exist in the All_Projects report and
+   whose Current Status / Project Status is NOT "Completed" (or "Closed").
+   Code, name, client and status come from All_Projects.
+   SAFE: read-only. If All_Projects cannot be read, the old list is shown
+   exactly as before. Nothing else (saving, Project_Record_ID, search) changes. */
+const PM={ok:false,at:0,loading:null,rows:new Map(),hidden:0,error:"",fields:""};
+const PM_REPORT="All_Projects";
+const PM_MAX_AGE=10*60000;            // re-read the project list every 10 minutes at most
+const pmKey=c=>sc(c).trim().toUpperCase();
+// Finds a value by exact field names first, then by any field whose name contains a word.
+function pmPick(r,names,words){
+  for(const n of names)if(r&&Object.prototype.hasOwnProperty.call(r,n)){const v=sc(r[n]).trim();if(v)return v}
+  const keys=Object.keys(r||{});
+  for(const w of words||[]){const k=keys.find(k=>k.toLowerCase().replace(/[^a-z]/g,"").includes(w));if(k){const v=sc(r[k]).trim();if(v)return v}}
+  return "";
+}
+const pmDone=s=>/^(completed?|closed|cancell?ed)$/i.test(sc(s).trim());
+function pmApply(rows,at){
+  const m=new Map();let hidden=0;
+  for(const r of rows||[]){
+    const code=pmPick(r,["Project_Code","Project_Code1","ProjectCode"],["projectcode"]);if(!code)continue;
+    const cur=pmPick(r,["Current_Status"],["currentstatus"]),pst=pmPick(r,["Project_Status"],["projectstatus"]);
+    const x={code,name:pmPick(r,["Project_Name","Project_Title","Project_Description","Description"],["projectname","projecttitle"]),
+      client:pmPick(r,["Client_Name","Customer_Name","Client","Customer"],["clientname","customername"]),
+      manager:pmPick(r,["Project_Manager"],["projectmanager"]),status:cur||pst,done:pmDone(cur)||(!cur&&pmDone(pst))};
+    if(x.done){hidden++;continue}
+    m.set(pmKey(code),x);
+  }
+  PM.rows=m;PM.hidden=hidden;PM.at=at||Date.now();PM.ok=m.size>0;
+  if(rows&&rows[0])PM.fields=Object.keys(rows[0]).slice(0,40).join(", ");
+}
+async function pmLoad(force){
+  if(PM.loading)return PM.loading;
+  if(!force&&PM.ok&&Date.now()-PM.at<PM_MAX_AGE)return;
+  PM.loading=(async()=>{
+    try{
+      let rows=[];
+      if(S.demo){try{rows=(DEMO.projects||[]).map(p=>({Project_Code:p.Project_Code,Project_Name:p.Project_Name,Client_Name:p.Project_Name,Current_Status:"In Progress"}))}catch(_){}}
+      else rows=await fetchRecords(PM_REPORT);
+      pmApply(rows);PM.error=PM.ok?"":"report is empty";
+      if(PM.ok&&!S.demo)LS.set("pm",{v:1,at:PM.at,rows});
+    }catch(e){PM.error=(e&&(e.message||e.code))||"read failed";log("All_Projects",e)}
+    finally{PM.loading=null}
+    try{if(S.view==="projects")renderView()}catch(_){}
+  })();
+  return PM.loading;
+}
+// saved copy -> instant correct list on the next start
+try{const c=LS.get("pm");if(c&&c.v===1&&Array.isArray(c.rows)&&Date.now()-Number(c.at||0)<CFG.MASTER_CACHE_DAYS*86400000)pmApply(c.rows,1)}catch(_){}
+// Project name everywhere (titles, headers): fill it from All_Projects when the old master has none.
+patch("v18ProjectForCode",()=>v18ProjectForCode,f=>{v18ProjectForCode=f},base=>function(code){
+  const p=base.apply(this,arguments);
+  try{const x=PM.rows.get(pmKey(code));if(x&&p){if(!p.name||p.name===sc(code))p.name=x.name||x.client||p.name;if(!p.client)p.client=x.client}}catch(_){}
+  return p;
+});
+const baseRenderProjects=typeof renderProjects==="function"?renderProjects:null;
+if(baseRenderProjects)renderProjects=function(){
+  try{
+    if(!PM.at||Date.now()-PM.at>PM_MAX_AGE)setTimeout(()=>pmLoad(false),0);
+    if(!PM.ok)return baseRenderProjects.apply(this,arguments);     // fail-open: old list
+    const q=sc(S.globalSearch).trim().toLowerCase();
+    const list=[...PM.rows.values()].filter(x=>!q||[x.code,x.name,x.client,x.manager,x.status].join(" ").toLowerCase().includes(q))
+      .sort((a,b)=>String(b.code).localeCompare(String(a.code),undefined,{numeric:true}));
+    const row=x=>{
+      let loaded=false,st=null;try{loaded=v208ProjectLoaded(x.code);st=loaded?v18ProjectStats(x.code):null}catch(_){}
+      const title=x.name||x.client||"—",sub=x.name&&x.client&&x.client!==x.name?x.client:"";
+      const stCls=/progress|active|running/i.test(x.status)?"green":/hold|pending/i.test(x.status)?"amber":"";
+      return `<tr class="project-row" data-project-open="${esc(x.code)}"><td class="project-code">${esc(x.code)}</td>
+        <td><div class="project-name">${esc(title)}</div>${sub?`<div class="v217-pm-sub">${esc(sub)}</div>`:""}</td>
+        <td>${x.status?`<span class="pill ${stCls}">${esc(x.status)}</span>`:"—"}</td>
+        <td>${esc(x.manager||"—")}</td>
+        <td>${loaded?st.total:"—"}</td><td>${loaded?st.open.length:"—"}</td>
+        <td>${loaded?(st.overdue?`<span class="pill red">${st.overdue}</span>`:"0"):"—"}</td>
+        <td>${loaded?`<div class="project-progress-label"><span>Engineering</span><b>${st.avg}%</b></div>${progressBar(st.avg)}`:`<span class="tiny muted">Open to load</span>`}</td></tr>`;
+    };
+    $("page").innerHTML=`<div class="project-index-head"><div class="project-index-title"><h2>Projects</h2><p>Running projects from All_Projects. Completed projects are hidden${PM.hidden?` (${PM.hidden})`:""}.</p></div><div class="actions"><span class="pill brand">${list.length} Projects</span></div></div>
+      <div class="project-list"><table class="project-table"><thead><tr><th>Project Code</th><th>Project Name / Client</th><th>Current Status</th><th>Project Manager</th><th>Design Work</th><th>Open</th><th>Overdue</th><th>Engineering Progress</th></tr></thead><tbody>
+      ${list.length?list.map(row).join(""):`<tr><td colspan="8"><div class="empty compact"><strong>No projects found</strong>${q?"Try another search.":"No running project in All_Projects."}</div></td></tr>`}</tbody></table></div>`;
+  }catch(e){log("projects list",e);return baseRenderProjects.apply(this,arguments)}
+};
+
+// Refresh button also re-reads the projects list.
+patch("refreshData",()=>refreshData,f=>{refreshData=f},base=>async function(){try{setTimeout(()=>pmLoad(true),0)}catch(_){}return base.apply(this,arguments)});
+
 /* ---------- 11. System Health: V21 section ---------- */
 patch("systemHealthHtml",()=>systemHealthHtml,f=>{systemHealthHtml=f},base=>function(){
   let html="";try{html=base.apply(this,arguments)}catch(e){log(e)}
@@ -7761,7 +7904,8 @@ patch("systemHealthHtml",()=>systemHealthHtml,f=>{systemHealthHtml=f},base=>func
       ["Emails waiting in outbox",String(V.mail.length)],
       ["Parent progress to re-check",String(rollupPending().length)],
       ["Design_Tracking field check",F.error?`Not checked: ${F.error}`:!F.checked?"Pending":F.missing.length?`MISSING: ${F.missing.join(", ")}`:"All required fields found"],
-      ["Optional fields not found",F.optional.length?F.optional.join(", "):"None"]
+      ["Optional fields not found",F.optional.length?F.optional.join(", "):"None"],
+      ["Projects list (All_Projects)",PM.ok?`${PM.rows.size} running • ${PM.hidden} completed hidden • read ${timeText(PM.at)}`:`Old list used (${PM.error||"not read yet"})`]
     ];
     html+=`<div class="v21-health"><h3>Speed &amp; safety (${BUILD})</h3><table>${rows.map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table></div>`;
   }catch(e){log(e)}
@@ -7774,6 +7918,7 @@ function afterLive(){
   try{V.jobs=jobList();V.mail=mailList()}catch(_){}
   drawBar();
   setTimeout(()=>{checkFields()},1500);
+  setTimeout(()=>{pmLoad(true)},300);                          // running projects list (V21.7)
   if(V.mail.length)setTimeout(()=>flushMail(false),5000);    // retry waiting emails quietly
 }
 try{
@@ -7783,7 +7928,8 @@ try{
   .v21-item.info{background:#f5f9ff;border-color:#d6e4fb;color:#1d3a6b}.v21-item.warn{background:#fffaeb;border-color:#f7d58a;color:#7a4b00}.v21-item.bad{background:#fff1f0;border-color:#f5b5ae;color:#8a1c12}
   .v21-item button{border:1px solid currentColor;background:#fff;color:inherit;border-radius:8px;padding:4px 10px;font:inherit;font-size:11px;font-weight:800;cursor:pointer}.v21-item button.ghost{border-color:transparent;background:transparent;text-decoration:underline}
   .v21-dot{width:9px;height:9px;border-radius:50%;border:2px solid #9bb8e8;border-top-color:#1d5fd0}.v21-dot.spin{animation:v21spin .8s linear infinite}@keyframes v21spin{to{transform:rotate(360deg)}}
-  .v21-health{margin-top:14px;border:1px solid #e4e7ec;border-radius:12px;padding:12px}.v21-health h3{margin:0 0 8px;font-size:13px}.v21-health table{width:100%;border-collapse:collapse;font-size:11px}.v21-health td{padding:6px 8px;border-top:1px solid #f2f4f7;vertical-align:top}.v21-health td:first-child{color:#667085;width:42%}`;
+  .v21-health{margin-top:14px;border:1px solid #e4e7ec;border-radius:12px;padding:12px}.v21-health h3{margin:0 0 8px;font-size:13px}.v21-health table{width:100%;border-collapse:collapse;font-size:11px}.v21-health td{padding:6px 8px;border-top:1px solid #f2f4f7;vertical-align:top}.v21-health td:first-child{color:#667085;width:42%}
+  .v217-pm-sub{font-size:10px;color:#667085;margin-top:2px}`;
   const st=document.createElement("style");st.id="v21Styles";st.textContent=css;document.head.appendChild(st);
 }catch(e){log("styles",e)}
 // public API used by the V20.19 layer for bulk creation
@@ -7792,7 +7938,7 @@ try{V.jobs=jobList();V.mail=mailList()}catch(_){}
 earlyPaint();
 // if the live start-up already finished before this layer loaded
 try{if(!V.live&&Array.isArray(S.employees)&&S.employees.length&&S.user){V.live=true;V.liveAt=Date.now();afterLive();saveMasters()}}catch(_){}
-try{const bd=el("buildBadge");if(bd)bd.textContent="V21.6";document.title="MEGA Engineering | Project Design Control V21.6"}catch(_){}
+try{const bd=el("buildBadge");if(bd)bd.textContent="V21.7";document.title="MEGA Engineering | Project Design Control V21.7"}catch(_){}
 drawBar();
 console.info(`[${BUILD}] loaded`);
 })()}catch(e){try{console.error("[V21] could not load",e)}catch(_){}}
