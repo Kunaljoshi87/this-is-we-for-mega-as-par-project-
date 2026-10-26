@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.9
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.10
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V21.9".
+   3. Paste this whole file and save. The badge at the top shows "V21.10".
 
  HOW THE CODE IS ORGANISED (top to bottom)
    STYLE block        All screen styles.
@@ -35,17 +35,20 @@
                       System Health), empty-project read fix.
                       V21.3: only Active designs (Design Master Status),
                       compact top bars and rows so more designs fit.
-                      V21.9: Projects list comes from the All_Projects report
+                      V21.10: Projects list comes from the All_Projects report
                       (proper code, name, client, status); Completed projects
                       are hidden. If that report cannot be read, the old list
                       is shown. New simple look for the Assign screen (style
                       only - same logic).
-                      V21.9: skipped tags - Department Code + Equipment
+                      V21.10: skipped tags - Department Code + Equipment
                       Category pairs listed in SKIP_TAGS (megaV218 layer)
                       are hidden on the Assign screen.
-                      V21.9: reliable connect - Zoho handshake first, 3 login
+                      V21.10: reliable connect - Zoho handshake first, 3 login
                       tries, saved login fallback, automatic start-up retry
                       with a small "Retry now" bar (no error popup).
+                      V21.10: skip list used ONLY for the BOM design (PDS and
+                      all other designs show every tag); PD Sheet is read in
+                      the background and the PDS screen waits for it.
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -65,7 +68,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V21.9</title>
+<title>MEGA Engineering | Project Design Control V21.10</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -291,7 +294,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.9</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.10</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -6400,16 +6403,17 @@ const MODE_PDS="PDS";
 const PROJECT_MODES=["Project Wise",""];
 const isProjectMode=m=>!m||m==="Project Wise";
 /*
-  SKIPPED TAGS (V21.8)
+  SKIPPED TAGS (V21.8, scope fixed in V21.10)
   Tags whose Department Code + Equipment Category pair is listed below are NOT shown
-  on the Assign screen (Tag Wise and Tag + PDS work), so they can never be assigned.
+  on the Assign screen of the BOM (Bill of Material) design only.
+  PDS work and every other design always show ALL tags.
   - To skip one more category: add its name to the right department list.
   - To stop skipping: delete the line. Upper/lower case, spaces and numbers like "1." do not matter.
-  - SKIP_DESIGNS: leave empty [] = applies to every design. Or put short names / names,
-    e.g. ["BOM"], to apply it only to those designs.
+  - SKIP_DESIGNS: the designs that use this list (Design Master short name or name;
+    a name that contains one of these words also matches, e.g. "Bill of Material Report").
   Tags that already have work assigned keep their old tasks; only new assigning is blocked.
 */
-const SKIP_DESIGNS=[];
+const SKIP_DESIGNS=["BOM","Bill of Material","Bill of Materials"];
 const SKIP_TAGS={
   "Equipment - Rotating":["Conveyor","Bucket Elevator","Agitator","Mixer","Nozzle","Decanter","Fan","Dryer","Milling",
     "Primary Clarifier Mechanism","Clarifier Mechanism","Secondary Clarifier Mechanism","Air Compressor","Tube Cleaning Machine","Engine"],
@@ -6427,8 +6431,12 @@ const SKIP_TAGS={
 const skipNorm=s=>sc(s).toLowerCase().replace(/^\s*\d+\s*[.)-]\s*/,"").replace(/[^a-z0-9]/g,"");
 const SKIP_SET=new Set(Object.entries(SKIP_TAGS).flatMap(([d,cats])=>cats.map(c=>skipNorm(d)+"|"+skipNorm(c))));
 function skipOn(a){
-  if(!SKIP_DESIGNS.length)return true;
-  try{const d=assignDrawing(a)||{};const want=SKIP_DESIGNS.map(skipNorm);return want.includes(skipNorm(d.short))||want.includes(skipNorm(d.name))}catch(_){return true}
+  if(!a||a.mode===MODE_PDS)return false;              // PDS work: never skip anything
+  if(!SKIP_DESIGNS.length)return false;
+  try{
+    const d=assignDrawing(a)||{},sh=skipNorm(d.short),nm=skipNorm(d.name);
+    return SKIP_DESIGNS.map(skipNorm).filter(Boolean).some(w=>sh===w||nm===w||(w.length>3&&nm.includes(w)));
+  }catch(_){return false}                              // on any doubt: show every tag
 }
 function isSkippedUnit(a,u){
   try{
@@ -7433,7 +7441,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V21(){
 "use strict";
-const BUILD="V21.9";
+const BUILD="V21.10";
 
 /* ---------- 0. Small safe helpers ---------- */
 const log=(...a)=>{try{console.warn("[V21]",...a)}catch(_){}};
@@ -7925,7 +7933,7 @@ try{
 // Redraw the bar after every screen change.
 patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){const r=base.apply(this,arguments);drawBar();return r});
 
-/* ---------- 10b. Projects list from the "All_Projects" report (V21.9) ----------
+/* ---------- 10b. Projects list from the "All_Projects" report (V21.10) ----------
    WHY: the old list was built from All_Associated_Projects + every code found in
    Design_Tracking. That showed junk codes (e.g. "RJHI02", "Others"), missing
    names ("—") and finished projects.
@@ -8010,8 +8018,30 @@ if(baseRenderProjects)renderProjects=function(){
   }catch(e){log("projects list",e);return baseRenderProjects.apply(this,arguments)}
 };
 
+/* ---------- 10c. PDS data: faster and never empty (V21.10) ----------
+   - The PD Sheet list is read once in the background right after start-up,
+     so "Assign Tag + PDS Work" opens without waiting.
+   - If the screen is opened while that read is still running, it now WAITS
+     for it (before, it could see "no data" and show an empty list).
+   - Refresh reads the PD Sheet again. */
+const PDSL={p:null,at:0};
+patch("ensurePdsData",()=>ensurePdsData,f=>{ensurePdsData=f},base=>function(type="all",force=false){
+  if(type!=="all")return base.apply(this,arguments);
+  if(PDSL.p)return PDSL.p;                       // one read at a time; everybody waits for the same read
+  if(!force&&Array.isArray(S.pds&&S.pds.summary))return Promise.resolve();
+  PDSL.p=(async()=>{
+    try{if(S.pds&&S.pds.loading)S.pds.loading.all=false;await base.call(this,"all",force);PDSL.at=Date.now()}
+    finally{PDSL.p=null}
+  })();
+  return PDSL.p;
+});
+function prefetchPds(){
+  try{if(S.demo||!S.pds||Array.isArray(S.pds.summary)||PDSL.p)return;ensurePdsData("all").catch(e=>log("PDS prefetch",e))}catch(e){log("PDS prefetch",e)}
+}
 // Refresh button also re-reads the projects list.
-patch("refreshData",()=>refreshData,f=>{refreshData=f},base=>async function(){try{setTimeout(()=>pmLoad(true),0)}catch(_){}return base.apply(this,arguments)});
+patch("refreshData",()=>refreshData,f=>{refreshData=f},base=>async function(){try{setTimeout(()=>pmLoad(true),0)}catch(_){}
+  try{if(S.pds&&Array.isArray(S.pds.summary))setTimeout(()=>ensurePdsData("all",true).catch(e=>log("PDS refresh",e)),0)}catch(_){}
+  return base.apply(this,arguments)});
 
 /* ---------- 11. System Health: V21 section ---------- */
 patch("systemHealthHtml",()=>systemHealthHtml,f=>{systemHealthHtml=f},base=>function(){
@@ -8040,7 +8070,8 @@ function afterLive(){
   try{V.jobs=jobList();V.mail=mailList()}catch(_){}
   drawBar();
   setTimeout(()=>{checkFields()},1500);
-  setTimeout(()=>{pmLoad(true)},300);                          // running projects list (V21.9)
+  setTimeout(()=>{pmLoad(true)},300);
+  setTimeout(prefetchPds,4000);                                 // PD Sheet in the background (V21.10)                          // running projects list (V21.10)
   if(V.mail.length)setTimeout(()=>flushMail(false),5000);    // retry waiting emails quietly
 }
 try{
@@ -8060,7 +8091,7 @@ try{V.jobs=jobList();V.mail=mailList()}catch(_){}
 earlyPaint();
 // if the live start-up already finished before this layer loaded
 try{if(!V.live&&Array.isArray(S.employees)&&S.employees.length&&S.user){V.live=true;V.liveAt=Date.now();afterLive();saveMasters()}}catch(_){}
-try{const bd=el("buildBadge");if(bd)bd.textContent="V21.9";document.title="MEGA Engineering | Project Design Control V21.9"}catch(_){}
+try{const bd=el("buildBadge");if(bd)bd.textContent="V21.10";document.title="MEGA Engineering | Project Design Control V21.10"}catch(_){}
 drawBar();
 console.info(`[${BUILD}] loaded`);
 })()}catch(e){try{console.error("[V21] could not load",e)}catch(_){}}
