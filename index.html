@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.7
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.8
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V21.7".
+   3. Paste this whole file and save. The badge at the top shows "V21.8".
 
  HOW THE CODE IS ORGANISED (top to bottom)
    STYLE block        All screen styles.
@@ -35,11 +35,14 @@
                       System Health), empty-project read fix.
                       V21.3: only Active designs (Design Master Status),
                       compact top bars and rows so more designs fit.
-                      V21.7: Projects list comes from the All_Projects report
+                      V21.8: Projects list comes from the All_Projects report
                       (proper code, name, client, status); Completed projects
                       are hidden. If that report cannot be read, the old list
                       is shown. New simple look for the Assign screen (style
                       only - same logic).
+                      V21.8: skipped tags - Department Code + Equipment
+                      Category pairs listed in SKIP_TAGS (megaV218 layer)
+                      are hidden on the Assign screen.
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -59,7 +62,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V21.7</title>
+<title>MEGA Engineering | Project Design Control V21.8</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -285,7 +288,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.7</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.8</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -6324,11 +6327,56 @@ function refocus(id){const i=el(id);if(i){i.focus();try{const n=i.value.length;i
 const MODE_PDS="PDS";
 const PROJECT_MODES=["Project Wise",""];
 const isProjectMode=m=>!m||m==="Project Wise";
+/*
+  SKIPPED TAGS (V21.8)
+  Tags whose Department Code + Equipment Category pair is listed below are NOT shown
+  on the Assign screen (Tag Wise and Tag + PDS work), so they can never be assigned.
+  - To skip one more category: add its name to the right department list.
+  - To stop skipping: delete the line. Upper/lower case, spaces and numbers like "1." do not matter.
+  - SKIP_DESIGNS: leave empty [] = applies to every design. Or put short names / names,
+    e.g. ["BOM"], to apply it only to those designs.
+  Tags that already have work assigned keep their old tasks; only new assigning is blocked.
+*/
+const SKIP_DESIGNS=[];
+const SKIP_TAGS={
+  "Equipment - Rotating":["Conveyor","Bucket Elevator","Agitator","Mixer","Nozzle","Decanter","Fan","Dryer","Milling",
+    "Primary Clarifier Mechanism","Clarifier Mechanism","Secondary Clarifier Mechanism","Air Compressor","Tube Cleaning Machine","Engine"],
+  "Electrical":["Electric Motor","Control System","Gear Box","Printer","Uninterruptible Power Supply (UPS)","UPS"],
+  "Instrumentation":["Gauge","Transmitter","Sensor","Temperature Sensor","Switch","Measuring Instrument"],
+  "Equipment - Stationary":["Weighing System","Accessories","Jet Cooker","Tank","Miscellaneous","Safety System","Filter","Decanter",
+    "Header","Packing","Reducing System","Coupling","Molecular Sieve","Separator","Support Balls","View Glass","Tank - MS","Silica Gel",
+    "Burner","Flare System","Lamella Packs","Demister Pad","Expansion Bellows","Cooler","Air Diffuser","CPU System","Media",
+    "Water Filter","WTP System","Transformer","Fire Fighting System","Cooling Tower","CO2 System","Distillation Column",
+    "Shell & Tube Heat Exchanger","ETP System","Filter Press","Chromatography","Oil","Sticker"]
+};
+// "1. Electric Motor" -> "electricmotor"
+const skipNorm=s=>sc(s).toLowerCase().replace(/^\s*\d+\s*[.)-]\s*/,"").replace(/[^a-z0-9]/g,"");
+const SKIP_SET=new Set(Object.entries(SKIP_TAGS).flatMap(([d,cats])=>cats.map(c=>skipNorm(d)+"|"+skipNorm(c))));
+function skipOn(a){
+  if(!SKIP_DESIGNS.length)return true;
+  try{const d=assignDrawing(a)||{};const want=SKIP_DESIGNS.map(skipNorm);return want.includes(skipNorm(d.short))||want.includes(skipNorm(d.name))}catch(_){return true}
+}
+function isSkippedUnit(a,u){
+  try{
+    if(!u||u.key==="PROJECT")return false;
+    const c=a._skipC||(a._skipC=new Map());if(c.has(u.key))return c.get(u.key);   // fast: each tag checked once
+    const g=u.group||{},eq=g.eq||u.eq||null;
+    // check the Equipment Master values and the PDS/scope row values; a match in either one skips the tag
+    const pairs=[[prop(eq,"department"),prop(eq,"equipmentCategory")],[sc(g.department),sc(g.equipmentCategory)||sc(u.category)]];
+    if(!pairs.some(([d,c])=>d&&c)){const v=unitView(a,u)||{};pairs.push([v.dept,v.category])}
+    const out=pairs.some(([d,c])=>!!(d&&c)&&SKIP_SET.has(skipNorm(d)+"|"+skipNorm(c)));   // section/type rows have no dept -> never skipped
+    c.set(u.key,out);return out;
+  }catch(_){return false}       // on any doubt: show the tag
+}
 function unitsFor(a){
   // Project-level designs have one work item: the whole design for this project
   if(isProjectMode(a.mode))return [{key:"PROJECT",section:"",type:"",tag:"",name:"",tagCount:0}];
-  if(a.mode===MODE_PDS){try{return v205PdsAllUnits(a.code)}catch(e){log("pds units",e);return[]}}
-  try{return v211ScopeUnits(a.mode)||[]}catch(e){log("scope units",e);return[]}
+  let list=[];
+  if(a.mode===MODE_PDS){try{list=v205PdsAllUnits(a.code)||[]}catch(e){log("pds units",e);return[]}}
+  else{try{list=v211ScopeUnits(a.mode)||[]}catch(e){log("scope units",e);return[]}}
+  // remove skipped tags (Department Code + Equipment Category list above)
+  try{if(skipOn(a)){const before=list.length;list=list.filter(u=>!isSkippedUnit(a,u));a._skipped=before-list.length}else a._skipped=0}catch(e){log("skip tags",e)}
+  return list;
 }
 function unitView(a,u){
   if(a.mode===MODE_PDS){
@@ -6514,7 +6562,7 @@ function drawAssign(){
       <div class="v218-assign-grid ${fields.length?"v219-side-layout":"no-panel"}">
        <div class="v218-assign-left">
         ${proj?"":`<div class="v218-tools"><div class="v217a-search"><span>⌕</span><input id="v218Q" class="input" placeholder="Search tag, equipment, section…" value="${esc(a.q)}"></div><button type="button" class="btn sm" data-v218-sel-all>☑ Select all (${rows.length})</button><button type="button" class="btn sm" data-v218-sel-none>Clear</button></div>
-        <div class="v218-meta"><span>Showing <b>${rows.length}</b> of ${all.length}${fcount?` • ${fcount} filter${fcount===1?"":"s"} on`:""}</span></div>`}
+        <div class="v218-meta"><span>Showing <b>${rows.length}</b> of ${all.length}${fcount?` • ${fcount} filter${fcount===1?"":"s"} on`:""}${a._skipped?` • <span title="Department Code + Equipment Category in the skip list">${a._skipped} skipped tag${a._skipped===1?"":"s"} hidden</span>`:""}</span></div>`}
         <div class="v218-units">${list}</div>
        </div>
        ${fields.length?`<aside class="v219-fside">${filters}</aside>`:""}
@@ -7311,7 +7359,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V21(){
 "use strict";
-const BUILD="V21.7";
+const BUILD="V21.8";
 
 /* ---------- 0. Small safe helpers ---------- */
 const log=(...a)=>{try{console.warn("[V21]",...a)}catch(_){}};
@@ -7803,7 +7851,7 @@ try{
 // Redraw the bar after every screen change.
 patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){const r=base.apply(this,arguments);drawBar();return r});
 
-/* ---------- 10b. Projects list from the "All_Projects" report (V21.7) ----------
+/* ---------- 10b. Projects list from the "All_Projects" report (V21.8) ----------
    WHY: the old list was built from All_Associated_Projects + every code found in
    Design_Tracking. That showed junk codes (e.g. "RJHI02", "Others"), missing
    names ("—") and finished projects.
@@ -7918,7 +7966,7 @@ function afterLive(){
   try{V.jobs=jobList();V.mail=mailList()}catch(_){}
   drawBar();
   setTimeout(()=>{checkFields()},1500);
-  setTimeout(()=>{pmLoad(true)},300);                          // running projects list (V21.7)
+  setTimeout(()=>{pmLoad(true)},300);                          // running projects list (V21.8)
   if(V.mail.length)setTimeout(()=>flushMail(false),5000);    // retry waiting emails quietly
 }
 try{
@@ -7938,7 +7986,7 @@ try{V.jobs=jobList();V.mail=mailList()}catch(_){}
 earlyPaint();
 // if the live start-up already finished before this layer loaded
 try{if(!V.live&&Array.isArray(S.employees)&&S.employees.length&&S.user){V.live=true;V.liveAt=Date.now();afterLive();saveMasters()}}catch(_){}
-try{const bd=el("buildBadge");if(bd)bd.textContent="V21.7";document.title="MEGA Engineering | Project Design Control V21.7"}catch(_){}
+try{const bd=el("buildBadge");if(bd)bd.textContent="V21.8";document.title="MEGA Engineering | Project Design Control V21.8"}catch(_){}
 drawBar();
 console.info(`[${BUILD}] loaded`);
 })()}catch(e){try{console.error("[V21] could not load",e)}catch(_){}}
