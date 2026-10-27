@@ -1,15 +1,21 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.10
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.11
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V21.10".
+   3. Paste this whole file and save. The badge at the top shows "V21.11".
+
+ >>> ALL SETTINGS ARE IN ONE PLACE: the "MEGA SETTINGS" block, the first
+     SCRIPT below (report names, projects list, waiting times, speed,
+     roles, people who left, BOM skipped tags, error report).
+     Change values only there.
 
  HOW THE CODE IS ORGANISED (top to bottom)
    STYLE block        All screen styles.
+   SCRIPT megaSettings MEGA SETTINGS + error recorder (starts first).
    SCRIPT 1           Main widget (V17 base -> V20.14). Projects, designs,
                       assignments, revisions, files, workflow, PDS,
                       dependencies, emails, universal search, start-up.
@@ -35,20 +41,25 @@
                       System Health), empty-project read fix.
                       V21.3: only Active designs (Design Master Status),
                       compact top bars and rows so more designs fit.
-                      V21.10: Projects list comes from the All_Projects report
+                      V21.11: Projects list comes from the All_Projects report
                       (proper code, name, client, status); Completed projects
                       are hidden. If that report cannot be read, the old list
                       is shown. New simple look for the Assign screen (style
                       only - same logic).
-                      V21.10: skipped tags - Department Code + Equipment
+                      V21.11: skipped tags - Department Code + Equipment
                       Category pairs listed in SKIP_TAGS (megaV218 layer)
                       are hidden on the Assign screen.
-                      V21.10: reliable connect - Zoho handshake first, 3 login
+                      V21.11: reliable connect - Zoho handshake first, 3 login
                       tries, saved login fallback, automatic start-up retry
                       with a small "Retry now" bar (no error popup).
-                      V21.10: skip list used ONLY for the BOM design (PDS and
+                      V21.11: skip list used ONLY for the BOM design (PDS and
                       all other designs show every tag); PD Sheet is read in
                       the background and the PDS screen waits for it.
+                      V21.11: one MEGA SETTINGS block; Equipment and PD Sheet
+                      read only for the open project (full read = backup)
+                      with a saved copy per project (instant open, live
+                      update in the background); red ⚠ error button with
+                      "Copy error report".
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -68,7 +79,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V21.10</title>
+<title>MEGA Engineering | Project Design Control V21.11</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -294,7 +305,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.10</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.11</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -329,6 +340,134 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <div id="loading" class="loading hidden"><div class="loading-box"><div class="spinner"></div><div id="loadingText" class="strong">Loading…</div><div id="loadingSubText" class="loading-sub">Please wait while Creator responds.</div><div class="loading-track"><div id="loadingBar" class="loading-bar"></div></div><div class="loading-meta"><span id="loadingProgressText">Working…</span><span id="loadingElapsed">0s</span></div></div></div>
 <!-- UI SECTION: Temporary success / warning / error messages. -->
 <div id="toasts" class="toasts"></div>
+<script id="megaSettings">
+/* ======================================================================
+   >>>>>>>>>>>>>>>>>>>>   MEGA SETTINGS  -  EDIT ONLY HERE   <<<<<<<<<<<<<<<<<<<<
+   Every value you may want to change is in this one block.
+   Change a value, keep the commas and quotes, save the widget.
+   The rest of the code reads these values - do not edit the logic below.
+   If this block is broken or deleted, the widget uses its built-in defaults.
+   ====================================================================== */
+var MEGA_SETTINGS={
+
+  /* ---------- 1. Zoho report link names ---------- */
+  REPORTS:{
+    projectList:"All_Projects",                      // running projects list (code, name, client, status)
+    projects:"All_Associated_Projects",              // project master used when saving (Project_Record_ID)
+    drawings:"All_Drawing_Types",                    // Design Master (only Status = Active is shown)
+    equipment:"Master_Equipment_List_Subform_Report",// Equipment Master (tags)
+    employees:"Employ_to_Create_ticket_Report",      // people for "Assigned To"
+    plantSections:"All_Plant_Section_Types",
+    tracking:"Design_Tracking_Report",               // all design tasks and revisions
+    pdSheet:"All_PD_Sheet"                           // PDS list used by "Assign Tag + PDS Work"
+  },
+
+  /* ---------- 2. Projects list ---------- */
+  PROJECT_LIST:{
+    HIDE_STATUSES:["Completed","Closed","Cancelled","Canceled"]   // Current Status values that are hidden
+  },
+
+  /* ---------- 3. Waiting times (milliseconds: 1000 = 1 second) ---------- */
+  TIMEOUTS:{
+    CONNECT_TRIES_MS:[15000,20000,30000],  // waiting for Zoho login, one number per try
+    READ_MS:20000,                         // one report page read
+    WRITE_MS:45000,                        // one save
+    READ_RETRIES:2                         // extra tries when a read fails
+  },
+
+  /* ---------- 4. Speed: saved copies on this computer ---------- */
+  SPEED:{
+    PROJECT_ONLY_READS:true,     // read Equipment / PD Sheet only for the open project (full read = backup)
+    SAVED_COPY_HOURS:72,         // saved Equipment / PD Sheet copy is used for this long, then read again
+    SAVED_COPY_PROJECTS:6,       // how many projects are kept on this computer
+    SAVED_COPY_MAX_KB:1500       // one project bigger than this is not saved (browser space is small)
+  },
+
+  /* ---------- 5. Roles and people who left ---------- */
+  ROLES:{                        // name or email  ->  "admin" or "manager"   (everyone else = engineer)
+    // "Kunal Joshi":"admin",
+    // "manager.name@mega.tc":"manager",
+  },                             // while this list is empty, everyone is admin
+  LEFT:[                         // names or emails of people who left (hidden from Assigned To)
+    // "Name Of Person Who Left",
+  ],
+  ENFORCE_ROLES:true,            // false = everyone can do everything
+  EMAIL_RETRIES:2,               // extra tries when an email fails
+
+  /* ---------- 6. Skipped tags (BOM only) ----------
+     Tags with this Department Code + Equipment Category are hidden on the
+     Assign screen of the designs in SKIP_DESIGNS. PDS work never skips.
+     Case, spaces and numbers like "1." do not matter.                  */
+  SKIP_DESIGNS:["BOM","Bill of Material","Bill of Materials"],
+  SKIP_TAGS:{
+    "Equipment - Rotating":["Conveyor","Bucket Elevator","Agitator","Mixer","Nozzle","Decanter","Fan","Dryer","Milling",
+      "Primary Clarifier Mechanism","Clarifier Mechanism","Secondary Clarifier Mechanism","Air Compressor","Tube Cleaning Machine","Engine"],
+    "Electrical":["Electric Motor","Control System","Gear Box","Printer","Uninterruptible Power Supply (UPS)","UPS"],
+    "Instrumentation":["Gauge","Transmitter","Sensor","Temperature Sensor","Switch","Measuring Instrument",
+      "Control System","Lamella Pack","Lamella Packs","Lamilla Pack","Lamilla Packs"],
+    "Instrument":["Control System","Lamella Pack","Lamella Packs","Lamilla Pack","Lamilla Packs"],
+    "Equipment - Stationary":["Weighing System","Accessories","Jet Cooker","Tank","Miscellaneous","Safety System","Filter","Decanter",
+      "Header","Packing","Reducing System","Coupling","Molecular Sieve","Separator","Support Balls","View Glass","Tank - MS","Silica Gel",
+      "Burner","Flare System","Lamella Packs","Demister Pad","Expansion Bellows","Cooler","Air Diffuser","CPU System","Media",
+      "Water Filter","WTP System","Transformer","Fire Fighting System","Cooling Tower","CO2 System","Distillation Column",
+      "Shell & Tube Heat Exchanger","ETP System","Filter Press","Chromatography","Oil","Sticker"]
+  },
+
+  /* ---------- 7. Error report ---------- */
+  ERRORS:{
+    KEEP:60,                     // how many recent errors are kept on this computer
+    SLOW_READ_MS:8000            // a read slower than this is written in the report as "slow"
+  }
+};
+
+/* ======================================================================
+   ERROR RECORDER (starts first, so even start-up errors are caught)
+   Every error is kept in a small list on this computer (localStorage
+   key MEGA_ERRLOG). The red "⚠" button in the top bar shows the count;
+   click it to see the list and "Copy error report".
+   Nothing here talks to Zoho and nothing here can stop the widget.
+   ====================================================================== */
+(function(){
+  try{
+    var K="MEGA_ERRLOG",MAX=(MEGA_SETTINGS.ERRORS&&MEGA_SETTINGS.ERRORS.KEEP)||60;
+    var R=window.MEGA_ERR={list:[],api:[],seen:0,listeners:[]};
+    try{var old=JSON.parse(localStorage.getItem(K)||"[]");if(Array.isArray(old))R.list=old.slice(-MAX)}catch(_){}
+    try{R.seen=Number(localStorage.getItem(K+"_SEEN")||R.list.length)||0}catch(_){}
+    function txt(x){
+      try{
+        if(x==null)return"";if(typeof x==="string")return x;
+        if(x instanceof Error)return (x.message||String(x))+(x.code?` [code ${x.code}]`:"");
+        if(x.message||x.code)return `${x.message||""}${x.code?` [code ${x.code}]`:""}`;
+        return JSON.stringify(x).slice(0,600);
+      }catch(_){return String(x)}
+    }
+    function ctx(){
+      var c={};
+      try{c.view=S.view||"";c.project=(S.projectWorkspace&&S.projectWorkspace.code)||"";c.user=S.user||"";c.online=navigator.onLine}catch(_){}
+      try{var t=document.getElementById("modalTitle"),b=document.getElementById("modalBackdrop");if(b&&!b.classList.contains("hidden")&&t)c.screen=t.textContent}catch(_){}
+      return c;
+    }
+    // kind: "error" (counted, red) or "api" (slow / failed Zoho reads, listed in the report)
+    R.add=function(kind,msg,detail){
+      try{
+        var e={t:new Date().toISOString(),kind:kind||"error",msg:txt(msg).slice(0,500),detail:txt(detail).slice(0,800),...ctx()};
+        var arr=kind==="api"?R.api:R.list;
+        var last=arr[arr.length-1];
+        if(last&&last.msg===e.msg&&last.kind===e.kind&&Date.now()-Date.parse(last.t)<3000){last.n=(last.n||1)+1;return} // same error twice in a row
+        arr.push(e);while(arr.length>MAX)arr.shift();
+        if(kind!=="api"){try{localStorage.setItem(K,JSON.stringify(R.list))}catch(_){}}
+        R.listeners.forEach(function(f){try{f(e)}catch(_){}});
+      }catch(_){}
+    };
+    window.addEventListener("error",function(ev){try{if(ev.error&&ev.error.code==="MEGA_RULE")return;R.add("error",ev.error||ev.message,(ev.filename||"")+":"+(ev.lineno||""))}catch(_){}});
+    window.addEventListener("unhandledrejection",function(ev){try{var e=ev.reason;if(e&&e.code==="MEGA_RULE")return;R.add("error",e,"unhandled promise")}catch(_){}});
+    // console.error always; console.warn only for our own layer messages ([V20.x] / [V21.x])
+    var ce=console.error,cw=console.warn;
+    console.error=function(){try{R.add("error",[].map.call(arguments,txt).join(" "),"console.error")}catch(_){}return ce.apply(console,arguments)};
+    console.warn=function(){try{var a=[].map.call(arguments,txt).join(" ");if(/^\[V2\d/.test(a)&&!/ loaded$/.test(a))R.add("api",a,"console.warn")}catch(_){}return cw.apply(console,arguments)};
+  }catch(_){}
+})();
+</script>
 <script>
 "use strict";
 
@@ -451,6 +590,19 @@ const PDS_REPORTS={
   consumable:["All_Consumable_PDS","All_Consumable_PDS_Report"],
   ei:["All_E_I_PDS","All_E_I_PDS_Report","All_EI_PDS","All_E_and_I_PDS"]
 };
+/* V21.11: read the MEGA SETTINGS block (top of this file). Missing values keep the defaults above. */
+(function applyMegaSettings(){
+  try{
+    const M=(typeof MEGA_SETTINGS==="object"&&MEGA_SETTINGS)||{},R=M.REPORTS||{},T=M.TIMEOUTS||{};
+    for(const k of ["projects","drawings","equipment","employees","plantSections","tracking"])if(typeof R[k]==="string"&&R[k].trim())CONFIG.REPORTS[k]=R[k].trim();
+    if(typeof R.tracking==="string"&&R.tracking.trim())CONFIG.TRACKING_REPORT_CANDIDATES=[R.tracking.trim()];
+    if(typeof R.pdSheet==="string"&&R.pdSheet.trim())PDS_REPORTS.all=[R.pdSheet.trim()];
+    if(Number(T.READ_MS)>=3000)CONFIG.READ_TIMEOUT_MS=Number(T.READ_MS);
+    if(Number(T.WRITE_MS)>=5000)CONFIG.WRITE_TIMEOUT_MS=Number(T.WRITE_MS);
+    if(Number(T.READ_RETRIES)>=0&&Number(T.READ_RETRIES)<=5)CONFIG.READ_RETRIES=Number(T.READ_RETRIES);
+    const E=M.ERRORS||{};if(Number(E.SLOW_READ_MS)>=1000)CONFIG.SLOW_REQUEST_MS=Number(E.SLOW_READ_MS);
+  }catch(e){console.warn("[V21.11] settings block could not be read - defaults used",e)}
+})();
 
 /* ================= SECTION 02: DESIGN_TRACKING FIELDS =================
    Maps readable code names to the exact existing Design_Tracking link names.
@@ -877,7 +1029,7 @@ function reliabilityNow(){return (typeof performance!=="undefined"&&performance.
 function timeoutError(label,ms,write=false){const e=new Error(write?`${label} did not confirm within ${Math.round(ms/1000)} seconds. The server may still have completed it. Refresh before trying again.`:`${label} timed out after ${Math.round(ms/1000)} seconds.`);e.code="MEGA_TIMEOUT";e.isWriteTimeout=write;return e}
 async function withTimeout(factory,ms,label,{write=false}={}){let timer;try{return await Promise.race([Promise.resolve().then(factory),new Promise((_,rej)=>{timer=setTimeout(()=>rej(timeoutError(label,ms,write)),ms)})])}finally{if(timer)clearTimeout(timer)}}
 function isRetryableReadError(e){if(isNoDataError(e))return false;const t=errorText(e).toLowerCase();return e?.code==="MEGA_TIMEOUT"||/timeout|timed out|network|temporar|429|rate limit|502|503|504|service unavailable|failed to fetch|connection/i.test(t)}
-function setHealth(key,status,detail={}){if(!S.runtime?.health)return;const prev=S.runtime.health.get(key)||{};S.runtime.health.set(key,{...prev,...detail,status,key,at:new Date().toISOString()})}
+function setHealth(key,status,detail={}){try{if(window.MEGA_ERR&&(status==="error"||status==="slow"))MEGA_ERR.add(status==="error"?"error":"api",`${detail.label||key}: ${status==="error"?(detail.error||"failed"):"slow"}${detail.ms?` (${detail.ms} ms)`:""}`,detail.method||key)}catch(_){}if(!S.runtime?.health)return;const prev=S.runtime.health.get(key)||{};S.runtime.health.set(key,{...prev,...detail,status,key,at:new Date().toISOString()})}
 function markReportSuccess(report,rows,ms){S.runtime.lastGoodReports.set(report,rows);setHealth(`report:${report}`,"ok",{label:report,rows:rows.length,ms:Math.round(ms),error:""})}
 function markReportFailure(report,e,ms=0){setHealth(`report:${report}`,"error",{label:report,ms:Math.round(ms||0),error:errorText(e)})}
 async function creatorReadCall(factory,label,{timeout=CONFIG.READ_TIMEOUT_MS,retries=CONFIG.READ_RETRIES,healthKey=label}={}){let last;for(let attempt=0;attempt<=retries;attempt++){const started=reliabilityNow();try{const value=await withTimeout(factory,timeout,label);const ms=reliabilityNow()-started;if(ms>=CONFIG.SLOW_REQUEST_MS){S.runtime.slowRequests++;setHealth(healthKey,"slow",{label,ms:Math.round(ms),error:""})}else setHealth(healthKey,"ok",{label,ms:Math.round(ms),error:""});return value}catch(e){last=e;setHealth(healthKey,"error",{label,ms:Math.round(reliabilityNow()-started),error:errorText(e)});if(attempt>=retries||!isRetryableReadError(e))throw e;await sleep(CONFIG.RETRY_BASE_MS*Math.pow(2,attempt))}}throw last}
@@ -4474,7 +4626,8 @@ async function connectCreator(){
   // 1. handshake (never blocks more than 6 s)
   try{if(typeof ZOHO.CREATOR.init==="function")await withTimeout(()=>ZOHO.CREATOR.init(),6000,"Zoho Creator handshake")}catch(e){console.warn("[V21.9] init() slow/failed - continuing",e)}
   // 2. login details, 3 tries
-  const waits=[15000,20000,30000];let last=null;
+  let waits=[15000,20000,30000];let last=null;
+  try{const w=MEGA_SETTINGS.TIMEOUTS.CONNECT_TRIES_MS;if(Array.isArray(w)&&w.length&&w.every(x=>Number(x)>=3000))waits=w.map(Number)}catch(_){}
   for(let i=0;i<waits.length;i++){
     try{
       if(i)bootBar(`Zoho is slow to answer — connecting again (try ${i+1} of ${waits.length})…`,"warn");
@@ -5514,19 +5667,12 @@ wire();wireV19();wireV20();wireV205Pds();wireV208();wireV209();wireV210();wireV2
    ====================================================================== */
 
 /* ---------- EDIT THIS: roles and people who have left ---------- */
-var MEGA_V217_SETTINGS={
-  ROLES:{                       // name or email  ->  "admin" or "manager"
-    // "Kunal Joshi":"admin",
-    // "HOD Name":"admin",
-    // "manager.name@mega.tc":"manager",
-  },                            // everyone not listed = engineer
-                                // while this list is empty, everyone is admin
-  LEFT:[                        // names or emails of people who left
-    // "Name Of Person Who Left",
-  ],
-  ENFORCE_ROLES:true,           // false = everyone can do everything
-  EMAIL_RETRIES:2               // extra tries when an email fails
-};
+/* V21.11: these values now come from the MEGA SETTINGS block at the top of the file. */
+var MEGA_V217_SETTINGS=(function(){
+  var M=(typeof MEGA_SETTINGS==="object"&&MEGA_SETTINGS)||{};
+  return {ROLES:(M.ROLES&&typeof M.ROLES==="object")?M.ROLES:{},LEFT:Array.isArray(M.LEFT)?M.LEFT:[],
+    ENFORCE_ROLES:M.ENFORCE_ROLES!==false,EMAIL_RETRIES:Number.isFinite(Number(M.EMAIL_RETRIES))?Number(M.EMAIL_RETRIES):2};
+})();
 
 /* keeps an old last line (with wireV216 / wireV217) from breaking */
 var wireV216=(typeof wireV216==="function")?wireV216:function(){};
@@ -6407,29 +6553,17 @@ const isProjectMode=m=>!m||m==="Project Wise";
   Tags whose Department Code + Equipment Category pair is listed below are NOT shown
   on the Assign screen of the BOM (Bill of Material) design only.
   PDS work and every other design always show ALL tags.
-  - To skip one more category: add its name to the right department list.
-  - To stop skipping: delete the line. Upper/lower case, spaces and numbers like "1." do not matter.
+  - The lists are edited in MEGA SETTINGS (top of the file): SKIP_DESIGNS and SKIP_TAGS.
   - SKIP_DESIGNS: the designs that use this list (Design Master short name or name;
     a name that contains one of these words also matches, e.g. "Bill of Material Report").
   Tags that already have work assigned keep their old tasks; only new assigning is blocked.
 */
-const SKIP_DESIGNS=["BOM","Bill of Material","Bill of Materials"];
-const SKIP_TAGS={
-  "Equipment - Rotating":["Conveyor","Bucket Elevator","Agitator","Mixer","Nozzle","Decanter","Fan","Dryer","Milling",
-    "Primary Clarifier Mechanism","Clarifier Mechanism","Secondary Clarifier Mechanism","Air Compressor","Tube Cleaning Machine","Engine"],
-  "Electrical":["Electric Motor","Control System","Gear Box","Printer","Uninterruptible Power Supply (UPS)","UPS"],
-  "Instrumentation":["Gauge","Transmitter","Sensor","Temperature Sensor","Switch","Measuring Instrument",
-    "Control System","Lamella Pack","Lamella Packs","Lamilla Pack","Lamilla Packs"],
-  "Instrument":["Control System","Lamella Pack","Lamella Packs","Lamilla Pack","Lamilla Packs"],
-  "Equipment - Stationary":["Weighing System","Accessories","Jet Cooker","Tank","Miscellaneous","Safety System","Filter","Decanter",
-    "Header","Packing","Reducing System","Coupling","Molecular Sieve","Separator","Support Balls","View Glass","Tank - MS","Silica Gel",
-    "Burner","Flare System","Lamella Packs","Demister Pad","Expansion Bellows","Cooler","Air Diffuser","CPU System","Media",
-    "Water Filter","WTP System","Transformer","Fire Fighting System","Cooling Tower","CO2 System","Distillation Column",
-    "Shell & Tube Heat Exchanger","ETP System","Filter Press","Chromatography","Oil","Sticker"]
-};
+// V21.11: the lists now live in the MEGA SETTINGS block at the top of the file (SKIP_DESIGNS, SKIP_TAGS).
+const SKIP_DESIGNS=(()=>{try{return Array.isArray(MEGA_SETTINGS.SKIP_DESIGNS)?MEGA_SETTINGS.SKIP_DESIGNS:[]}catch(_){return[]}})();
+const SKIP_TAGS=(()=>{try{return (MEGA_SETTINGS.SKIP_TAGS&&typeof MEGA_SETTINGS.SKIP_TAGS==="object")?MEGA_SETTINGS.SKIP_TAGS:{}}catch(_){return{}}})();
 // "1. Electric Motor" -> "electricmotor"
 const skipNorm=s=>sc(s).toLowerCase().replace(/^\s*\d+\s*[.)-]\s*/,"").replace(/[^a-z0-9]/g,"");
-const SKIP_SET=new Set(Object.entries(SKIP_TAGS).flatMap(([d,cats])=>cats.map(c=>skipNorm(d)+"|"+skipNorm(c))));
+const SKIP_SET=new Set(Object.entries(SKIP_TAGS).flatMap(([d,cats])=>(Array.isArray(cats)?cats:[]).map(c=>skipNorm(d)+"|"+skipNorm(c))));
 function skipOn(a){
   if(!a||a.mode===MODE_PDS)return false;              // PDS work: never skip anything
   if(!SKIP_DESIGNS.length)return false;
@@ -6450,6 +6584,15 @@ function isSkippedUnit(a,u){
     c.set(u.key,out);return out;
   }catch(_){return false}       // on any doubt: show the tag
 }
+// V21.11: PD Sheet rows for one project (fast project-only read + saved copy in the V21 layer).
+// Falls back to the old full read if the V21 layer is not there.
+async function pdsReady(code){
+  const L=window.MEGA_V21;
+  if(L&&typeof L.pdsForProject==="function")return L.pdsForProject(code);
+  if(!Array.isArray(S.pds?.summary))return ensurePdsData("all");
+}
+// V21.11: Equipment / PD Sheet were updated in the background -> redraw the open Assign screen.
+try{document.addEventListener("mega:data",ev=>{try{const a=V.assign,c=ev.detail&&ev.detail.code;if(!a||String(a.code)!==String(c))return;const open=!el("modalBackdrop")?.classList.contains("hidden");if(!open)return;a._vc=null;a._skipC=null;keepScroll(()=>{syncAssign();drawAssign()})}catch(e){log("live update",e)}})}catch(_){}
 function unitsFor(a){
   // Project-level designs have one work item: the whole design for this project
   if(isProjectMode(a.mode))return [{key:"PROJECT",section:"",type:"",tag:"",name:"",tagCount:0}];
@@ -6554,7 +6697,7 @@ async function openAssign(parentId){
   busy(pds?"Loading Tag + PDS data…":`Loading ${v19ScopeLabel(mode)}…`);
   try{
     if(!isProjectMode(mode)||pds)await ensureEquipmentForProject(code);
-    if(pds&&!Array.isArray(S.pds?.summary))await ensurePdsData("all");
+    if(pds)await pdsReady(code);
   }finally{idle()}
   const fresh=!V.assign||V.assign.parentId!==String(parentId);
   if(fresh){
@@ -6578,7 +6721,7 @@ async function openAssignDrawing(drawingId){
   let pds=false;try{pds=v205IsPdsDrawingMaster(drawing)}catch(_){}
   let mode=pds?MODE_PDS:v211ScopeModeForDrawing(drawing);if(!pds&&isProjectMode(mode))mode="Project Wise";
   busy(pds?"Loading Tag + PDS data…":`Loading ${v19ScopeLabel(mode)}…`);
-  try{if(mode!=="Project Wise")await ensureEquipmentForProject(code);if(pds&&!Array.isArray(S.pds?.summary))await ensurePdsData("all")}finally{idle()}
+  try{if(mode!=="Project Wise")await ensureEquipmentForProject(code);if(pds)await pdsReady(code)}finally{idle()}
   if(!V.assign||V.assign.parentId||V.assign.drawingId!==String(drawing.id)||V.assign.code!==code){
     V.assign={parentId:"",drawingId:String(drawing.id),code,mode,q:"",f:{},sel:new Set(mode==="Project Wise"?["PROJECT"]:[]),users:[],priority:"Medium",start:todayIso(),target:"",end:"",remark:"",show:300,panel:true};
   }
@@ -7441,7 +7584,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V21(){
 "use strict";
-const BUILD="V21.10";
+const BUILD="V21.11";
 
 /* ---------- 0. Small safe helpers ---------- */
 const log=(...a)=>{try{console.warn("[V21]",...a)}catch(_){}};
@@ -7933,7 +8076,7 @@ try{
 // Redraw the bar after every screen change.
 patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){const r=base.apply(this,arguments);drawBar();return r});
 
-/* ---------- 10b. Projects list from the "All_Projects" report (V21.10) ----------
+/* ---------- 10b. Projects list from the "All_Projects" report (V21.11) ----------
    WHY: the old list was built from All_Associated_Projects + every code found in
    Design_Tracking. That showed junk codes (e.g. "RJHI02", "Others"), missing
    names ("—") and finished projects.
@@ -7943,7 +8086,7 @@ patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){const r=bas
    SAFE: read-only. If All_Projects cannot be read, the old list is shown
    exactly as before. Nothing else (saving, Project_Record_ID, search) changes. */
 const PM={ok:false,at:0,loading:null,rows:new Map(),hidden:0,error:"",fields:""};
-const PM_REPORT="All_Projects";
+const PM_REPORT=(()=>{try{return String(MEGA_SETTINGS.REPORTS.projectList||"").trim()||"All_Projects"}catch(_){return"All_Projects"}})();   // MEGA_SETTINGS.REPORTS.projectList
 const PM_MAX_AGE=10*60000;            // re-read the project list every 10 minutes at most
 const pmKey=c=>sc(c).trim().toUpperCase();
 // Finds a value by exact field names first, then by any field whose name contains a word.
@@ -7953,7 +8096,8 @@ function pmPick(r,names,words){
   for(const w of words||[]){const k=keys.find(k=>k.toLowerCase().replace(/[^a-z]/g,"").includes(w));if(k){const v=sc(r[k]).trim();if(v)return v}}
   return "";
 }
-const pmDone=s=>/^(completed?|closed|cancell?ed)$/i.test(sc(s).trim());
+const PM_HIDE=(()=>{try{const a=MEGA_SETTINGS.PROJECT_LIST.HIDE_STATUSES;if(Array.isArray(a)&&a.length)return a.map(x=>String(x).trim().toLowerCase())}catch(_){}return["completed","closed","cancelled","canceled"]})();
+const pmDone=s=>PM_HIDE.includes(sc(s).trim().toLowerCase());   // MEGA_SETTINGS.PROJECT_LIST.HIDE_STATUSES
 function pmApply(rows,at){
   const m=new Map();let hidden=0;
   for(const r of rows||[]){
@@ -8018,29 +8162,167 @@ if(baseRenderProjects)renderProjects=function(){
   }catch(e){log("projects list",e);return baseRenderProjects.apply(this,arguments)}
 };
 
-/* ---------- 10c. PDS data: faster and never empty (V21.10) ----------
-   - The PD Sheet list is read once in the background right after start-up,
-     so "Assign Tag + PDS Work" opens without waiting.
-   - If the screen is opened while that read is still running, it now WAITS
-     for it (before, it could see "no data" and show an empty list).
-   - Refresh reads the PD Sheet again. */
-const PDSL={p:null,at:0};
+/* ---------- 10c. Fast project data: Equipment + PD Sheet (V21.11) ----------
+   WHY: the PD Sheet was read for ALL projects, and Equipment/PD Sheet were read
+   again every time the widget opened. With growing data this is slow and can
+   time out.
+   NOW (settings: MEGA_SETTINGS.SPEED):
+   1. Only the open project is read from Zoho (criteria on Project_Code).
+      The rows are double-checked to really belong to that project.
+      If the project-only read does not work in your Zoho, the old full read
+      is used automatically (backup) - nothing is ever missing.
+   2. A saved copy per project is kept on this computer (max N projects,
+      max size per project). Next time the screen opens instantly from the
+      saved copy and the latest data is read from Zoho in the background.
+      If anything changed, the open screen updates by itself.
+   3. If a screen is opened while a read is running, it waits for that read
+      (it never shows an empty list by mistake). */
+const SP=(()=>{try{return (MEGA_SETTINGS&&MEGA_SETTINGS.SPEED)||{}}catch(_){return{}}})();
+const SPD={on:SP.PROJECT_ONLY_READS!==false,hours:Number(SP.SAVED_COPY_HOURS)||72,max:Math.max(1,Number(SP.SAVED_COPY_PROJECTS)||6),maxKB:Number(SP.SAVED_COPY_MAX_KB)||1500};
+const fire=(kind,code)=>{try{document.dispatchEvent(new CustomEvent("mega:data",{detail:{kind,code:String(code)}}))}catch(_){}};
+// ---- saved copies (localStorage) ----
+function copyGet(kind,code){
+  const c=LS.get(`${kind}::${code}`);
+  if(!c||c.v!==1||!Array.isArray(c.rows))return null;
+  if(Date.now()-Number(c.at||0)>SPD.hours*3600000)return null;
+  return c;
+}
+function copyIndex(){const x=LS.get("copyIndex",[]);return Array.isArray(x)?x:[]}
+function copySet(kind,code,rows){
+  try{
+    if(S.demo||!Array.isArray(rows))return;
+    const key=`${kind}::${code}`,txt=JSON.stringify({v:1,at:Date.now(),rows});
+    if(txt.length>SPD.maxKB*1024){LS.del(key);return}       // too big for the browser: always read live
+    let idx=copyIndex().filter(x=>x.k!==key);idx.push({k:key,code:String(code),at:Date.now()});
+    // keep only the newest projects
+    const codes=[...new Set(idx.slice().reverse().map(x=>x.code))];
+    if(codes.length>SPD.max){const keep=new Set(codes.slice(0,SPD.max));idx.filter(x=>!keep.has(x.code)).forEach(x=>LS.del(x.k));idx=idx.filter(x=>keep.has(x.code))}
+    let ok=false;try{localStorage.setItem(NS()+key,txt);ok=true}catch(_){}
+    if(!ok&&idx.length>1){const old=idx.shift();LS.del(old.k);try{localStorage.setItem(NS()+key,txt);ok=true}catch(_){}}  // free space once and retry
+    if(!ok)idx=idx.filter(x=>x.k!==key);
+    LS.set("copyIndex",idx);
+  }catch(e){log("saved copy",kind,code,e)}
+}
+const sig=rows=>{try{return rows.length+"|"+rows.map(r=>sc(r.id||r.ID||idOf(r))).join(",").length+"|"+rows.slice(0,50).map(r=>sc(r.id||r.ID||idOf(r))).join(",")}catch(_){return String(rows.length)}};
+
+// ---- Equipment: saved copy first, then live in the background ----
+patch("ensureEquipmentForProjectImpl",()=>ensureEquipmentForProjectImpl,f=>{ensureEquipmentForProjectImpl=f},base=>async function(code,force=false){
+  code=String(code||"").trim();
+  if(!code||S.demo)return base.apply(this,arguments);
+  if(!force&&!S.cache.equipmentByProject.has(code)){
+    const c=copyGet("eq",code);
+    if(c&&c.rows.length){
+      S.cache.equipmentByProject.set(code,c.rows);S.cache.equipmentProjects.add(code);try{mergeEquipmentRows(c.rows)}catch(_){}
+      setTimeout(async()=>{       // latest data from Zoho, quietly
+        try{const before=sig(c.rows);const rows=await base.call(this,code,true);if(rows&&rows.length)copySet("eq",code,rows);if(sig(rows||[])!==before)fire("equipment",code)}
+        catch(e){window.MEGA_ERR&&MEGA_ERR.add("api",`Equipment refresh for project ${code} failed - saved copy kept`,e)}
+      },50);
+      return c.rows;
+    }
+  }
+  const rows=await base.apply(this,arguments);
+  if(Array.isArray(rows)&&rows.length)copySet("eq",code,rows);
+  return rows;
+});
+
+// ---- PD Sheet: only the open project ----
+const PDP={rows:new Map(),at:new Map(),p:new Map(),full:false,crit:LS.get("pdsCrit",""),bad:new Set(LS.get("pdsBad",[])||[])};
+const PDSL={p:null};
+const belongs=(r,code)=>{try{return v205PdsRowBelongsToProject(r,code)}catch(_){return false}};
+// S.pds.summary = rows of the projects read so far (marked "partial" so any screen that
+// needs every project - e.g. Universal Search - still does the full read).
+function pdsUnion(){
+  if(PDP.full)return;
+  const all=[];for(const r of PDP.rows.values())all.push(...r);
+  S.pds.summary=all;S.pds.partial=true;
+}
+function pdsPutProject(code,rows){
+  PDP.rows.set(code,rows);PDP.at.set(code,Date.now());
+  if(PDP.full&&Array.isArray(S.pds.summary))S.pds.summary=S.pds.summary.filter(r=>!belongs(r,code)).concat(rows);
+  else pdsUnion();
+}
+// Full read (old way). Also used as the backup.
 patch("ensurePdsData",()=>ensurePdsData,f=>{ensurePdsData=f},base=>function(type="all",force=false){
   if(type!=="all")return base.apply(this,arguments);
-  if(PDSL.p)return PDSL.p;                       // one read at a time; everybody waits for the same read
-  if(!force&&Array.isArray(S.pds&&S.pds.summary))return Promise.resolve();
+  if(PDSL.p)return PDSL.p;                                   // one full read at a time
+  const partial=!!(S.pds&&S.pds.partial);
+  if(!force&&!partial&&Array.isArray(S.pds&&S.pds.summary))return Promise.resolve();
   PDSL.p=(async()=>{
-    try{if(S.pds&&S.pds.loading)S.pds.loading.all=false;await base.call(this,"all",force);PDSL.at=Date.now()}
-    finally{PDSL.p=null}
+    const t0=Date.now();
+    try{
+      if(S.pds&&S.pds.loading)S.pds.loading.all=false;
+      await base.call(this,"all",force||partial);
+      if(Array.isArray(S.pds.summary)){S.pds.partial=false;PDP.full=true}
+      const ms=Date.now()-t0;if(ms>(CONFIG.SLOW_REQUEST_MS||8000)&&window.MEGA_ERR)MEGA_ERR.add("api",`PD Sheet full read took ${Math.round(ms/1000)} s (${(S.pds.summary||[]).length} rows)`,"full read");
+    }finally{PDSL.p=null}
   })();
   return PDSL.p;
 });
-function prefetchPds(){
-  try{if(S.demo||!S.pds||Array.isArray(S.pds.summary)||PDSL.p)return;ensurePdsData("all").catch(e=>log("PDS prefetch",e))}catch(e){log("PDS prefetch",e)}
+// Reads one project. Returns rows, or null when the project-only read cannot be trusted.
+async function pdsReadProject(code){
+  const report=(PDS_REPORTS.all||[])[0];if(!report)return null;
+  let e=String(code);try{e=creatorCriteriaEscape(code)}catch(_){}
+  const list=[`(Project_Code.Project_Code == "${e}")`,`(Project_Code == "${e}")`].map(c=>c.replace(String(e),"#"));
+  const order=PDP.crit?[PDP.crit,...list.filter(x=>x!==PDP.crit)]:list;
+  for(const tpl of order){
+    if(PDP.bad.has(tpl))continue;
+    const c=tpl.replace("#",e);
+    try{
+      const t0=Date.now(),rows=await fetchRecords(report,c,CONFIG.MAX_REPORT_PAGES),ok=rows.filter(r=>belongs(r,code)),ms=Date.now()-t0;
+      if(ms>(CONFIG.SLOW_REQUEST_MS||8000)&&window.MEGA_ERR)MEGA_ERR.add("api",`PD Sheet project ${code} read took ${Math.round(ms/1000)} s`,c);
+      if(ok.length){if(PDP.crit!==tpl){PDP.crit=tpl;LS.set("pdsCrit",tpl)}return ok}
+      if(!rows.length&&PDP.crit===tpl)return [];             // proven way, and this project has no PDS rows
+    }catch(err){
+      PDP.bad.add(tpl);LS.set("pdsBad",[...PDP.bad]);         // do not try this way again on this computer
+      window.MEGA_ERR&&MEGA_ERR.add("api",`PD Sheet project-only read not supported: ${c} - backup used`,err);
+    }
+  }
+  return null;
 }
+async function pdsFetchProject(code){
+  let rows=null;
+  if(!PDP.full)rows=await pdsReadProject(code);
+  if(rows===null){                                           // backup: full read, then take this project
+    await ensurePdsData("all");
+    rows=(S.pds.summary||[]).filter(r=>belongs(r,code));
+    PDP.rows.set(code,rows);PDP.at.set(code,Date.now());
+  }else pdsPutProject(code,rows);
+  copySet("pds",code,rows);
+  return rows;
+}
+// Used by the Assign screens (V20.19 layer: pdsReady)
+async function pdsForProject(code,force=false){
+  code=String(code||"").trim();if(!code)return;
+  if(S.demo||!SPD.on){if(force||!Array.isArray(S.pds.summary)||S.pds.partial)return ensurePdsData("all",force);return}
+  if(PDP.full&&!force)return;
+  if(!force&&PDP.rows.has(code)&&Date.now()-Number(PDP.at.get(code)||0)<10*60000)return;
+  if(PDP.p.has(code))return PDP.p.get(code);
+  const job=(async()=>{
+    const saved=(!force&&!PDP.rows.has(code))?copyGet("pds",code):null;
+    if(saved&&saved.rows.length){
+      pdsPutProject(code,saved.rows);PDP.at.set(code,0);       // shown at once; marked old so it is read again
+      setTimeout(async()=>{
+        try{const before=sig(saved.rows);const rows=await pdsFetchProject(code);if(sig(rows)!==before)fire("pds",code)}
+        catch(e){window.MEGA_ERR&&MEGA_ERR.add("api",`PD Sheet refresh for project ${code} failed - saved copy kept`,e)}
+      },50);
+      return;
+    }
+    await pdsFetchProject(code);
+  })();
+  PDP.p.set(code,job);
+  try{return await job}finally{PDP.p.delete(code)}
+}
+// Opening a project starts its PD Sheet read in the background (ready before you click Assign).
+patch("openProjectWorkspace",()=>openProjectWorkspace,f=>{openProjectWorkspace=f},base=>async function(code){
+  const r=await base.apply(this,arguments);
+  try{if(!S.demo&&code)setTimeout(()=>pdsForProject(String(code)).catch(e=>log("PDS background",e)),300)}catch(_){}
+  return r;
+});
+function prefetchPds(){/* V21.11: no full PD Sheet read at start-up any more - only the opened project is read */}
 // Refresh button also re-reads the projects list.
 patch("refreshData",()=>refreshData,f=>{refreshData=f},base=>async function(){try{setTimeout(()=>pmLoad(true),0)}catch(_){}
-  try{if(S.pds&&Array.isArray(S.pds.summary))setTimeout(()=>ensurePdsData("all",true).catch(e=>log("PDS refresh",e)),0)}catch(_){}
+  // Refresh: read the open project's PD Sheet again (or the full list if it was loaded)
+  try{const c=String(S.projectWorkspace?.code||"");if(PDP.full)setTimeout(()=>ensurePdsData("all",true).catch(e=>log("PDS refresh",e)),0);else if(c&&PDP.rows.has(c))setTimeout(()=>pdsForProject(c,true).then(()=>fire("pds",c)).catch(e=>log("PDS refresh",e)),0)}catch(_){}
   return base.apply(this,arguments)});
 
 /* ---------- 11. System Health: V21 section ---------- */
@@ -8057,6 +8339,9 @@ patch("systemHealthHtml",()=>systemHealthHtml,f=>{systemHealthHtml=f},base=>func
       ["Parent progress to re-check",String(rollupPending().length)],
       ["Design_Tracking field check",F.error?`Not checked: ${F.error}`:!F.checked?"Pending":F.missing.length?`MISSING: ${F.missing.join(", ")}`:"All required fields found"],
       ["Optional fields not found",F.optional.length?F.optional.join(", "):"None"],
+      ["Errors saved on this computer",`${ER.list.length} (click the ⚠ button in the top bar for the report)`],
+      ["PD Sheet loading",PDP.full?"All projects loaded":`Project-only (${PDP.crit||"way not proven yet"})${PDP.bad.size?" • backup used for: "+[...PDP.bad].join(" ; "):""}`],
+      ["Saved Equipment / PD Sheet copies",copyIndex().map(x=>x.k).join(", ")||"None"],
       ["Projects list (All_Projects)",PM.ok?`${PM.rows.size} running • ${PM.hidden} completed hidden • read ${timeText(PM.at)}`:`Old list used (${PM.error||"not read yet"})`]
     ];
     html+=`<div class="v21-health"><h3>Speed &amp; safety (${BUILD})</h3><table>${rows.map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table></div>`;
@@ -8064,14 +8349,92 @@ patch("systemHealthHtml",()=>systemHealthHtml,f=>{systemHealthHtml=f},base=>func
   return html;
 });
 
+/* ---------- 12a. Error report (V21.11) ----------
+   Every error is recorded at once (see ERROR RECORDER at the top of the file):
+   - widget errors, failed or timed-out Zoho reads/saves, start-up problems;
+   - slow reads and fall-backs are listed too (as "info"), but do not turn the button red.
+   A red "⚠ N" button appears in the top bar the moment an error happens.
+   Click it: the list opens with "Copy error report". Paste that text to the
+   developer - it has the screen, project, person, time and technical detail. */
+const ER=window.MEGA_ERR||{list:[],api:[],seen:0,listeners:[],add(){}};
+function errNew(){return Math.max(0,ER.list.length-Number(ER.seen||0))}
+function errButton(){
+  try{
+    let b=el("megaErrBtn");
+    if(!b){
+      const pill=el("sessionPill");if(!pill||!pill.parentNode)return;
+      b=document.createElement("button");b.type="button";b.id="megaErrBtn";b.className="v21-errbtn";b.title="Errors on this computer - click to see and copy the report";
+      pill.parentNode.insertBefore(b,pill);
+    }
+    const n=errNew();
+    b.innerHTML=n?`⚠ <b>${n}</b>`:"⚠";
+    b.classList.toggle("on",n>0);b.classList.toggle("hidden",!n&&!ER.list.length);
+  }catch(_){}
+}
+let errToastAt=0;
+ER.listeners.push(e=>{
+  if(e.kind==="api")return;
+  errButton();
+  // tell the user once in a while, never spam
+  if(Date.now()-errToastAt>30000){errToastAt=Date.now();say("Something went wrong. Click the red ⚠ button at the top to copy the error report.","warn")}
+});
+function errReport(){
+  const L=[];
+  L.push(`MEGA Project Design Control - error report`);
+  L.push(`Build: ${BUILD} | Time: ${new Date().toISOString()} | Online: ${navigator.onLine}`);
+  try{L.push(`User: ${S.user||"-"} | Working as: ${(window.MEGA_V217&&MEGA_V217.actor&&MEGA_V217.actor()?.name)||"-"} | View: ${S.view||"-"} | Project: ${S.projectWorkspace?.code||"-"}`)}catch(_){}
+  try{L.push(`Live: ${V.live?"yes":"no"} | Projects: ${(S.projects||[]).length} | Designs: ${(S.drawings||[]).length} | People: ${(S.employees||[]).length} | PD Sheet rows in memory: ${(S.pds?.summary||[]).length}${PDP.full?" (all projects)":` (projects: ${[...PDP.rows.keys()].join(", ")||"-"})`}`)}catch(_){}
+  try{L.push(`PD Sheet project read: ${PDP.crit||"not proven yet"}${PDP.bad.size?` | not supported: ${[...PDP.bad].join(" ; ")}`:""}`)}catch(_){}
+  try{if(V.fields.missing.length)L.push(`MISSING Design_Tracking fields: ${V.fields.missing.join(", ")}`)}catch(_){}
+  L.push("");L.push(`ERRORS (newest first, ${ER.list.length}):`);
+  ER.list.slice().reverse().forEach((e,i)=>L.push(`${i+1}. ${e.t} | ${e.view||"-"}${e.screen?" > "+e.screen:""} | project ${e.project||"-"}${e.n?` | x${e.n}`:""}\n   ${e.msg}${e.detail?`\n   detail: ${e.detail}`:""}`));
+  L.push("");L.push(`SLOW / FALLBACK INFO (this session, ${ER.api.length}):`);
+  ER.api.slice(-25).reverse().forEach(e=>L.push(`- ${e.t} | ${e.msg}${e.detail?` | ${e.detail}`:""}`));
+  try{
+    const h=[...(S.runtime?.health?.values?.()||[])].filter(x=>x.status!=="ok").slice(-15);
+    if(h.length){L.push("");L.push("READ HEALTH (not ok):");h.forEach(x=>L.push(`- ${x.label||x.key}: ${x.status}${x.ms?` ${x.ms} ms`:""}${x.error?` - ${x.error}`:""}`))}
+  }catch(_){}
+  return L.join("\n");
+}
+function copyText(t){
+  return new Promise(res=>{
+    try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>res(true),()=>res(fallback()));return}}catch(_){}
+    res(fallback());
+    function fallback(){try{const a=el("megaErrText");if(!a)return false;a.focus();a.select();return document.execCommand("copy")}catch(_){return false}}
+  });
+}
+function openErrors(){
+  try{
+    ER.seen=ER.list.length;try{localStorage.setItem("MEGA_ERRLOG_SEEN",String(ER.seen))}catch(_){}
+    errButton();
+    const rows=ER.list.slice().reverse().slice(0,30).map(e=>`<tr><td>${esc(timeText(e.t))}</td><td>${esc(e.view||"-")}${e.screen?`<br><span class="tiny muted">${esc(e.screen)}</span>`:""}</td><td>${esc(e.project||"-")}</td><td><b>${esc(e.msg)}</b>${e.n?` <span class="pill">x${e.n}</span>`:""}${e.detail?`<div class="tiny muted">${esc(e.detail)}</div>`:""}</td></tr>`).join("");
+    openModal("Error report",`${ER.list.length} error${ER.list.length===1?"":"s"} saved on this computer • ${ER.api.length} slow/fallback notes this session`,
+      `<div class="v21-err">${ER.list.length?`<table><thead><tr><th>Time</th><th>Screen</th><th>Project</th><th>What happened</th></tr></thead><tbody>${rows}</tbody></table>`:`<div class="empty compact"><strong>No errors recorded</strong>Everything is working.</div>`}
+       <label class="tiny muted" style="display:block;margin:10px 0 4px">Full report (this is what "Copy" copies):</label><textarea id="megaErrText" readonly>${esc(errReport())}</textarea></div>`,
+      `<button class="btn" data-v21-err-clear>Clear list</button><button class="btn" data-modal="close">Close</button><button class="btn primary" data-v21-err-copy>Copy error report</button>`);
+    try{document.querySelector("#modalBackdrop .modal")?.classList.add("v218-wide")}catch(_){}
+  }catch(e){log("error report",e)}
+}
+try{
+  document.addEventListener("click",e=>{
+    const t=e.target;if(!t||!t.closest)return;
+    if(t.closest("#megaErrBtn,[data-v21-errors]")){e.preventDefault();e.stopImmediatePropagation();return openErrors()}
+    if(t.closest("[data-v21-err-copy]")){e.preventDefault();e.stopImmediatePropagation();copyText(errReport()).then(ok=>say(ok?"Error report copied. Paste it in the chat to the developer.":"Copy was blocked by the browser. Click in the box, press Ctrl+A then Ctrl+C.",ok?"good":"warn"));return}
+    if(t.closest("[data-v21-err-clear]")){e.preventDefault();e.stopImmediatePropagation();ER.list.length=0;ER.api.length=0;ER.seen=0;try{localStorage.setItem("MEGA_ERRLOG","[]");localStorage.setItem("MEGA_ERRLOG_SEEN","0")}catch(_){}errButton();try{closeModal()}catch(_){}return say("Error list cleared.","good")}
+  },true);
+}catch(e){log("error events",e)}
+// toast messages of type "bad"/"error" are errors too
+patch("toast",()=>toast,f=>{toast=f},base=>function(msg,type){try{if(/^(bad|error|danger)$/.test(String(type||""))&&ER.add)ER.add("error",msg,"message shown")}catch(_){}return base.apply(this,arguments)});
+// the runtime error popup is recorded with its title
+patch("showRuntimeError",()=>showRuntimeError,f=>{showRuntimeError=f},base=>function(e,title){try{ER.add&&ER.add("error",`${title||"Operation could not be completed"}: ${errorText(e)}`,e&&e.stack?String(e.stack).split("\n").slice(0,3).join(" | "):"")}catch(_){}return base.apply(this,arguments)});
+
 /* ---------- 12. Start-up ---------- */
 function afterLive(){
   // runs once when the live connection is ready
   try{V.jobs=jobList();V.mail=mailList()}catch(_){}
   drawBar();
   setTimeout(()=>{checkFields()},1500);
-  setTimeout(()=>{pmLoad(true)},300);
-  setTimeout(prefetchPds,4000);                                 // PD Sheet in the background (V21.10)                          // running projects list (V21.10)
+  setTimeout(()=>{pmLoad(true)},300);                          // running projects list (All_Projects)
   if(V.mail.length)setTimeout(()=>flushMail(false),5000);    // retry waiting emails quietly
 }
 try{
@@ -8082,17 +8445,22 @@ try{
   .v21-item button{border:1px solid currentColor;background:#fff;color:inherit;border-radius:8px;padding:4px 10px;font:inherit;font-size:11px;font-weight:800;cursor:pointer}.v21-item button.ghost{border-color:transparent;background:transparent;text-decoration:underline}
   .v21-dot{width:9px;height:9px;border-radius:50%;border:2px solid #9bb8e8;border-top-color:#1d5fd0}.v21-dot.spin{animation:v21spin .8s linear infinite}@keyframes v21spin{to{transform:rotate(360deg)}}
   .v21-health{margin-top:14px;border:1px solid #e4e7ec;border-radius:12px;padding:12px}.v21-health h3{margin:0 0 8px;font-size:13px}.v21-health table{width:100%;border-collapse:collapse;font-size:11px}.v21-health td{padding:6px 8px;border-top:1px solid #f2f4f7;vertical-align:top}.v21-health td:first-child{color:#667085;width:42%}
-  .v217-pm-sub{font-size:10px;color:#667085;margin-top:2px}`;
+  .v217-pm-sub{font-size:10px;color:#667085;margin-top:2px}
+  .v21-errbtn{border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.12);color:#fff;border-radius:999px;padding:4px 10px;font:inherit;font-size:12px;font-weight:900;cursor:pointer;margin-right:6px}
+  .v21-errbtn.on{background:#d92d20;border-color:#fff;animation:v21pulse 1.4s ease-in-out 3}.v21-errbtn.hidden{display:none}
+  @keyframes v21pulse{50%{box-shadow:0 0 0 6px rgba(217,45,32,.35)}}
+  .v21-err table{width:100%;border-collapse:collapse;font-size:11px}.v21-err th{text-align:left;color:#667085;padding:6px;border-bottom:1px solid #eaecf0}.v21-err td{padding:6px;border-top:1px solid #f2f4f7;vertical-align:top}
+  .v21-err textarea{width:100%;height:170px;font:11px/1.4 monospace;border:1px solid #d0d5dd;border-radius:10px;padding:8px;resize:vertical}`;
   const st=document.createElement("style");st.id="v21Styles";st.textContent=css;document.head.appendChild(st);
 }catch(e){log("styles",e)}
 // public API used by the V20.19 layer for bulk creation
-try{window.MEGA_V21={runBatch,keyOf,build:BUILD}}catch(_){}
+try{window.MEGA_V21={runBatch,keyOf,build:BUILD,pdsForProject}}catch(_){}
 try{V.jobs=jobList();V.mail=mailList()}catch(_){}
 earlyPaint();
 // if the live start-up already finished before this layer loaded
 try{if(!V.live&&Array.isArray(S.employees)&&S.employees.length&&S.user){V.live=true;V.liveAt=Date.now();afterLive();saveMasters()}}catch(_){}
-try{const bd=el("buildBadge");if(bd)bd.textContent="V21.10";document.title="MEGA Engineering | Project Design Control V21.10"}catch(_){}
-drawBar();
+try{const bd=el("buildBadge");if(bd)bd.textContent="V21.11";document.title="MEGA Engineering | Project Design Control V21.11"}catch(_){}
+drawBar();errButton();setTimeout(errButton,1500);
 console.info(`[${BUILD}] loaded`);
 })()}catch(e){try{console.error("[V21] could not load",e)}catch(_){}}
 </script>
