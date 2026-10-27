@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.11
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.13
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V21.11".
+   3. Paste this whole file and save. The badge at the top shows "V21.13".
 
  >>> ALL SETTINGS ARE IN ONE PLACE: the "MEGA SETTINGS" block, the first
      SCRIPT below (report names, projects list, waiting times, speed,
@@ -41,25 +41,31 @@
                       System Health), empty-project read fix.
                       V21.3: only Active designs (Design Master Status),
                       compact top bars and rows so more designs fit.
-                      V21.11: Projects list comes from the All_Projects report
+                      V21.13: Projects list comes from the All_Projects report
                       (proper code, name, client, status); Completed projects
                       are hidden. If that report cannot be read, the old list
                       is shown. New simple look for the Assign screen (style
                       only - same logic).
-                      V21.11: skipped tags - Department Code + Equipment
+                      V21.13: skipped tags - Department Code + Equipment
                       Category pairs listed in SKIP_TAGS (megaV218 layer)
                       are hidden on the Assign screen.
-                      V21.11: reliable connect - Zoho handshake first, 3 login
+                      V21.13: reliable connect - Zoho handshake first, 3 login
                       tries, saved login fallback, automatic start-up retry
                       with a small "Retry now" bar (no error popup).
-                      V21.11: skip list used ONLY for the BOM design (PDS and
+                      V21.13: skip list used ONLY for the BOM design (PDS and
                       all other designs show every tag); PD Sheet is read in
                       the background and the PDS screen waits for it.
-                      V21.11: one MEGA SETTINGS block; Equipment and PD Sheet
+                      V21.13: one MEGA SETTINGS block; Equipment and PD Sheet
                       read only for the open project (full read = backup)
                       with a saved copy per project (instant open, live
                       update in the background); red ⚠ error button with
                       "Copy error report".
+                      V21.13: error report shows only real errors ("no
+                      records", "try another way" and optional field-list
+                      answers are info); Design_Tracking read uses the text
+                      Project_Code only, once Zoho confirms it.
+                      V21.13: Error report moved inside ⚙ Settings (a small
+                      red count on ⚙ shows new errors).
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -79,7 +85,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V21.11</title>
+<title>MEGA Engineering | Project Design Control V21.13</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -305,7 +311,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.11</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.13</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -423,8 +429,8 @@ var MEGA_SETTINGS={
 /* ======================================================================
    ERROR RECORDER (starts first, so even start-up errors are caught)
    Every error is kept in a small list on this computer (localStorage
-   key MEGA_ERRLOG). The red "⚠" button in the top bar shows the count;
-   click it to see the list and "Copy error report".
+   key MEGA_ERRLOG). Open ⚙ Settings → Error report to see the list and
+   "Copy error report" (a small red count on ⚙ shows new errors).
    Nothing here talks to Zoho and nothing here can stop the widget.
    ====================================================================== */
 (function(){
@@ -1029,7 +1035,19 @@ function reliabilityNow(){return (typeof performance!=="undefined"&&performance.
 function timeoutError(label,ms,write=false){const e=new Error(write?`${label} did not confirm within ${Math.round(ms/1000)} seconds. The server may still have completed it. Refresh before trying again.`:`${label} timed out after ${Math.round(ms/1000)} seconds.`);e.code="MEGA_TIMEOUT";e.isWriteTimeout=write;return e}
 async function withTimeout(factory,ms,label,{write=false}={}){let timer;try{return await Promise.race([Promise.resolve().then(factory),new Promise((_,rej)=>{timer=setTimeout(()=>rej(timeoutError(label,ms,write)),ms)})])}finally{if(timer)clearTimeout(timer)}}
 function isRetryableReadError(e){if(isNoDataError(e))return false;const t=errorText(e).toLowerCase();return e?.code==="MEGA_TIMEOUT"||/timeout|timed out|network|temporar|429|rate limit|502|503|504|service unavailable|failed to fetch|connection/i.test(t)}
-function setHealth(key,status,detail={}){try{if(window.MEGA_ERR&&(status==="error"||status==="slow"))MEGA_ERR.add(status==="error"?"error":"api",`${detail.label||key}: ${status==="error"?(detail.error||"failed"):"slow"}${detail.ms?` (${detail.ms} ms)`:""}`,detail.method||key)}catch(_){}if(!S.runtime?.health)return;const prev=S.runtime.health.get(key)||{};S.runtime.health.set(key,{...prev,...detail,status,key,at:new Date().toISOString()})}
+/* V21.12: which read problems are REAL errors (red ⚠) and which are normal Zoho answers.
+   - 9220 / 9280 "No records found"  -> normal (empty project), not recorded
+   - 3330 / 2945 "Invalid criteria"  -> normal while the widget tries another way of reading; info only
+   - "Invalid Configuration" on field-list (meta) reads -> Zoho does not allow this optional check for this login; info only */
+function megaHealthKind(key,status,detail){
+  const m=String(detail&&detail.error||"");
+  if(status==="slow")return "api";
+  if(/\b(9220|9280)\b|No records (?:exist|found)/i.test(m))return "";
+  if(/\b(3330|2945)\b|Invalid criteria/i.test(m))return "api";
+  if(String(key).startsWith("meta:")||/Invalid Configuration/i.test(m))return "api";
+  return "error";
+}
+function setHealth(key,status,detail={}){try{if(window.MEGA_ERR&&(status==="error"||status==="slow")){const k=megaHealthKind(key,status,detail);if(k)MEGA_ERR.add(k,`${detail.label||key}: ${status==="error"?(detail.error||"failed"):"slow"}${detail.ms?` (${detail.ms} ms)`:""}`,detail.method||key)}}catch(_){}if(!S.runtime?.health)return;const prev=S.runtime.health.get(key)||{};S.runtime.health.set(key,{...prev,...detail,status,key,at:new Date().toISOString()})}
 function markReportSuccess(report,rows,ms){S.runtime.lastGoodReports.set(report,rows);setHealth(`report:${report}`,"ok",{label:report,rows:rows.length,ms:Math.round(ms),error:""})}
 function markReportFailure(report,e,ms=0){setHealth(`report:${report}`,"error",{label:report,ms:Math.round(ms||0),error:errorText(e)})}
 async function creatorReadCall(factory,label,{timeout=CONFIG.READ_TIMEOUT_MS,retries=CONFIG.READ_RETRIES,healthKey=label}={}){let last;for(let attempt=0;attempt<=retries;attempt++){const started=reliabilityNow();try{const value=await withTimeout(factory,timeout,label);const ms=reliabilityNow()-started;if(ms>=CONFIG.SLOW_REQUEST_MS){S.runtime.slowRequests++;setHealth(healthKey,"slow",{label,ms:Math.round(ms),error:""})}else setHealth(healthKey,"ok",{label,ms:Math.round(ms),error:""});return value}catch(e){last=e;setHealth(healthKey,"error",{label,ms:Math.round(reliabilityNow()-started),error:errorText(e)});if(attempt>=retries||!isRetryableReadError(e))throw e;await sleep(CONFIG.RETRY_BASE_MS*Math.pow(2,attempt))}}throw last}
@@ -7584,7 +7602,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V21(){
 "use strict";
-const BUILD="V21.11";
+const BUILD="V21.13";
 
 /* ---------- 0. Small safe helpers ---------- */
 const log=(...a)=>{try{console.warn("[V21]",...a)}catch(_){}};
@@ -7811,11 +7829,15 @@ patch("v208FetchTrackingForProject",()=>v208FetchTrackingForProject,f=>{v208Fetc
   code=String(code||"").trim();if(!code)return[];
   if(S.demo)return base.apply(this,arguments);
   let report;try{report=await v208DiscoverTrackingReportLink()}catch(e){return base.apply(this,arguments)}
-  const e1=creatorCriteriaEscape(code),tries=[`(${AF.projectCode} == "${e1}")`,`(${AF.projectCode}.Project_Code == "${e1}")`];
+  // V21.13: Design_Tracking.Project_Code is a TEXT field in your Zoho (Zoho answered 3330
+  // "is not of type Lookup"). Once that is known, only the text way is used, and an empty
+  // answer simply means "this project has no design work yet" - no extra read, no error.
+  const textOnly=LS.get("trkText",false)===true;
+  const e1=creatorCriteriaEscape(code),tries=[`(${AF.projectCode} == "${e1}")`].concat(textOnly?[]:[`(${AF.projectCode}.Project_Code == "${e1}")`]);
   let emptyOk=false,lastErr=null;
   for(const c of tries){
     try{const rows=await fetchRecords(report,c,CONFIG.MAX_REPORT_PAGES);if(rows&&rows.length)return rows;emptyOk=true}
-    catch(e){lastErr=e}
+    catch(e){lastErr=e;if(/\b3330\b|not of type Lookup/i.test(errorText(e)))LS.set("trkText",true)}
   }
   if(emptyOk)return [];                         // the project simply has no design work yet
   try{return await base.apply(this,arguments)}catch(e){throw lastErr||e}
@@ -8020,6 +8042,9 @@ async function repairParents(code){
 const CORE=["projectCode","drawingDocument","drawingMasterId","assignedTo","assignedEmployeeName","assignedFrom","primaryAssignment","assignmentLevel","status","progress","startDate","targetDate","logicalTaskKey","designTitle","designType","criteria","responsibility","priority","revision","parentDesignId"];
 async function checkFields(){
   const F=V.fields;if(F.checked||S.demo)return;F.checked=true;
+  // V21.13: Zoho answers "Invalid Configuration" when this login may not read the field list.
+  // Then the check is skipped for 24 hours (it is only an extra safety check).
+  const off=LS.get("metaOff",0);if(off&&Date.now()-Number(off)<86400000){F.error="Skipped - Zoho does not allow the field list for this login (optional check)";return}
   try{
     if(!ZOHO?.CREATOR?.META?.getFields){F.error="Zoho field list is not available in this SDK.";return}
     const raw=await creatorReadCall(()=>ZOHO.CREATOR.META.getFields(withApp({form_link_name:CONFIG.FORMS.tracking})),"Check Design_Tracking fields",{retries:1,healthKey:"meta:v21-fields"});
@@ -8035,7 +8060,11 @@ async function checkFields(){
     F.missing=missCore;F.optional=missOpt;
     if(missCore.length)log("Design_Tracking fields missing:",missCore);
     drawBar();
-  }catch(e){F.error=errorText(e);log("field check",e)}
+  }catch(e){
+    F.error=errorText(e);
+    if(/Invalid Configuration/i.test(F.error)){LS.set("metaOff",Date.now());F.error="Skipped - Zoho does not allow the field list for this login (optional check)";return}
+    log("field check",e);
+  }
 }
 
 /* ---------- 10. Top status bar (cache / jobs / emails / setup) ---------- */
@@ -8076,7 +8105,7 @@ try{
 // Redraw the bar after every screen change.
 patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){const r=base.apply(this,arguments);drawBar();return r});
 
-/* ---------- 10b. Projects list from the "All_Projects" report (V21.11) ----------
+/* ---------- 10b. Projects list from the "All_Projects" report (V21.13) ----------
    WHY: the old list was built from All_Associated_Projects + every code found in
    Design_Tracking. That showed junk codes (e.g. "RJHI02", "Others"), missing
    names ("—") and finished projects.
@@ -8162,7 +8191,7 @@ if(baseRenderProjects)renderProjects=function(){
   }catch(e){log("projects list",e);return baseRenderProjects.apply(this,arguments)}
 };
 
-/* ---------- 10c. Fast project data: Equipment + PD Sheet (V21.11) ----------
+/* ---------- 10c. Fast project data: Equipment + PD Sheet (V21.13) ----------
    WHY: the PD Sheet was read for ALL projects, and Equipment/PD Sheet were read
    again every time the widget opened. With growing data this is slow and can
    time out.
@@ -8318,7 +8347,7 @@ patch("openProjectWorkspace",()=>openProjectWorkspace,f=>{openProjectWorkspace=f
   try{if(!S.demo&&code)setTimeout(()=>pdsForProject(String(code)).catch(e=>log("PDS background",e)),300)}catch(_){}
   return r;
 });
-function prefetchPds(){/* V21.11: no full PD Sheet read at start-up any more - only the opened project is read */}
+function prefetchPds(){/* V21.13: no full PD Sheet read at start-up any more - only the opened project is read */}
 // Refresh button also re-reads the projects list.
 patch("refreshData",()=>refreshData,f=>{refreshData=f},base=>async function(){try{setTimeout(()=>pmLoad(true),0)}catch(_){}
   // Refresh: read the open project's PD Sheet again (or the full list if it was loaded)
@@ -8339,7 +8368,7 @@ patch("systemHealthHtml",()=>systemHealthHtml,f=>{systemHealthHtml=f},base=>func
       ["Parent progress to re-check",String(rollupPending().length)],
       ["Design_Tracking field check",F.error?`Not checked: ${F.error}`:!F.checked?"Pending":F.missing.length?`MISSING: ${F.missing.join(", ")}`:"All required fields found"],
       ["Optional fields not found",F.optional.length?F.optional.join(", "):"None"],
-      ["Errors saved on this computer",`${ER.list.length} (click the ⚠ button in the top bar for the report)`],
+      ["Errors saved on this computer",`${ER.list.length} (⚙ Settings → Error report)`],
       ["PD Sheet loading",PDP.full?"All projects loaded":`Project-only (${PDP.crit||"way not proven yet"})${PDP.bad.size?" • backup used for: "+[...PDP.bad].join(" ; "):""}`],
       ["Saved Equipment / PD Sheet copies",copyIndex().map(x=>x.k).join(", ")||"None"],
       ["Projects list (All_Projects)",PM.ok?`${PM.rows.size} running • ${PM.hidden} completed hidden • read ${timeText(PM.at)}`:`Old list used (${PM.error||"not read yet"})`]
@@ -8349,7 +8378,7 @@ patch("systemHealthHtml",()=>systemHealthHtml,f=>{systemHealthHtml=f},base=>func
   return html;
 });
 
-/* ---------- 12a. Error report (V21.11) ----------
+/* ---------- 12a. Error report (V21.13) ----------
    Every error is recorded at once (see ERROR RECORDER at the top of the file):
    - widget errors, failed or timed-out Zoho reads/saves, start-up problems;
    - slow reads and fall-backs are listed too (as "info"), but do not turn the button red.
@@ -8358,17 +8387,15 @@ patch("systemHealthHtml",()=>systemHealthHtml,f=>{systemHealthHtml=f},base=>func
    developer - it has the screen, project, person, time and technical detail. */
 const ER=window.MEGA_ERR||{list:[],api:[],seen:0,listeners:[],add(){}};
 function errNew(){return Math.max(0,ER.list.length-Number(ER.seen||0))}
+// V21.13: no separate button in the top bar. The error report is inside ⚙ Settings.
+// The ⚙ button only gets a small red dot with the count when there are new errors.
 function errButton(){
   try{
-    let b=el("megaErrBtn");
-    if(!b){
-      const pill=el("sessionPill");if(!pill||!pill.parentNode)return;
-      b=document.createElement("button");b.type="button";b.id="megaErrBtn";b.className="v21-errbtn";b.title="Errors on this computer - click to see and copy the report";
-      pill.parentNode.insertBefore(b,pill);
-    }
+    const g=el("setupBtn");if(!g)return;
     const n=errNew();
-    b.innerHTML=n?`⚠ <b>${n}</b>`:"⚠";
-    b.classList.toggle("on",n>0);b.classList.toggle("hidden",!n&&!ER.list.length);
+    g.classList.add("v21-gear");g.classList.toggle("has-err",n>0);
+    if(n)g.setAttribute("data-err",n>9?"9+":String(n));else g.removeAttribute("data-err");
+    g.title=n?`Settings - ${n} new error${n===1?"":"s"} (open Error report)`:"Settings";
   }catch(_){}
 }
 let errToastAt=0;
@@ -8376,7 +8403,7 @@ ER.listeners.push(e=>{
   if(e.kind==="api")return;
   errButton();
   // tell the user once in a while, never spam
-  if(Date.now()-errToastAt>30000){errToastAt=Date.now();say("Something went wrong. Click the red ⚠ button at the top to copy the error report.","warn")}
+  if(Date.now()-errToastAt>30000){errToastAt=Date.now();say("Something went wrong. Open ⚙ Settings → Error report to copy the details.","warn")}
 });
 function errReport(){
   const L=[];
@@ -8418,11 +8445,27 @@ function openErrors(){
 try{
   document.addEventListener("click",e=>{
     const t=e.target;if(!t||!t.closest)return;
-    if(t.closest("#megaErrBtn,[data-v21-errors]")){e.preventDefault();e.stopImmediatePropagation();return openErrors()}
+    if(t.closest("[data-v21-health-open]")){e.preventDefault();e.stopImmediatePropagation();try{openSystemHealthModal()}catch(err){log(err)}return}
+    if(t.closest("[data-v21-setup-old]")){e.preventDefault();e.stopImmediatePropagation();try{setupBase&&setupBase()}catch(err){log(err)}return}
+    if(t.closest("[data-v21-errors]")){e.preventDefault();e.stopImmediatePropagation();return openErrors()}
     if(t.closest("[data-v21-err-copy]")){e.preventDefault();e.stopImmediatePropagation();copyText(errReport()).then(ok=>say(ok?"Error report copied. Paste it in the chat to the developer.":"Copy was blocked by the browser. Click in the box, press Ctrl+A then Ctrl+C.",ok?"good":"warn"));return}
     if(t.closest("[data-v21-err-clear]")){e.preventDefault();e.stopImmediatePropagation();ER.list.length=0;ER.api.length=0;ER.seen=0;try{localStorage.setItem("MEGA_ERRLOG","[]");localStorage.setItem("MEGA_ERRLOG_SEEN","0")}catch(_){}errButton();try{closeModal()}catch(_){}return say("Error list cleared.","good")}
   },true);
 }catch(e){log("error events",e)}
+// ⚙ Settings: small menu with Error report, System Health and the old setup page.
+let setupBase=null;
+patch("setupModal",()=>setupModal,f=>{setupModal=f;try{const b=el("setupBtn");if(b)b.onclick=f}catch(_){}},base=>{setupBase=base;return function(){
+  try{
+    const n=errNew(),all=ER.list.length;
+    openModal("Settings","Tools for checking the widget.",
+      `<div class="v21-set">
+        <button type="button" class="v21-set-row" data-v21-errors><span class="ic ${n?"bad":""}">⚠</span><span><b>Error report</b><small>${all?`${all} saved${n?` • <em>${n} new</em>`:""}`:"No errors"} — see the list and copy the report for the developer</small></span><span class="go">›</span></button>
+        <button type="button" class="v21-set-row" data-v21-health-open><span class="ic">●</span><span><b>System Health</b><small>Connection, report reads, saved copies, speed &amp; safety</small></span><span class="go">›</span></button>
+        <button type="button" class="v21-set-row" data-v21-setup-old><span class="ic">⚙</span><span><b>Setup / field mapping</b><small>Design_Tracking fields used by the widget</small></span><span class="go">›</span></button>
+        <div class="tiny muted" style="margin-top:8px">Values like report names, roles and skipped tags are changed in the MEGA SETTINGS block at the top of the widget code.</div>
+      </div>`,`<button class="btn" data-modal="close">Close</button>`);
+  }catch(e){log("settings",e);return base.apply(this,arguments)}
+}});
 // toast messages of type "bad"/"error" are errors too
 patch("toast",()=>toast,f=>{toast=f},base=>function(msg,type){try{if(/^(bad|error|danger)$/.test(String(type||""))&&ER.add)ER.add("error",msg,"message shown")}catch(_){}return base.apply(this,arguments)});
 // the runtime error popup is recorded with its title
@@ -8446,9 +8489,14 @@ try{
   .v21-dot{width:9px;height:9px;border-radius:50%;border:2px solid #9bb8e8;border-top-color:#1d5fd0}.v21-dot.spin{animation:v21spin .8s linear infinite}@keyframes v21spin{to{transform:rotate(360deg)}}
   .v21-health{margin-top:14px;border:1px solid #e4e7ec;border-radius:12px;padding:12px}.v21-health h3{margin:0 0 8px;font-size:13px}.v21-health table{width:100%;border-collapse:collapse;font-size:11px}.v21-health td{padding:6px 8px;border-top:1px solid #f2f4f7;vertical-align:top}.v21-health td:first-child{color:#667085;width:42%}
   .v217-pm-sub{font-size:10px;color:#667085;margin-top:2px}
-  .v21-errbtn{border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.12);color:#fff;border-radius:999px;padding:4px 10px;font:inherit;font-size:12px;font-weight:900;cursor:pointer;margin-right:6px}
-  .v21-errbtn.on{background:#d92d20;border-color:#fff;animation:v21pulse 1.4s ease-in-out 3}.v21-errbtn.hidden{display:none}
-  @keyframes v21pulse{50%{box-shadow:0 0 0 6px rgba(217,45,32,.35)}}
+  .v21-gear{position:relative}
+  .v21-gear.has-err::after{content:attr(data-err);position:absolute;top:-5px;right:-5px;min-width:15px;height:15px;padding:0 3px;border-radius:999px;background:#d92d20;color:#fff;font-size:9px;font-weight:900;line-height:15px;text-align:center;border:1.5px solid #fff}
+  .v21-set{display:grid;gap:8px}
+  .v21-set-row{display:grid;grid-template-columns:34px 1fr 14px;gap:10px;align-items:center;width:100%;text-align:left;border:1px solid #e4e7ec;border-radius:12px;background:#fff;padding:10px 12px;cursor:pointer;font:inherit}
+  .v21-set-row:hover{background:#fafbfc;border-color:#d0d5dd}
+  .v21-set-row .ic{width:34px;height:34px;border-radius:10px;background:#f2f4f7;display:grid;place-items:center;font-size:15px;color:#475467}.v21-set-row .ic.bad{background:#fee4e2;color:#d92d20}
+  .v21-set-row b{display:block;font-size:13px;color:#101828}.v21-set-row small{display:block;font-size:11px;color:#667085;margin-top:2px}.v21-set-row em{color:#d92d20;font-style:normal;font-weight:800}
+  .v21-set-row .go{color:#98a2b3;font-size:18px}
   .v21-err table{width:100%;border-collapse:collapse;font-size:11px}.v21-err th{text-align:left;color:#667085;padding:6px;border-bottom:1px solid #eaecf0}.v21-err td{padding:6px;border-top:1px solid #f2f4f7;vertical-align:top}
   .v21-err textarea{width:100%;height:170px;font:11px/1.4 monospace;border:1px solid #d0d5dd;border-radius:10px;padding:8px;resize:vertical}`;
   const st=document.createElement("style");st.id="v21Styles";st.textContent=css;document.head.appendChild(st);
@@ -8459,7 +8507,7 @@ try{V.jobs=jobList();V.mail=mailList()}catch(_){}
 earlyPaint();
 // if the live start-up already finished before this layer loaded
 try{if(!V.live&&Array.isArray(S.employees)&&S.employees.length&&S.user){V.live=true;V.liveAt=Date.now();afterLive();saveMasters()}}catch(_){}
-try{const bd=el("buildBadge");if(bd)bd.textContent="V21.11";document.title="MEGA Engineering | Project Design Control V21.11"}catch(_){}
+try{const bd=el("buildBadge");if(bd)bd.textContent="V21.13";document.title="MEGA Engineering | Project Design Control V21.13"}catch(_){}
 drawBar();errButton();setTimeout(errButton,1500);
 console.info(`[${BUILD}] loaded`);
 })()}catch(e){try{console.error("[V21] could not load",e)}catch(_){}}
