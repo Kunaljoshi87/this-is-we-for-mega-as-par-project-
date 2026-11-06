@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.13
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.14
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V21.13".
+   3. Paste this whole file and save. The badge at the top shows "V21.14".
 
  >>> ALL SETTINGS ARE IN ONE PLACE: the "MEGA SETTINGS" block, the first
      SCRIPT below (report names, projects list, waiting times, speed,
@@ -41,31 +41,35 @@
                       System Health), empty-project read fix.
                       V21.3: only Active designs (Design Master Status),
                       compact top bars and rows so more designs fit.
-                      V21.13: Projects list comes from the All_Projects report
+                      V21.14: Projects list comes from the All_Projects report
                       (proper code, name, client, status); Completed projects
                       are hidden. If that report cannot be read, the old list
                       is shown. New simple look for the Assign screen (style
                       only - same logic).
-                      V21.13: skipped tags - Department Code + Equipment
+                      V21.14: skipped tags - Department Code + Equipment
                       Category pairs listed in SKIP_TAGS (megaV218 layer)
                       are hidden on the Assign screen.
-                      V21.13: reliable connect - Zoho handshake first, 3 login
+                      V21.14: reliable connect - Zoho handshake first, 3 login
                       tries, saved login fallback, automatic start-up retry
                       with a small "Retry now" bar (no error popup).
-                      V21.13: skip list used ONLY for the BOM design (PDS and
+                      V21.14: skip list used ONLY for the BOM design (PDS and
                       all other designs show every tag); PD Sheet is read in
                       the background and the PDS screen waits for it.
-                      V21.13: one MEGA SETTINGS block; Equipment and PD Sheet
+                      V21.14: one MEGA SETTINGS block; Equipment and PD Sheet
                       read only for the open project (full read = backup)
                       with a saved copy per project (instant open, live
                       update in the background); red ⚠ error button with
                       "Copy error report".
-                      V21.13: error report shows only real errors ("no
+                      V21.14: error report shows only real errors ("no
                       records", "try another way" and optional field-list
                       answers are info); Design_Tracking read uses the text
                       Project_Code only, once Zoho confirms it.
-                      V21.13: Error report moved inside ⚙ Settings (a small
+                      V21.14: Error report moved inside ⚙ Settings (a small
                       red count on ⚙ shows new errors).
+                      V21.14: "Assigned by me" page (live status of tasks you
+                      gave, NEW updates), email to the assigner when a status
+                      changes, clearer new-task email, Task Files tab on every
+                      task (upload/download any file type).
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -85,7 +89,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V21.13</title>
+<title>MEGA Engineering | Project Design Control V21.14</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -311,7 +315,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.13</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.14</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -419,7 +423,13 @@ var MEGA_SETTINGS={
       "Shell & Tube Heat Exchanger","ETP System","Filter Press","Chromatography","Oil","Sticker"]
   },
 
-  /* ---------- 7. Error report ---------- */
+  /* ---------- 7. Emails ---------- */
+  EMAILS:{
+    STATUS_TO_ASSIGNER:true,     // email the person who assigned a task when its status changes
+    WIDGET_LINK:"https://creatorapp.zoho.in/megaengg/mega-engineering-sales/#Page:Design_Control"  // "Open" link in emails
+  },
+
+  /* ---------- 8. Error report ---------- */
   ERRORS:{
     KEEP:60,                     // how many recent errors are kept on this computer
     SLOW_READ_MS:8000            // a read slower than this is written in the report as "slow"
@@ -7602,7 +7612,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V21(){
 "use strict";
-const BUILD="V21.13";
+const BUILD="V21.14";
 
 /* ---------- 0. Small safe helpers ---------- */
 const log=(...a)=>{try{console.warn("[V21]",...a)}catch(_){}};
@@ -7829,7 +7839,7 @@ patch("v208FetchTrackingForProject",()=>v208FetchTrackingForProject,f=>{v208Fetc
   code=String(code||"").trim();if(!code)return[];
   if(S.demo)return base.apply(this,arguments);
   let report;try{report=await v208DiscoverTrackingReportLink()}catch(e){return base.apply(this,arguments)}
-  // V21.13: Design_Tracking.Project_Code is a TEXT field in your Zoho (Zoho answered 3330
+  // V21.14: Design_Tracking.Project_Code is a TEXT field in your Zoho (Zoho answered 3330
   // "is not of type Lookup"). Once that is known, only the text way is used, and an empty
   // answer simply means "this project has no design work yet" - no extra read, no error.
   const textOnly=LS.get("trkText",false)===true;
@@ -7957,6 +7967,8 @@ async function sendMailJob(job){
   let last=null;
   for(let i=0;i<CFG.EMAIL_TRIES;i++){
     try{
+      // V21.14: ready-made emails (status update to the person who assigned)
+      if(job.kind==="html"){await invokeNotificationCustomApi({email:job.email,name:job.to},job.subject,job.html,"status-email");return true}
       if(typeof v208NotifyAssignmentsBase!=="function")throw new Error("Email sender is not available in this widget build.");
       // the sender returns {sent, failed}; one job = one person, so failed>0 means this person's email failed
       const r=await v208NotifyAssignmentsBase(job.records.map(x=>({...x})));
@@ -8042,7 +8054,7 @@ async function repairParents(code){
 const CORE=["projectCode","drawingDocument","drawingMasterId","assignedTo","assignedEmployeeName","assignedFrom","primaryAssignment","assignmentLevel","status","progress","startDate","targetDate","logicalTaskKey","designTitle","designType","criteria","responsibility","priority","revision","parentDesignId"];
 async function checkFields(){
   const F=V.fields;if(F.checked||S.demo)return;F.checked=true;
-  // V21.13: Zoho answers "Invalid Configuration" when this login may not read the field list.
+  // V21.14: Zoho answers "Invalid Configuration" when this login may not read the field list.
   // Then the check is skipped for 24 hours (it is only an extra safety check).
   const off=LS.get("metaOff",0);if(off&&Date.now()-Number(off)<86400000){F.error="Skipped - Zoho does not allow the field list for this login (optional check)";return}
   try{
@@ -8105,7 +8117,7 @@ try{
 // Redraw the bar after every screen change.
 patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){const r=base.apply(this,arguments);drawBar();return r});
 
-/* ---------- 10b. Projects list from the "All_Projects" report (V21.13) ----------
+/* ---------- 10b. Projects list from the "All_Projects" report (V21.14) ----------
    WHY: the old list was built from All_Associated_Projects + every code found in
    Design_Tracking. That showed junk codes (e.g. "RJHI02", "Others"), missing
    names ("—") and finished projects.
@@ -8191,7 +8203,7 @@ if(baseRenderProjects)renderProjects=function(){
   }catch(e){log("projects list",e);return baseRenderProjects.apply(this,arguments)}
 };
 
-/* ---------- 10c. Fast project data: Equipment + PD Sheet (V21.13) ----------
+/* ---------- 10c. Fast project data: Equipment + PD Sheet (V21.14) ----------
    WHY: the PD Sheet was read for ALL projects, and Equipment/PD Sheet were read
    again every time the widget opened. With growing data this is slow and can
    time out.
@@ -8347,7 +8359,7 @@ patch("openProjectWorkspace",()=>openProjectWorkspace,f=>{openProjectWorkspace=f
   try{if(!S.demo&&code)setTimeout(()=>pdsForProject(String(code)).catch(e=>log("PDS background",e)),300)}catch(_){}
   return r;
 });
-function prefetchPds(){/* V21.13: no full PD Sheet read at start-up any more - only the opened project is read */}
+function prefetchPds(){/* V21.14: no full PD Sheet read at start-up any more - only the opened project is read */}
 // Refresh button also re-reads the projects list.
 patch("refreshData",()=>refreshData,f=>{refreshData=f},base=>async function(){try{setTimeout(()=>pmLoad(true),0)}catch(_){}
   // Refresh: read the open project's PD Sheet again (or the full list if it was loaded)
@@ -8378,7 +8390,343 @@ patch("systemHealthHtml",()=>systemHealthHtml,f=>{systemHealthHtml=f},base=>func
   return html;
 });
 
-/* ---------- 12a. Error report (V21.13) ----------
+/* ======================================================================
+   13. TEAM FOLLOW-UP (V21.14)
+   A. "Assigned by me" page  - Rutuja sees every task she gave (to Pratik and
+      others), grouped by person, with live status, progress and the last
+      update ("Started working", "Submitted for Check"…). New updates since
+      her last visit get a NEW badge and a count on the tab.
+   B. Status email to the person who assigned - when Pratik changes the
+      status of a task (starts, submits, completes, puts on hold…), Rutuja
+      gets an email. Sent through the same email outbox (retries, never lost).
+   C. Clearer "new task" email - project code + name, design, tag/equipment,
+      scope, dates, priority, instruction, who assigned it and how to start.
+   D. Task Files tab on every task - upload ANY file (Excel, PDF, Word,
+      DWG/DXF, ZIP, images…) at any time, download the exact same file.
+      Stored in the task's existing Supporting_File field (no new field).
+   Settings: MEGA_SETTINGS.EMAILS (top of the file).
+   ====================================================================== */
+const EM=(()=>{try{return (MEGA_SETTINGS&&MEGA_SETTINGS.EMAILS)||{}}catch(_){return{}}})();
+const EMAIL_STATUS_ON=EM.STATUS_TO_ASSIGNER!==false;
+const WIDGET_LINK=String(EM.WIDGET_LINK||"").trim();
+const NN=s=>sc(s).trim().toLowerCase();
+const actorNow=()=>{try{return (S.v217&&S.v217.actor)||null}catch(_){return null}};
+// every way "me" can be written in Assigned_By (name, email, login when not shared)
+function myKeys(){
+  const a=actorNow(),k=new Set();
+  if(a){if(a.name)k.add(NN(a.name));if(a.email)k.add(NN(a.email))}
+  else if(S.user)k.add(NN(S.user));
+  return k;
+}
+function personKey(v){const raw=sc(v).trim();let d="";try{d=personDisplay(raw)}catch(_){}return [NN(raw),NN(d)].filter(Boolean)}
+const isMe=v=>{const k=myKeys();return personKey(v).some(x=>k.has(x))};
+const projName=code=>{try{const p=v18ProjectForCode(code);return p&&p.name&&p.name!==code?p.name:""}catch(_){return""}};
+const designOf=a=>{try{const d=drawingForAssignment(a)||{};return {short:sc(a[AF.shortName])||d.short||"",name:sc(a[AF.drawingDocument])||d.name||""}}catch(_){return {short:sc(a[AF.shortName]),name:sc(a[AF.drawingDocument])}}};
+const scopeOf=a=>{
+  const tag=sc(a[AF.tagNo]),eq=sc(a[AF.equipmentName]),sec=sc(a[AF.plantSection]),typ=sc(a[AF.plantSectionType]),dt=sc(a[AF.designType]);
+  return {tag,eq,sec,typ,dt,line:[tag&&eq?`${tag} — ${eq}`:tag||eq,[sec,typ].filter(Boolean).join(" / ")].filter(Boolean).join(" • ")||sc(a[AF.criteria])||"Whole design"};
+};
+function lastActivity(a){
+  try{
+    const items=assignmentActivityTimeline(a).filter(x=>x&&x.time).sort((x,y)=>String(y.time).localeCompare(String(x.time)));
+    const x=items[0];if(!x)return null;
+    let who="";try{who=personDisplay(x.actor)||sc(x.actor)}catch(_){who=sc(x.actor)}
+    return {time:x.time,action:x.action||"Update",detail:x.detail||"",who,byMe:isMe(x.actor)};
+  }catch(_){return null}
+}
+const STATE=s=>{s=sc(s)||"Not Started";
+  if(s==="Not Started")return "todo";
+  if(s==="In Progress")return "working";
+  if(/^(Submitted for|Checking|Checked|Reviewing|Reviewed|Approving)/.test(s))return "review";
+  if(/^(Completed|Approved|Issued)$/.test(s))return "done";
+  if(/^(On Hold|Returned)$/.test(s))return "hold";
+  if(s==="Cancelled")return "cancel";
+  return "working";
+};
+const isOverdue=a=>{try{const d=dateDiffDays(toInputDate(a[AF.targetDate]));return d!=null&&d<0&&!["done","cancel"].includes(STATE(a[AF.status]))}catch(_){return false}};
+
+// The activity history now records the person ("Working as"), not the shared Zoho login,
+// so everybody can see WHO started or changed a task. The login is kept in "login".
+patch("activityEntry",()=>activityEntry,f=>{activityEntry=f},base=>function(){
+  const e=base.apply(this,arguments);
+  try{const a=actorNow();if(e&&a&&a.name){e.login=e.actor;e.actor=a.name}}catch(_){}
+  return e;
+});
+/* ---- A. data: tasks I assigned (all projects) ---- */
+const BM={loading:null,at:0,key:"",error:"",q:"",f:"all",who:""};
+function upsertRaw(raw){
+  try{
+    const r=adaptRecord(raw),id=String(idOf(r));
+    const old=(S.records||[]).find(x=>String(idOf(x))===id);
+    if(old){Object.assign(old,r);return}
+    S.records.push(r);if(isAssignmentRecord(r))S.assignments.push(r);else if(isRevisionRecord(r))S.revisions.push(r);
+  }catch(_){}
+}
+async function loadByMe(force){
+  const a=actorNow(),names=[...new Set([a&&a.name,a&&a.email,!a&&S.user].filter(Boolean).map(String))];
+  const key=names.join("|");
+  if(!force&&BM.key===key&&Date.now()-BM.at<3*60000)return;
+  if(BM.loading)return BM.loading;
+  BM.loading=(async()=>{
+    try{
+      if(S.demo||!names.length){BM.at=Date.now();BM.key=key;return}
+      const report=await v208DiscoverTrackingReportLink();let ok=0,last=null;
+      for(const n of names){
+        try{const rows=await fetchRecords(report,`(${AF.assignedBy} == "${creatorCriteriaEscape(n)}")`,CONFIG.MAX_REPORT_PAGES);rows.forEach(upsertRaw);ok++}
+        catch(e){last=e}
+      }
+      BM.error=(!ok&&last)?errorText(last):"";
+      if(BM.error&&window.MEGA_ERR)MEGA_ERR.add("error",`Assigned by me: could not read tasks - ${BM.error}`,"Assigned_By criteria");
+      BM.at=Date.now();BM.key=key;
+    }finally{BM.loading=null}
+  })();
+  return BM.loading;
+}
+function byMeRows(){
+  return (S.assignments||[]).filter(a=>{
+    try{
+      if(!isMe(a[AF.assignedBy]))return false;
+      if(isMe(a[AF.assignedTo])||isMe(a[AF.assignedEmployeeName]))return false;  // my own main design tasks
+      return true;
+    }catch(_){return false}
+  });
+}
+const seenKey=()=>`bymeSeen::${NN((actorNow()||{}).name||S.user)}`;
+function newCount(){
+  try{const seen=Number(LS.get(seenKey(),0))||0;return byMeRows().filter(a=>{const x=lastActivity(a);return x&&!x.byMe&&Date.parse(x.time)>seen}).length}catch(_){return 0}
+}
+function navTab(){
+  try{
+    const nav=document.querySelector(".navtabs");if(!nav)return;
+    let b=nav.querySelector('[data-view="byme"]');
+    if(!b){b=document.createElement("button");b.className="navtab";b.dataset.view="byme";b.onclick=()=>{try{setView("byme")}catch(_){S.view="byme";renderView()}};
+      const mine=nav.querySelector('[data-view="mine"]');nav.insertBefore(b,mine?mine.nextSibling:null)}
+    const n=newCount();
+    b.innerHTML=`⇢ Assigned by me${n?` <span class="v21-tabdot">${n}</span>`:""}`;
+    b.classList.toggle("active",S.view==="byme");
+  }catch(e){log("byme tab",e)}
+}
+function renderByMe(){
+  const page=el("page");if(!page)return;
+  const a=actorNow();
+  if(!a&&!S.user){page.innerHTML=`<div class="empty"><strong>Choose your name first</strong>Click "Working as" at the top and select your name.</div>`;return}
+  const seen=Number(LS.get(seenKey(),0))||0;
+  const all=byMeRows();
+  const people=[...new Set(all.map(x=>assignmentDisplayUser(x)||"—"))].sort();
+  const q=NN(BM.q);
+  const rows=all.filter(x=>{
+    const st=STATE(x[AF.status]);
+    if(BM.f==="overdue"){if(!isOverdue(x))return false}else if(BM.f!=="all"&&st!==BM.f)return false;
+    if(BM.who&&(assignmentDisplayUser(x)||"—")!==BM.who)return false;
+    if(q){const d=designOf(x),s=scopeOf(x);if(![sc(x[AF.projectCode]),projName(sc(x[AF.projectCode])),d.short,d.name,s.line,assignmentDisplayUser(x),sc(x[AF.status])].join(" ").toLowerCase().includes(q))return false}
+    return true;
+  });
+  const cnt=k=>k==="all"?all.length:k==="overdue"?all.filter(isOverdue).length:all.filter(x=>STATE(x[AF.status])===k).length;
+  const chips=[["all","All"],["todo","Not started"],["working","Working"],["review","In check / review"],["hold","On hold / Returned"],["done","Done"],["overdue","Overdue"]]
+    .map(([k,l])=>`<button type="button" class="v21-chip ${BM.f===k?"on":""} ${k==="overdue"&&cnt(k)?"bad":""}" data-v21-bm-f="${k}">${l} <b>${cnt(k)}</b></button>`).join("");
+  const groups=new Map();
+  for(const x of rows){const p=assignmentDisplayUser(x)||"—";if(!groups.has(p))groups.set(p,[]);groups.get(p).push(x)}
+  const order=x=>{const l=lastActivity(x);return l?Date.parse(l.time)||0:0};
+  const body=[...groups.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([p,list])=>{
+    list.sort((x,y)=>order(y)-order(x));
+    const c=k=>list.filter(x=>STATE(x[AF.status])===k).length;
+    const trs=list.map(x=>{
+      const d=designOf(x),s=scopeOf(x),l=lastActivity(x),fresh=l&&!l.byMe&&Date.parse(l.time)>seen,code=sc(x[AF.projectCode]);
+      return `<tr class="${fresh?"v21-fresh":""}" data-open-assignment="${esc(idOf(x))}">
+        <td><b>${esc(code)}</b><div class="v21-sub">${esc(projName(code))}</div></td>
+        <td><b>${esc(d.short||d.name)}</b><div class="v21-sub">${esc(d.short?d.name:"")}</div></td>
+        <td>${esc(s.line)}${s.dt?`<div class="v21-sub">${esc(s.dt)}</div>`:""}</td>
+        <td>${statusPill(sc(x[AF.status])||"Not Started")}${isOverdue(x)?` <span class="pill red">Overdue</span>`:""}</td>
+        <td style="min-width:110px"><div class="v21-pct"><span>${num0(x[AF.progress])}%</span>${progressBar(x[AF.progress])}</div></td>
+        <td>${l?`${fresh?`<span class="v21-new">NEW</span> `:""}<b>${esc(l.action)}</b><div class="v21-sub">${esc(l.who||"")}${l.who?" • ":""}${esc(timeText(l.time))}</div>`:`<span class="v21-sub">No update yet</span>`}</td>
+        <td>${esc(displayDate(x[AF.targetDate]))}</td></tr>`;
+    }).join("");
+    return `<section class="v21-bm-card"><div class="v21-bm-head"><div class="avatar">${esc(initials(p))}</div><div class="v21-bm-name"><b>${esc(p)}</b><span>${list.length} task${list.length===1?"":"s"}</span></div>
+      <div class="v21-bm-stats"><span class="pill">${c("todo")} not started</span><span class="pill blue">${c("working")} working</span><span class="pill purple">${c("review")} in check</span><span class="pill green">${c("done")} done</span>${list.filter(isOverdue).length?`<span class="pill red">${list.filter(isOverdue).length} overdue</span>`:""}</div></div>
+      <div class="v21-bm-table"><table><thead><tr><th>Project</th><th>Design</th><th>Tag / Scope</th><th>Status</th><th>Progress</th><th>Last update</th><th>Target</th></tr></thead><tbody>${trs}</tbody></table></div></section>`;
+  }).join("");
+  page.innerHTML=`<div class="section-row"><div><h2>Assigned by me</h2><p>Tasks you gave to others, with their live status. Working as: <b>${esc((a&&a.name)||S.user||"")}</b>. You also get an email when someone changes a status.</p></div>
+     <div class="actions"><button class="btn" data-v21-bm-refresh>↻ Refresh</button></div></div>
+    <div class="v21-bm-tools"><div class="v21-bm-chips">${chips}</div>
+      <div class="v21-bm-filters"><select data-v21-bm-who><option value="">All people (${people.length})</option>${people.map(p=>`<option ${p===BM.who?"selected":""}>${esc(p)}</option>`).join("")}</select>
+      <input class="input" id="v21BmQ" placeholder="Search project, design, tag…" value="${esc(BM.q)}"></div></div>
+    ${BM.loading?`<div class="v21-sub" style="margin:8px 0"><span class="v21-dot spin"></span> Loading your assigned tasks from all projects…</div>`:""}
+    ${BM.error?`<div class="notice warn" style="margin:8px 0">Could not read all tasks from Zoho: ${esc(BM.error)}. Tasks of opened projects are still shown.</div>`:""}
+    ${body||`<div class="empty"><strong>${all.length?"No task matches the filter":"No tasks assigned by you yet"}</strong>${all.length?"Clear the filter or search.":"When you assign work, it appears here with live status."}</div>`}`;
+}
+// open the page: show what we have at once, then read the latest from Zoho
+function showByMe(force){
+  try{renderByMe()}catch(e){log("byme",e)}
+  loadByMe(force).then(()=>{if(S.view==="byme"){renderByMe();try{LS.set(seenKey(),Date.now())}catch(_){}navTab()}}).catch(e=>log("byme load",e));
+  if(!BM.loading)try{LS.set(seenKey(),Date.now())}catch(_){}
+}
+patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){
+  if(S.view==="byme"){
+    try{document.querySelectorAll(".navtab").forEach(b=>b.classList.toggle("active",b.dataset.view==="byme"))}catch(_){}
+    showByMe(false);navTab();try{drawBar()}catch(_){}return;
+  }
+  const r=base.apply(this,arguments);navTab();return r;
+});
+try{
+  document.addEventListener("click",e=>{
+    const t=e.target;if(!t||!t.closest)return;let x;
+    if((x=t.closest("[data-v21-bm-f]"))){e.preventDefault();BM.f=x.dataset.v21BmF;return renderByMe()}
+    if(t.closest("[data-v21-bm-refresh]")){e.preventDefault();return showByMe(true)}
+  },true);
+  document.addEventListener("change",e=>{const t=e.target;if(t&&t.matches&&t.matches("[data-v21-bm-who]")){BM.who=t.value;renderByMe()}},true);
+  let bt=null;
+  document.addEventListener("input",e=>{const t=e.target;if(t&&t.id==="v21BmQ"){BM.q=t.value;clearTimeout(bt);bt=setTimeout(()=>{const pos=t.selectionStart;renderByMe();const n=el("v21BmQ");if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}},250)}},true);
+}catch(e){log("byme events",e)}
+// keep the NEW count fresh in the background (every 5 minutes, only when live)
+setInterval(()=>{try{if(V.live&&!S.demo&&actorNow())loadByMe(false).then(navTab).catch(()=>{})}catch(_){}},5*60000);
+
+/* ---- B. status email to the person who assigned the task ---- */
+const recentMail=new Map();   // same task + same status within 2 minutes = one email
+function parentOfRevision(r){
+  try{return (S.assignments||[]).find(a=>revisionsForAssignment(a).some(x=>String(idOf(x))===String(idOf(r))))||null}catch(_){return null}
+}
+function statusEmailHtml(a,from,to,who,data){
+  const d=designOf(a),s=scopeOf(a),code=sc(a[AF.projectCode]),pn=projName(code);
+  const remark=sc(data[AF.remark])||sc(data[AF.returnReason])||"";
+  const row=(k,v)=>v?`<tr><td style="padding:7px 10px;border:1px solid #e5e7eb;color:#667085;width:150px">${h(k)}</td><td style="padding:7px 10px;border:1px solid #e5e7eb"><b>${h(v)}</b></td></tr>`:"";
+  return `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1f2937;line-height:1.5">
+    <div style="background:#c42770;color:#fff;padding:14px 18px;border-radius:8px 8px 0 0"><div style="font-size:12px;opacity:.9">MEGA ENGINEERING • Design Control</div><div style="font-size:19px;font-weight:700">Task update: ${h(to)}</div></div>
+    <div style="padding:16px 18px;border:1px solid #e5e7eb;border-top:0;border-radius:0 0 8px 8px">
+      <p><b>${h(who)}</b> changed the status of a task you assigned:</p>
+      <p style="font-size:16px"><span style="color:#667085">${h(from||"Not Started")}</span> &nbsp;→&nbsp; <b style="color:#c42770">${h(to)}</b></p>
+      <table style="border-collapse:collapse;width:100%;margin-top:8px">
+        ${row("Project",`${code}${pn?` — ${pn}`:""}`)}${row("Design",`${d.short?d.short+" — ":""}${d.name}`)}${row("Tag / Equipment",[s.tag,s.eq].filter(Boolean).join(" — "))}
+        ${row("Plant section",[s.sec,s.typ].filter(Boolean).join(" / "))}${row("Type",s.dt)}${row("Progress",`${num0(data[AF.progress]!==undefined?data[AF.progress]:a[AF.progress])}%`)}
+        ${row("Target date",displayDate(a[AF.targetDate]))}${row("Remark",remark)}${row("Updated on",new Date().toLocaleString())}
+      </table>
+      ${WIDGET_LINK?`<p style="margin-top:16px"><a href="${h(WIDGET_LINK)}" style="background:#c42770;color:#fff;padding:9px 16px;border-radius:6px;text-decoration:none;font-weight:700">Open Design Control</a></p>`:""}
+      <p style="color:#667085;font-size:12px;margin-top:14px">You get this email because you assigned this task. See all your tasks in Design Control → "Assigned by me".</p>
+    </div></div>`;
+}
+function queueStatusMail(rec,from,to,data){
+  if(!EMAIL_STATUS_ON||S.demo)return;
+  const a=isAssignmentRecord(rec)?rec:(isRevisionRecord(rec)?parentOfRevision(rec):null);if(!a)return;
+  const byVal=sc(a[AF.assignedBy]);if(!byVal)return;
+  const k=`${idOf(a)}|${to}`;if(Date.now()-(recentMail.get(k)||0)<120000)return;recentMail.set(k,Date.now());
+  const rcp=requireAssignmentRecipient(byVal);
+  if(!rcp.email||!rcp.email.includes("@")){window.MEGA_ERR&&MEGA_ERR.add("api",`Status email skipped: no email found for "${byVal}" (assigned by) in the Employee list`,`task ${idOf(a)}`);return}
+  const act=actorNow(),who=(act&&act.name)||personDisplay(S.user)||S.user||"Someone";
+  if((act&&(NN(act.name)===NN(rcp.name)||NN(act.email)===NN(rcp.email)))||(!act&&NN(S.user)===NN(rcp.email)))return;   // you changed your own task: no email
+  const d=designOf(a),s=scopeOf(a);
+  const subject=`[Design Control] ${who} • ${to} • ${sc(a[AF.projectCode])} • ${d.short||d.name}${s.tag?` • ${s.tag}`:""}`;
+  const job={id:`S${Date.now()}${Math.random().toString(36).slice(2,6)}`,at:Date.now(),kind:"html",to:rcp.name,email:rcp.email,subject,html:statusEmailHtml(a,from,to,who,data||{}),label:`Status ${to}`};
+  mailSet(mailList().concat([job]));drawBar();
+  setTimeout(async()=>{try{const ok=await sendMailJob(job);const now=mailList();if(ok)mailSet(now.filter(j=>j.id!==job.id));else mailSet(now.map(j=>j.id===job.id?job:j));drawBar()}catch(e){log(e)}},0);
+}
+patch("updateRecord",()=>updateRecord,f=>{updateRecord=f},base=>async function(id,data){
+  let rec=null,before="";
+  try{rec=(S.records||[]).find(x=>String(idOf(x))===String(id))||null;before=sc(rec&&rec[AF.status])}catch(_){}
+  const out=await base.apply(this,arguments);
+  try{if(rec&&data&&data[AF.status]!==undefined){const after=sc(data[AF.status]);if(after&&after!==before)queueStatusMail(rec,before,after,data)}}catch(e){log("status email",e)}
+  return out;
+});
+
+/* ---- C. clearer "new task" email ---- */
+patch("assignmentEmailSubject",()=>assignmentEmailSubject,f=>{assignmentEmailSubject=f},base=>function(records){
+  try{
+    const f=records[0]||{},by=personDisplay(f[AF.assignedBy])||sc(f[AF.assignedBy])||"Design Control",d=designOf(f),s=scopeOf(f);
+    if(records.length===1)return `[Design Control] New task from ${by} • ${sc(f[AF.projectCode])} • ${d.short||d.name}${s.tag?` • ${s.tag}`:""}`;
+    return `[Design Control] ${records.length} new tasks from ${by} • ${sc(f[AF.projectCode])} • ${d.short||d.name}`;
+  }catch(e){return base.apply(this,arguments)}
+});
+patch("assignmentEmailHtml",()=>assignmentEmailHtml,f=>{assignmentEmailHtml=f},base=>function(recipient,records){
+  try{
+    const list=records.slice(0,60),more=Math.max(0,records.length-list.length),f=records[0]||{};
+    const by=personDisplay(f[AF.assignedBy])||sc(f[AF.assignedBy])||"Design Control";
+    const td=v=>`<td style="padding:7px 8px;border:1px solid #e5e7eb;vertical-align:top">${v}</td>`;
+    const remarks=[...new Set(records.map(r=>sc(r[AF.remark])).filter(Boolean))];
+    const rows=list.map((r,i)=>{const d=designOf(r),s=scopeOf(r),code=sc(r[AF.projectCode]),pn=projName(code);
+      return `<tr>${td(i+1)}${td(`<b>${h(code)}</b>${pn?`<br><span style="color:#667085">${h(pn)}</span>`:""}`)}${td(`<b>${h(d.short||"")}</b>${d.name?`<br>${h(d.name)}`:""}`)}${td(`${s.tag?`<b>${h(s.tag)}</b>`:""}${s.eq?`<br>${h(s.eq)}`:""}${!s.tag&&!s.eq?"—":""}`)}${td(`${h([s.sec,s.typ].filter(Boolean).join(" / ")||"—")}${s.dt?`<br><b>${h(s.dt)}</b>`:""}`)}${td(h(displayDate(r[AF.startDate])))}${td(`<b>${h(displayDate(r[AF.targetDate]))}</b>`)}${td(h(sc(r[AF.priority])||"Medium"))}</tr>`}).join("");
+    const th=t=>`<th style="padding:7px 8px;border:1px solid #e5e7eb;text-align:left;background:#f9fafb">${t}</th>`;
+    return `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1f2937;line-height:1.5">
+      <div style="background:#c42770;color:#fff;padding:14px 18px;border-radius:8px 8px 0 0"><div style="font-size:12px;opacity:.9">MEGA ENGINEERING • Design Control</div><div style="font-size:19px;font-weight:700">${records.length===1?"New task assigned to you":`${records.length} new tasks assigned to you`}</div></div>
+      <div style="padding:16px 18px;border:1px solid #e5e7eb;border-top:0;border-radius:0 0 8px 8px">
+        <p>Hello <b>${h(recipient.name||recipient.email)}</b>,</p>
+        <p><b>${h(by)}</b> assigned you ${records.length===1?"this task":"these tasks"} on ${h(new Date().toLocaleDateString())}.</p>
+        <table style="width:100%;border-collapse:collapse;margin-top:6px;font-size:13px"><thead><tr>${th("#")}${th("Project")}${th("Design")}${th("Tag / Equipment")}${th("Plant section / Type")}${th("Start")}${th("Target")}${th("Priority")}</tr></thead><tbody>${rows}</tbody></table>
+        ${more?`<p style="color:#667085"><b>+ ${more} more</b> — see all of them in Design Control → My Work.</p>`:""}
+        ${remarks.length?`<div style="margin-top:12px;padding:10px 12px;background:#fff8fb;border:1px solid #f3c6dc;border-radius:6px"><b>Instruction from ${h(by)}:</b><br>${remarks.map(x=>h(x)).join("<br>")}</div>`:""}
+        <div style="margin-top:14px;padding:10px 12px;background:#f9fafb;border-radius:6px"><b>How to start</b><ol style="margin:6px 0 0 18px;padding:0">
+          <li>Open <b>Design Control</b> in Zoho Creator${WIDGET_LINK?` (<a href="${h(WIDGET_LINK)}">open link</a>)`:""}.</li>
+          <li>Check your name in <b>Working as</b> at the top.</li>
+          <li>Open <b>My Work</b> and click the task.</li>
+          <li>When you start, set the status to <b>In Progress</b>. ${h(by)} is informed automatically.</li>
+          <li>Upload your files in the task's <b>Task Files</b> tab (any file type).</li></ol></div>
+        <p style="color:#667085;font-size:12px;margin-top:12px">Sent to ${h(recipient.email)} from the Employee list.</p>
+      </div></div>`;
+  }catch(e){log("task email",e);return base.apply(this,arguments)}
+});
+
+/* ---- D. Task Files tab on every task ---- */
+const TF_FIELD=AF.supportingFile;
+function taskFileList(a){
+  const out=[];
+  for(const [f,label] of [[AF.supportingFile,"File"],[AF.drawingFile,"Drawing"],[AF.nativeFile,"Native"]]){
+    try{for(const x of creatorFileEntries(a[f]))out.push({...x,field:f,label})}catch(_){}
+  }
+  return out;
+}
+const fileIcon=n=>{const e=String(n||"").split(".").pop().toLowerCase();return /^(dwg|dxf|dgn|step|stp|igs|iges|sat|ifc|rvt|nwd|skp)$/.test(e)?"CAD":/^(xls|xlsx|xlsm|csv)$/.test(e)?"XLS":e==="pdf"?"PDF":/^(doc|docx)$/.test(e)?"DOC":/^(png|jpg|jpeg|gif|bmp|svg)$/.test(e)?"IMG":/^(zip|rar|7z)$/.test(e)?"ZIP":(e||"FILE").slice(0,4).toUpperCase()};
+function taskFilesHtml(){
+  const a=S.current;if(!a)return "";
+  const files=taskFileList(a),revs=(()=>{try{return revisionsForAssignment(a)}catch(_){return[]}})();
+  const revFiles=revs.reduce((n,r)=>n+[AF.drawingFile,AF.nativeFile,AF.supportingFile].reduce((m,f)=>{try{return m+creatorFileEntries(r[f]).length}catch(_){return m}},0),0);
+  const max=Math.round((CONFIG.MAX_FILE_BYTES||52428800)/1048576);
+  return `<div class="tab-card v21-tf">
+    <div class="section-row" style="margin-top:0"><div><h2>Task Files</h2><p>Upload any file for this task — Excel, PDF, Word, CAD (DWG/DXF), ZIP, images. Download gives back the exact same file. Up to ${max} MB per file.</p></div></div>
+    <div class="v21-tf-up"><input type="file" id="v21TfInput" multiple><button type="button" class="btn primary" data-v21-tf-upload>⬆ Upload selected files</button></div>
+    <div class="v21-tf-list">${files.length?files.map(f=>`<div class="v21-tf-row"><span class="v21-tf-ic">${esc(fileIcon(f.filename))}</span><span class="v21-tf-name" title="${esc(f.filename)}">${esc(f.filename)}</span><span class="v21-sub">${esc(f.label)}</span>
+      <button class="btn sm" data-download-file="${esc(idOf(a))}" data-file-field="${esc(f.field)}" data-file-path="${esc(f.filepath)}" data-file-name="${esc(f.filename)}">⬇ Download</button></div>`).join(""):`<div class="empty compact"><strong>No files yet</strong>Choose files above and click Upload.</div>`}</div>
+    ${revs.length?`<div class="v21-sub" style="margin-top:10px">Revision files: ${revFiles} file${revFiles===1?"":"s"} in ${revs.length} revision${revs.length===1?"":"s"} — see the <button class="btn link sm" data-detail-tab="files">Design Files</button> tab.</div>`:""}
+  </div>`;
+}
+async function uploadTaskFiles(){
+  const a=S.current,inp=el("v21TfInput");if(!a)return;
+  const files=Array.from((inp&&inp.files)||[]);if(!files.length)throw rule("Choose one or more files first.");
+  const big=files.filter(f=>f.size>CONFIG.MAX_FILE_BYTES);if(big.length)throw rule(`Too big (max ${Math.round(CONFIG.MAX_FILE_BYTES/1048576)} MB): ${big.map(f=>f.name).join(", ")}`);
+  const id=idOf(a);let done=0;const failed=[];
+  busy(`Uploading ${files.length} file${files.length===1?"":"s"}…`);
+  try{
+    for(let i=0;i<files.length;i++){
+      try{const lt=el("loadingText");if(lt)lt.textContent=`Uploading ${files[i].name} (${i+1}/${files.length})…`}catch(_){}
+      try{await uploadFile(id,TF_FIELD,files[i]);done++}
+      catch(e){failed.push(files[i].name);window.MEGA_ERR&&MEGA_ERR.add("error",`Upload failed: ${files[i].name} - ${errorText(e)}`,`task ${id}`)}
+    }
+    if(done&&!S.demo){try{const fresh=await getTrackingRecordById(id);if(fresh){Object.assign(a,fresh);const loc=(S.records||[]).find(x=>String(idOf(x))===String(id));if(loc&&loc!==a)Object.assign(loc,fresh)}}catch(e){log("file refresh",e)}}
+    if(done){try{const names=files.filter(f=>!failed.includes(f.name)).map(f=>f.name).join(", ");const data=withActivity(a,{},"Files Uploaded",names,{kind:"files"});await updateRecord(id,data);Object.assign(a,data)}catch(e){log("file activity",e)}}
+  }finally{idle()}
+  say(`${done} file${done===1?"":"s"} uploaded${failed.length?` • ${failed.length} failed: ${failed.join(", ")}`:""}.`,failed.length?"warn":"good");
+  renderView();
+}
+patch("renderDetailTab",()=>renderDetailTab,f=>{renderDetailTab=f},base=>function(){
+  if(S.detailTab==="taskfiles"){try{return taskFilesHtml()}catch(e){log("task files",e)}}
+  return base.apply(this,arguments);
+});
+patch("renderDetailPage",()=>renderDetailPage,f=>{renderDetailPage=f},base=>function(){
+  const r=base.apply(this,arguments);
+  try{
+    const tabs=document.querySelector("#page .subtabs");
+    if(tabs&&S.current&&!tabs.querySelector('[data-detail-tab="taskfiles"]')){
+      const n=taskFileList(S.current).length,b=document.createElement("button");
+      b.className=`subtab ${S.detailTab==="taskfiles"?"active":""}`;b.dataset.detailTab="taskfiles";b.textContent=`📎 Task Files${n?` (${n})`:""}`;
+      const ov=tabs.querySelector('[data-detail-tab="overview"]');tabs.insertBefore(b,ov?ov.nextSibling:tabs.firstChild);
+    }
+  }catch(e){log("task files tab",e)}
+  return r;
+});
+try{document.addEventListener("click",e=>{const t=e.target;if(t&&t.closest&&t.closest("[data-v21-tf-upload]")){e.preventDefault();e.stopImmediatePropagation();(typeof guarded==="function"?guarded:(f=>f()))(uploadTaskFiles)}},true)}catch(_){}
+// a damaged download (Zoho sent the file as text) is reported at once
+patch("binaryStringToBlob",()=>binaryStringToBlob,f=>{binaryStringToBlob=f},base=>function(content,mime){
+  try{if(typeof content==="string"&&content.indexOf("�")>=0&&!/^text\//.test(String(mime||""))&&window.MEGA_ERR)MEGA_ERR.add("error","Downloaded file may be damaged: Zoho returned it as text (contains replacement characters)",String(mime||""))}catch(_){}
+  return base.apply(this,arguments);
+});
+
+/* ---------- 12a. Error report ----------
    Every error is recorded at once (see ERROR RECORDER at the top of the file):
    - widget errors, failed or timed-out Zoho reads/saves, start-up problems;
    - slow reads and fall-backs are listed too (as "info"), but do not turn the button red.
@@ -8387,7 +8735,7 @@ patch("systemHealthHtml",()=>systemHealthHtml,f=>{systemHealthHtml=f},base=>func
    developer - it has the screen, project, person, time and technical detail. */
 const ER=window.MEGA_ERR||{list:[],api:[],seen:0,listeners:[],add(){}};
 function errNew(){return Math.max(0,ER.list.length-Number(ER.seen||0))}
-// V21.13: no separate button in the top bar. The error report is inside ⚙ Settings.
+// V21.14: no separate button in the top bar. The error report is inside ⚙ Settings.
 // The ⚙ button only gets a small red dot with the count when there are new errors.
 function errButton(){
   try{
@@ -8489,6 +8837,22 @@ try{
   .v21-dot{width:9px;height:9px;border-radius:50%;border:2px solid #9bb8e8;border-top-color:#1d5fd0}.v21-dot.spin{animation:v21spin .8s linear infinite}@keyframes v21spin{to{transform:rotate(360deg)}}
   .v21-health{margin-top:14px;border:1px solid #e4e7ec;border-radius:12px;padding:12px}.v21-health h3{margin:0 0 8px;font-size:13px}.v21-health table{width:100%;border-collapse:collapse;font-size:11px}.v21-health td{padding:6px 8px;border-top:1px solid #f2f4f7;vertical-align:top}.v21-health td:first-child{color:#667085;width:42%}
   .v217-pm-sub{font-size:10px;color:#667085;margin-top:2px}
+  .v21-tabdot{display:inline-grid;place-items:center;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:#d92d20;color:#fff;font-size:9px;font-weight:900;margin-left:3px}
+  .v21-bm-tools{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;margin:4px 0 12px}
+  .v21-bm-chips{display:flex;gap:6px;flex-wrap:wrap}.v21-chip{border:1px solid #d0d5dd;background:#fff;border-radius:999px;padding:5px 11px;font:inherit;font-size:11px;cursor:pointer;color:#344054}
+  .v21-chip b{margin-left:3px}.v21-chip.on{background:#c42770;border-color:#c42770;color:#fff}.v21-chip.bad b{color:#d92d20}.v21-chip.on.bad b{color:#fff}
+  .v21-bm-filters{display:flex;gap:6px}.v21-bm-filters select,.v21-bm-filters .input{height:34px;min-width:180px}
+  .v21-bm-card{border:1px solid #e4e7ec;border-radius:14px;background:#fff;margin-bottom:12px;overflow:hidden}
+  .v21-bm-head{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fafbfc;border-bottom:1px solid #eaecf0;flex-wrap:wrap}
+  .v21-bm-name{flex:1;min-width:160px}.v21-bm-name b{display:block;font-size:14px}.v21-bm-name span{font-size:11px;color:#667085}.v21-bm-stats{display:flex;gap:5px;flex-wrap:wrap}
+  .v21-bm-table{overflow:auto}.v21-bm-table table{width:100%;border-collapse:collapse;font-size:12px;min-width:900px}
+  .v21-bm-table th{text-align:left;font-size:10px;color:#667085;padding:8px 10px;border-bottom:1px solid #eaecf0;background:#fff}
+  .v21-bm-table td{padding:8px 10px;border-bottom:1px solid #f2f4f7;vertical-align:top}.v21-bm-table tr{cursor:pointer}.v21-bm-table tbody tr:hover{background:#fff8fb}
+  .v21-bm-table tr.v21-fresh{background:#fffbeb}.v21-new{display:inline-block;background:#d92d20;color:#fff;font-size:9px;font-weight:900;border-radius:4px;padding:1px 5px}
+  .v21-sub{font-size:10px;color:#667085;margin-top:2px}.v21-pct span{font-size:11px;font-weight:800}
+  .v21-tf-up{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px;border:1px dashed #d780aa;border-radius:12px;background:#fff8fb;margin-bottom:12px}
+  .v21-tf-list{display:grid;gap:6px}.v21-tf-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto;gap:10px;align-items:center;border:1px solid #eaecf0;border-radius:10px;padding:8px 10px}
+  .v21-tf-ic{font-size:10px;font-weight:900;color:#c42770;background:#fdf0f6;border-radius:8px;text-align:center;padding:7px 0}.v21-tf-name{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .v21-gear{position:relative}
   .v21-gear.has-err::after{content:attr(data-err);position:absolute;top:-5px;right:-5px;min-width:15px;height:15px;padding:0 3px;border-radius:999px;background:#d92d20;color:#fff;font-size:9px;font-weight:900;line-height:15px;text-align:center;border:1.5px solid #fff}
   .v21-set{display:grid;gap:8px}
@@ -8507,7 +8871,7 @@ try{V.jobs=jobList();V.mail=mailList()}catch(_){}
 earlyPaint();
 // if the live start-up already finished before this layer loaded
 try{if(!V.live&&Array.isArray(S.employees)&&S.employees.length&&S.user){V.live=true;V.liveAt=Date.now();afterLive();saveMasters()}}catch(_){}
-try{const bd=el("buildBadge");if(bd)bd.textContent="V21.13";document.title="MEGA Engineering | Project Design Control V21.13"}catch(_){}
+try{const bd=el("buildBadge");if(bd)bd.textContent="V21.14";document.title="MEGA Engineering | Project Design Control V21.14"}catch(_){}
 drawBar();errButton();setTimeout(errButton,1500);
 console.info(`[${BUILD}] loaded`);
 })()}catch(e){try{console.error("[V21] could not load",e)}catch(_){}}
