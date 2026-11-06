@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.14
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.15
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V21.14".
+   3. Paste this whole file and save. The badge at the top shows "V21.15".
 
  >>> ALL SETTINGS ARE IN ONE PLACE: the "MEGA SETTINGS" block, the first
      SCRIPT below (report names, projects list, waiting times, speed,
@@ -41,35 +41,39 @@
                       System Health), empty-project read fix.
                       V21.3: only Active designs (Design Master Status),
                       compact top bars and rows so more designs fit.
-                      V21.14: Projects list comes from the All_Projects report
+                      V21.7: Projects list comes from the All_Projects report
                       (proper code, name, client, status); Completed projects
                       are hidden. If that report cannot be read, the old list
                       is shown. New simple look for the Assign screen (style
                       only - same logic).
-                      V21.14: skipped tags - Department Code + Equipment
+                      V21.8: skipped tags - Department Code + Equipment
                       Category pairs listed in SKIP_TAGS (megaV218 layer)
                       are hidden on the Assign screen.
-                      V21.14: reliable connect - Zoho handshake first, 3 login
+                      V21.9: reliable connect - Zoho handshake first, 3 login
                       tries, saved login fallback, automatic start-up retry
                       with a small "Retry now" bar (no error popup).
-                      V21.14: skip list used ONLY for the BOM design (PDS and
+                      V21.10: skip list used ONLY for the BOM design (PDS and
                       all other designs show every tag); PD Sheet is read in
                       the background and the PDS screen waits for it.
-                      V21.14: one MEGA SETTINGS block; Equipment and PD Sheet
+                      V21.11: one MEGA SETTINGS block; Equipment and PD Sheet
                       read only for the open project (full read = backup)
                       with a saved copy per project (instant open, live
                       update in the background); red ⚠ error button with
                       "Copy error report".
-                      V21.14: error report shows only real errors ("no
+                      V21.12: error report shows only real errors ("no
                       records", "try another way" and optional field-list
                       answers are info); Design_Tracking read uses the text
                       Project_Code only, once Zoho confirms it.
-                      V21.14: Error report moved inside ⚙ Settings (a small
+                      V21.13: Error report moved inside ⚙ Settings (a small
                       red count on ⚙ shows new errors).
                       V21.14: "Assigned by me" page (live status of tasks you
                       gave, NEW updates), email to the assigner when a status
                       changes, clearer new-task email, Task Files tab on every
                       task (upload/download any file type).
+                      V21.15: "Assigned by me" moved inside My Work (switch:
+                      Assigned to me / Assigned by me), summary graphics
+                      (status bar, overdue, due in 7 days), changing
+                      "Working as" refreshes the data and opens My Work.
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -89,7 +93,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V21.14</title>
+<title>MEGA Engineering | Project Design Control V21.15</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -315,7 +319,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.14</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.15</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -7612,7 +7616,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V21(){
 "use strict";
-const BUILD="V21.14";
+const BUILD="V21.15";
 
 /* ---------- 0. Small safe helpers ---------- */
 const log=(...a)=>{try{console.warn("[V21]",...a)}catch(_){}};
@@ -7839,7 +7843,7 @@ patch("v208FetchTrackingForProject",()=>v208FetchTrackingForProject,f=>{v208Fetc
   code=String(code||"").trim();if(!code)return[];
   if(S.demo)return base.apply(this,arguments);
   let report;try{report=await v208DiscoverTrackingReportLink()}catch(e){return base.apply(this,arguments)}
-  // V21.14: Design_Tracking.Project_Code is a TEXT field in your Zoho (Zoho answered 3330
+  // V21.12: Design_Tracking.Project_Code is a TEXT field in your Zoho (Zoho answered 3330
   // "is not of type Lookup"). Once that is known, only the text way is used, and an empty
   // answer simply means "this project has no design work yet" - no extra read, no error.
   const textOnly=LS.get("trkText",false)===true;
@@ -8054,7 +8058,7 @@ async function repairParents(code){
 const CORE=["projectCode","drawingDocument","drawingMasterId","assignedTo","assignedEmployeeName","assignedFrom","primaryAssignment","assignmentLevel","status","progress","startDate","targetDate","logicalTaskKey","designTitle","designType","criteria","responsibility","priority","revision","parentDesignId"];
 async function checkFields(){
   const F=V.fields;if(F.checked||S.demo)return;F.checked=true;
-  // V21.14: Zoho answers "Invalid Configuration" when this login may not read the field list.
+  // V21.12: Zoho answers "Invalid Configuration" when this login may not read the field list.
   // Then the check is skipped for 24 hours (it is only an extra safety check).
   const off=LS.get("metaOff",0);if(off&&Date.now()-Number(off)<86400000){F.error="Skipped - Zoho does not allow the field list for this login (optional check)";return}
   try{
@@ -8117,7 +8121,7 @@ try{
 // Redraw the bar after every screen change.
 patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){const r=base.apply(this,arguments);drawBar();return r});
 
-/* ---------- 10b. Projects list from the "All_Projects" report (V21.14) ----------
+/* ---------- 10b. Projects list from the "All_Projects" report (V21.7) ----------
    WHY: the old list was built from All_Associated_Projects + every code found in
    Design_Tracking. That showed junk codes (e.g. "RJHI02", "Others"), missing
    names ("—") and finished projects.
@@ -8203,7 +8207,7 @@ if(baseRenderProjects)renderProjects=function(){
   }catch(e){log("projects list",e);return baseRenderProjects.apply(this,arguments)}
 };
 
-/* ---------- 10c. Fast project data: Equipment + PD Sheet (V21.14) ----------
+/* ---------- 10c. Fast project data: Equipment + PD Sheet (V21.11) ----------
    WHY: the PD Sheet was read for ALL projects, and Equipment/PD Sheet were read
    again every time the widget opened. With growing data this is slow and can
    time out.
@@ -8359,7 +8363,7 @@ patch("openProjectWorkspace",()=>openProjectWorkspace,f=>{openProjectWorkspace=f
   try{if(!S.demo&&code)setTimeout(()=>pdsForProject(String(code)).catch(e=>log("PDS background",e)),300)}catch(_){}
   return r;
 });
-function prefetchPds(){/* V21.14: no full PD Sheet read at start-up any more - only the opened project is read */}
+function prefetchPds(){/* V21.11: no full PD Sheet read at start-up any more - only the opened project is read */}
 // Refresh button also re-reads the projects list.
 patch("refreshData",()=>refreshData,f=>{refreshData=f},base=>async function(){try{setTimeout(()=>pmLoad(true),0)}catch(_){}
   // Refresh: read the open project's PD Sheet again (or the full list if it was loaded)
@@ -8495,90 +8499,161 @@ const seenKey=()=>`bymeSeen::${NN((actorNow()||{}).name||S.user)}`;
 function newCount(){
   try{const seen=Number(LS.get(seenKey(),0))||0;return byMeRows().filter(a=>{const x=lastActivity(a);return x&&!x.byMe&&Date.parse(x.time)>seen}).length}catch(_){return 0}
 }
+/* ---- My Work with two switches (V21.15) ----
+   No extra tab in the top bar any more. My Work has a switch:
+     [ ✓ Assigned to me ]  [ ⇢ Assigned by me  (NEW count) ]
+   Both views get a summary with simple graphics:
+     - big number of open tasks, a status bar (Not started / Working / In check /
+       On hold / Done) with a legend, Overdue and "Due in 7 days" tiles;
+     - status chips that filter the list (click again = all).
+   Changing "Working as" refreshes everything for the new person and opens
+   My Work → Assigned to me (page 1). */
+const MW={tab:"to",f:"all",loadingMine:false};
+// status colours (checked for colour-blind separation; every colour also has a text label)
+const SEG=[["todo","Not started","#98a2b3"],["working","Working","#2f6fdb"],["review","In check / review","#c2459a"],["hold","On hold / Returned","#fab219"],["done","Done","#0ca30c"]];
+const dueSoon=a=>{try{const d=dateDiffDays(toInputDate(a[AF.targetDate]));return d!=null&&d>=0&&d<=7&&!["done","cancel"].includes(STATE(a[AF.status]))}catch(_){return false}};
+function summaryHtml(list,title){
+  const live=list.filter(a=>STATE(a[AF.status])!=="cancel");
+  const n=k=>live.filter(a=>STATE(a[AF.status])===k).length,total=live.length||0;
+  const open=live.filter(a=>STATE(a[AF.status])!=="done").length,od=live.filter(isOverdue).length,soon=live.filter(dueSoon).length;
+  const segs=SEG.map(([k,l,c])=>({k,l,c,v:n(k)})).filter(x=>x.v);
+  const bar=total?segs.map(x=>`<span class="v21-seg" data-v21-f="${x.k}" style="flex:${x.v} 1 0;background:${x.c}" title="${esc(x.l)}: ${x.v} (${Math.round(x.v*100/total)}%)"></span>`).join(""):`<span class="v21-seg empty"></span>`;
+  const legend=SEG.map(([k,l,c])=>`<button type="button" class="v21-leg ${MW.f===k?"on":""}" data-v21-f="${k}"><i style="background:${c}"></i>${esc(l)} <b>${n(k)}</b></button>`).join("");
+  const done=n("done"),pct=total?Math.round(done*100/total):0;
+  return `<div class="v21-sum">
+    <div class="v21-sum-big"><div class="v21-sum-n">${open}</div><div class="v21-sum-l">open task${open===1?"":"s"}<span>${esc(title)} • ${total} total</span></div></div>
+    <div class="v21-sum-mid"><div class="v21-sum-cap"><span>Status</span><span>${pct}% done</span></div><div class="v21-bar">${bar}</div><div class="v21-legend">${legend}</div></div>
+    <div class="v21-sum-tiles">
+      <button type="button" class="v21-tile ${od?"bad":""} ${MW.f==="overdue"?"on":""}" data-v21-f="overdue"><span class="ic">!</span><b>${od}</b><small>Overdue</small></button>
+      <button type="button" class="v21-tile ${soon?"warn":""} ${MW.f==="soon"?"on":""}" data-v21-f="soon"><span class="ic">◷</span><b>${soon}</b><small>Due in 7 days</small></button>
+    </div></div>
+    ${MW.f!=="all"?`<div class="v21-filt">Showing: <b>${esc(MW.f==="overdue"?"Overdue":MW.f==="soon"?"Due in 7 days":(SEG.find(x=>x[0]===MW.f)||["",""])[1])}</b> <button type="button" class="btn link sm" data-v21-f="all">Show all</button></div>`:""}`;
+}
+const passF=a=>MW.f==="all"?true:MW.f==="overdue"?isOverdue(a):MW.f==="soon"?dueSoon(a):STATE(a[AF.status])===MW.f;
+function workSwitch(){
+  const n=newCount();
+  let mine=0;try{mine=myAssignments().filter(a=>!["done","cancel"].includes(STATE(a[AF.status]))).length}catch(_){}
+  return `<div class="v21-ws" role="tablist"><button type="button" class="${MW.tab==="to"?"on":""}" data-v21-ws="to">✓ Assigned to me <b>${mine}</b></button><button type="button" class="${MW.tab==="by"?"on":""}" data-v21-ws="by">⇢ Assigned by me${n?` <span class="v21-tabdot">${n} new</span>`:""}</button></div>`;
+}
 function navTab(){
   try{
-    const nav=document.querySelector(".navtabs");if(!nav)return;
-    let b=nav.querySelector('[data-view="byme"]');
-    if(!b){b=document.createElement("button");b.className="navtab";b.dataset.view="byme";b.onclick=()=>{try{setView("byme")}catch(_){S.view="byme";renderView()}};
-      const mine=nav.querySelector('[data-view="mine"]');nav.insertBefore(b,mine?mine.nextSibling:null)}
-    const n=newCount();
-    b.innerHTML=`⇢ Assigned by me${n?` <span class="v21-tabdot">${n}</span>`:""}`;
-    b.classList.toggle("active",S.view==="byme");
-  }catch(e){log("byme tab",e)}
+    document.querySelectorAll('.navtab[data-view="byme"]').forEach(b=>b.remove());        // old top tab (V21.14) removed
+    const t=document.querySelector('.navtab[data-view="mine"]');if(!t)return;
+    const n=newCount();let d=t.querySelector(".v21-tabdot");
+    if(n){if(!d){d=document.createElement("span");d.className="v21-tabdot";t.appendChild(d)}d.textContent=String(n)}else if(d)d.remove();
+  }catch(e){log("my work tab",e)}
 }
+// ---- view: Assigned to me ----
+function renderMineView(){
+  const page=el("page");if(!page)return;
+  if(!S.cache.myTrackingLoaded){
+    page.innerHTML=workSwitch()+`<div class="section-row"><div><h2>My Work</h2><p>Loading your work…</p></div></div><div class="v208-loading-skeleton">${'<div class="v208-sk"></div>'.repeat(4)}</div>`;
+    if(!MW.loadingMine){MW.loadingMine=true;Promise.resolve().then(()=>v208EnsureMyTracking()).catch(e=>log("my work load",e)).finally(()=>{MW.loadingMine=false;if(S.view==="mine"&&MW.tab==="to")renderMineView()})}
+    return;
+  }
+  const q=sc(S.globalSearch).trim().toLowerCase(),a=actorNow();
+  let all=[];try{all=myAssignments().filter(x=>searchMatchAssignment(x,q))}catch(e){log(e)}
+  const rows=all.filter(passF).sort((x,y)=>(dateDiffDays(toInputDate(x[AF.targetDate]))??9999)-(dateDiffDays(toInputDate(y[AF.targetDate]))??9999));
+  let cards="";try{cards=rows.map(renderWorkCard).join("")}catch(e){log("cards",e)}
+  page.innerHTML=workSwitch()+`<div class="section-row"><div><h2>My Work</h2><p>Work assigned to <b>${esc((a&&a.name)||personDisplay(S.user)||S.user||"you")}</b>. Nearest target date first.</p></div><div class="actions"><button class="btn" data-v21-mw-refresh>↻ Refresh</button></div></div>
+    ${summaryHtml(all,"assigned to me")}
+    ${rows.length?`<div class="cards">${cards}</div>`:`<div class="empty"><div class="ico">✓</div><strong>${all.length?"No task matches this filter":"No work assigned to you"}</strong>${all.length?"Click “Show all”.":"Design work assigned to you will appear here."}</div>`}`;
+}
+// ---- view: Assigned by me ----
 function renderByMe(){
   const page=el("page");if(!page)return;
   const a=actorNow();
-  if(!a&&!S.user){page.innerHTML=`<div class="empty"><strong>Choose your name first</strong>Click "Working as" at the top and select your name.</div>`;return}
+  if(!a&&!S.user){page.innerHTML=workSwitch()+`<div class="empty"><strong>Choose your name first</strong>Click "Working as" at the top and select your name.</div>`;return}
   const seen=Number(LS.get(seenKey(),0))||0;
   const all=byMeRows();
   const people=[...new Set(all.map(x=>assignmentDisplayUser(x)||"—"))].sort();
   const q=NN(BM.q);
-  const rows=all.filter(x=>{
-    const st=STATE(x[AF.status]);
-    if(BM.f==="overdue"){if(!isOverdue(x))return false}else if(BM.f!=="all"&&st!==BM.f)return false;
+  const base=all.filter(x=>{
     if(BM.who&&(assignmentDisplayUser(x)||"—")!==BM.who)return false;
     if(q){const d=designOf(x),s=scopeOf(x);if(![sc(x[AF.projectCode]),projName(sc(x[AF.projectCode])),d.short,d.name,s.line,assignmentDisplayUser(x),sc(x[AF.status])].join(" ").toLowerCase().includes(q))return false}
     return true;
   });
-  const cnt=k=>k==="all"?all.length:k==="overdue"?all.filter(isOverdue).length:all.filter(x=>STATE(x[AF.status])===k).length;
-  const chips=[["all","All"],["todo","Not started"],["working","Working"],["review","In check / review"],["hold","On hold / Returned"],["done","Done"],["overdue","Overdue"]]
-    .map(([k,l])=>`<button type="button" class="v21-chip ${BM.f===k?"on":""} ${k==="overdue"&&cnt(k)?"bad":""}" data-v21-bm-f="${k}">${l} <b>${cnt(k)}</b></button>`).join("");
+  const rows=base.filter(passF);
   const groups=new Map();
   for(const x of rows){const p=assignmentDisplayUser(x)||"—";if(!groups.has(p))groups.set(p,[]);groups.get(p).push(x)}
   const order=x=>{const l=lastActivity(x);return l?Date.parse(l.time)||0:0};
   const body=[...groups.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([p,list])=>{
     list.sort((x,y)=>order(y)-order(x));
-    const c=k=>list.filter(x=>STATE(x[AF.status])===k).length;
+    const live=list.filter(x=>STATE(x[AF.status])!=="cancel"),tot=live.length||1,c=k=>live.filter(x=>STATE(x[AF.status])===k).length;
+    const mini=SEG.filter(s=>c(s[0])).map(([k,l,col])=>`<span class="v21-seg" style="flex:${c(k)} 1 0;background:${col}" title="${esc(l)}: ${c(k)}"></span>`).join("");
+    const avg=Math.round(live.reduce((s,x)=>s+num0(x[AF.progress]),0)/tot);
+    const fresh=list.filter(x=>{const l=lastActivity(x);return l&&!l.byMe&&Date.parse(l.time)>seen}).length;
     const trs=list.map(x=>{
-      const d=designOf(x),s=scopeOf(x),l=lastActivity(x),fresh=l&&!l.byMe&&Date.parse(l.time)>seen,code=sc(x[AF.projectCode]);
-      return `<tr class="${fresh?"v21-fresh":""}" data-open-assignment="${esc(idOf(x))}">
+      const d=designOf(x),s=scopeOf(x),l=lastActivity(x),nw=l&&!l.byMe&&Date.parse(l.time)>seen,code=sc(x[AF.projectCode]);
+      return `<tr class="${nw?"v21-fresh":""}" data-open-assignment="${esc(idOf(x))}">
         <td><b>${esc(code)}</b><div class="v21-sub">${esc(projName(code))}</div></td>
         <td><b>${esc(d.short||d.name)}</b><div class="v21-sub">${esc(d.short?d.name:"")}</div></td>
         <td>${esc(s.line)}${s.dt?`<div class="v21-sub">${esc(s.dt)}</div>`:""}</td>
         <td>${statusPill(sc(x[AF.status])||"Not Started")}${isOverdue(x)?` <span class="pill red">Overdue</span>`:""}</td>
         <td style="min-width:110px"><div class="v21-pct"><span>${num0(x[AF.progress])}%</span>${progressBar(x[AF.progress])}</div></td>
-        <td>${l?`${fresh?`<span class="v21-new">NEW</span> `:""}<b>${esc(l.action)}</b><div class="v21-sub">${esc(l.who||"")}${l.who?" • ":""}${esc(timeText(l.time))}</div>`:`<span class="v21-sub">No update yet</span>`}</td>
+        <td>${l?`${nw?`<span class="v21-new">NEW</span> `:""}<b>${esc(l.action)}</b><div class="v21-sub">${esc(l.who||"")}${l.who?" • ":""}${esc(timeText(l.time))}</div>`:`<span class="v21-sub">No update yet</span>`}</td>
         <td>${esc(displayDate(x[AF.targetDate]))}</td></tr>`;
     }).join("");
-    return `<section class="v21-bm-card"><div class="v21-bm-head"><div class="avatar">${esc(initials(p))}</div><div class="v21-bm-name"><b>${esc(p)}</b><span>${list.length} task${list.length===1?"":"s"}</span></div>
-      <div class="v21-bm-stats"><span class="pill">${c("todo")} not started</span><span class="pill blue">${c("working")} working</span><span class="pill purple">${c("review")} in check</span><span class="pill green">${c("done")} done</span>${list.filter(isOverdue).length?`<span class="pill red">${list.filter(isOverdue).length} overdue</span>`:""}</div></div>
+    return `<section class="v21-bm-card"><div class="v21-bm-head"><div class="avatar">${esc(initials(p))}</div><div class="v21-bm-name"><b>${esc(p)}${fresh?` <span class="v21-new">${fresh} NEW</span>`:""}</b><span>${list.length} task${list.length===1?"":"s"} • ${avg}% average progress${list.filter(isOverdue).length?` • <em>${list.filter(isOverdue).length} overdue</em>`:""}</span></div>
+      <div class="v21-bm-mini"><div class="v21-bar sm">${mini||'<span class="v21-seg empty"></span>'}</div><div class="v21-sub">${c("todo")} not started • ${c("working")} working • ${c("review")} in check • ${c("done")} done</div></div></div>
       <div class="v21-bm-table"><table><thead><tr><th>Project</th><th>Design</th><th>Tag / Scope</th><th>Status</th><th>Progress</th><th>Last update</th><th>Target</th></tr></thead><tbody>${trs}</tbody></table></div></section>`;
   }).join("");
-  page.innerHTML=`<div class="section-row"><div><h2>Assigned by me</h2><p>Tasks you gave to others, with their live status. Working as: <b>${esc((a&&a.name)||S.user||"")}</b>. You also get an email when someone changes a status.</p></div>
-     <div class="actions"><button class="btn" data-v21-bm-refresh>↻ Refresh</button></div></div>
-    <div class="v21-bm-tools"><div class="v21-bm-chips">${chips}</div>
-      <div class="v21-bm-filters"><select data-v21-bm-who><option value="">All people (${people.length})</option>${people.map(p=>`<option ${p===BM.who?"selected":""}>${esc(p)}</option>`).join("")}</select>
-      <input class="input" id="v21BmQ" placeholder="Search project, design, tag…" value="${esc(BM.q)}"></div></div>
-    ${BM.loading?`<div class="v21-sub" style="margin:8px 0"><span class="v21-dot spin"></span> Loading your assigned tasks from all projects…</div>`:""}
-    ${BM.error?`<div class="notice warn" style="margin:8px 0">Could not read all tasks from Zoho: ${esc(BM.error)}. Tasks of opened projects are still shown.</div>`:""}
-    ${body||`<div class="empty"><strong>${all.length?"No task matches the filter":"No tasks assigned by you yet"}</strong>${all.length?"Clear the filter or search.":"When you assign work, it appears here with live status."}</div>`}`;
+  page.innerHTML=workSwitch()+`<div class="section-row"><div><h2>Assigned by me</h2><p>Tasks <b>${esc((a&&a.name)||S.user||"")}</b> gave to others, with live status. You also get an email when someone changes a status.</p></div>
+     <div class="v21-bm-actions"><select data-v21-bm-who class="v21-sel"><option value="">All people (${people.length})</option>${people.map(p=>`<option ${p===BM.who?"selected":""}>${esc(p)}</option>`).join("")}</select>
+     <input class="input v21-q" id="v21BmQ" placeholder="Search project, design, tag…" value="${esc(BM.q)}"><button class="btn" data-v21-bm-refresh>↻ Refresh</button></div></div>
+    ${BM.loading?`<div class="v21-sub" style="margin:6px 0"><span class="v21-dot spin"></span> Loading your assigned tasks from all projects…</div>`:""}
+    ${BM.error?`<div class="notice warn" style="margin:6px 0">Could not read all tasks from Zoho: ${esc(BM.error)}. Tasks of opened projects are still shown.</div>`:""}
+    ${summaryHtml(base,"assigned by me")}
+    ${body||`<div class="empty"><strong>${all.length?"No task matches this filter":"No tasks assigned by you yet"}</strong>${all.length?"Click “Show all” or clear the search.":"When you assign work, it appears here with live status."}</div>`}`;
 }
-// open the page: show what we have at once, then read the latest from Zoho
 function showByMe(force){
   try{renderByMe()}catch(e){log("byme",e)}
-  loadByMe(force).then(()=>{if(S.view==="byme"){renderByMe();try{LS.set(seenKey(),Date.now())}catch(_){}navTab()}}).catch(e=>log("byme load",e));
-  if(!BM.loading)try{LS.set(seenKey(),Date.now())}catch(_){}
+  loadByMe(force).then(()=>{if(S.view==="mine"&&MW.tab==="by"){renderByMe();try{LS.set(seenKey(),Date.now())}catch(_){}}navTab()}).catch(e=>log("byme load",e));
+}
+// "My Work" now draws the switch + the chosen view. The old "byme" view name still works.
+patch("renderMyWork",()=>renderMyWork,f=>{renderMyWork=f},base=>function(){
+  try{if(MW.tab==="by")return showByMe(false);return renderMineView()}
+  catch(e){log("my work",e);return base.apply(this,arguments)}
+});
+// When "Working as" changes: refresh all data for the new person and open My Work (page 1).
+let lastActor=null;
+function checkActorChange(){
+  try{
+    const a=actorNow(),k=a?NN(a.name):"";
+    if(lastActor===null||lastActor===""){lastActor=k;return false}   // first choice after start-up: keep the normal start page
+    if(k===lastActor)return false;
+    lastActor=k;
+    try{closeModal()}catch(_){}
+    S.current=null;S.drawing=null;S.globalSearch="";try{const g=el("globalSearch");if(g)g.value=""}catch(_){}
+    S.cache.myTrackingLoaded=false;S.cache.myTrackingPromise=null;
+    BM.at=0;BM.key="";BM.q="";BM.who="";BM.error="";MW.tab="to";MW.f="all";
+    S.view="mine";try{window.scrollTo(0,0)}catch(_){}
+    say(`Now working as ${a?a.name:"—"}. Showing ${a?a.name+"'s":"your"} work.`,"good");
+    setTimeout(()=>{loadByMe(true).then(navTab).catch(()=>{})},200);
+    return true;
+  }catch(e){log("actor change",e);return false}
 }
 patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){
-  if(S.view==="byme"){
-    try{document.querySelectorAll(".navtab").forEach(b=>b.classList.toggle("active",b.dataset.view==="byme"))}catch(_){}
-    showByMe(false);navTab();try{drawBar()}catch(_){}return;
-  }
+  checkActorChange();
+  if(S.view==="byme"){S.view="mine";MW.tab="by"}
   const r=base.apply(this,arguments);navTab();return r;
 });
 try{
   document.addEventListener("click",e=>{
     const t=e.target;if(!t||!t.closest)return;let x;
-    if((x=t.closest("[data-v21-bm-f]"))){e.preventDefault();BM.f=x.dataset.v21BmF;return renderByMe()}
+    if((x=t.closest("[data-v21-ws]"))){e.preventDefault();const v=x.dataset.v21Ws;if(MW.tab===v)return;MW.tab=v;MW.f="all";return renderView()}
+    if((x=t.closest("[data-v21-f]"))&&S.view==="mine"){e.preventDefault();const f=x.dataset.v21F;MW.f=(MW.f===f?"all":f);return MW.tab==="by"?renderByMe():renderMineView()}
     if(t.closest("[data-v21-bm-refresh]")){e.preventDefault();return showByMe(true)}
+    if(t.closest("[data-v21-mw-refresh]")){e.preventDefault();S.cache.myTrackingLoaded=false;S.cache.myTrackingPromise=null;return renderMineView()}
   },true);
   document.addEventListener("change",e=>{const t=e.target;if(t&&t.matches&&t.matches("[data-v21-bm-who]")){BM.who=t.value;renderByMe()}},true);
   let bt=null;
   document.addEventListener("input",e=>{const t=e.target;if(t&&t.id==="v21BmQ"){BM.q=t.value;clearTimeout(bt);bt=setTimeout(()=>{const pos=t.selectionStart;renderByMe();const n=el("v21BmQ");if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}},250)}},true);
-}catch(e){log("byme events",e)}
+}catch(e){log("my work events",e)}
 // keep the NEW count fresh in the background (every 5 minutes, only when live)
-setInterval(()=>{try{if(V.live&&!S.demo&&actorNow())loadByMe(false).then(navTab).catch(()=>{})}catch(_){}},5*60000);
+setInterval(()=>{try{if(V.live&&!S.demo&&actorNow())loadByMe(false).then(()=>{navTab();if(S.view==="mine"){const w=document.querySelector("#page .v21-ws");if(w)w.outerHTML=workSwitch()}}).catch(()=>{})}catch(_){}},5*60000);
+// after start-up, read "Assigned by me" once so the NEW count is right
+setTimeout(()=>{try{if(actorNow()&&!S.demo)loadByMe(false).then(navTab).catch(()=>{})}catch(_){}},8000);
 
 /* ---- B. status email to the person who assigned the task ---- */
 const recentMail=new Map();   // same task + same status within 2 minutes = one email
@@ -8735,7 +8810,7 @@ patch("binaryStringToBlob",()=>binaryStringToBlob,f=>{binaryStringToBlob=f},base
    developer - it has the screen, project, person, time and technical detail. */
 const ER=window.MEGA_ERR||{list:[],api:[],seen:0,listeners:[],add(){}};
 function errNew(){return Math.max(0,ER.list.length-Number(ER.seen||0))}
-// V21.14: no separate button in the top bar. The error report is inside ⚙ Settings.
+// V21.13: no separate button in the top bar. The error report is inside ⚙ Settings.
 // The ⚙ button only gets a small red dot with the count when there are new errors.
 function errButton(){
   try{
@@ -8757,7 +8832,7 @@ function errReport(){
   const L=[];
   L.push(`MEGA Project Design Control - error report`);
   L.push(`Build: ${BUILD} | Time: ${new Date().toISOString()} | Online: ${navigator.onLine}`);
-  try{L.push(`User: ${S.user||"-"} | Working as: ${(window.MEGA_V217&&MEGA_V217.actor&&MEGA_V217.actor()?.name)||"-"} | View: ${S.view||"-"} | Project: ${S.projectWorkspace?.code||"-"}`)}catch(_){}
+  try{L.push(`User: ${S.user||"-"} | Working as: ${(S.v217&&S.v217.actor&&S.v217.actor.name)||"-"} | View: ${S.view||"-"} | Project: ${S.projectWorkspace?.code||"-"}`)}catch(_){}
   try{L.push(`Live: ${V.live?"yes":"no"} | Projects: ${(S.projects||[]).length} | Designs: ${(S.drawings||[]).length} | People: ${(S.employees||[]).length} | PD Sheet rows in memory: ${(S.pds?.summary||[]).length}${PDP.full?" (all projects)":` (projects: ${[...PDP.rows.keys()].join(", ")||"-"})`}`)}catch(_){}
   try{L.push(`PD Sheet project read: ${PDP.crit||"not proven yet"}${PDP.bad.size?` | not supported: ${[...PDP.bad].join(" ; ")}`:""}`)}catch(_){}
   try{if(V.fields.missing.length)L.push(`MISSING Design_Tracking fields: ${V.fields.missing.join(", ")}`)}catch(_){}
@@ -8853,6 +8928,32 @@ try{
   .v21-tf-up{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px;border:1px dashed #d780aa;border-radius:12px;background:#fff8fb;margin-bottom:12px}
   .v21-tf-list{display:grid;gap:6px}.v21-tf-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto;gap:10px;align-items:center;border:1px solid #eaecf0;border-radius:10px;padding:8px 10px}
   .v21-tf-ic{font-size:10px;font-weight:900;color:#c42770;background:#fdf0f6;border-radius:8px;text-align:center;padding:7px 0}.v21-tf-name{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* V21.15 My Work switch + summary graphics */
+  .v21-ws{display:inline-flex;gap:4px;padding:4px;border:1px solid #e4e7ec;border-radius:12px;background:#f9fafb;margin:0 0 12px}
+  .v21-ws button{border:0;background:transparent;border-radius:9px;padding:7px 14px;font:inherit;font-size:12px;font-weight:800;color:#475467;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+  .v21-ws button b{font-size:11px;color:#98a2b3}.v21-ws button.on{background:#fff;color:#c42770;box-shadow:0 1px 3px rgba(16,24,40,.12)}.v21-ws button.on b{color:#c42770}
+  .navtab .v21-tabdot{margin-left:4px}
+  .v21-sum{display:grid;grid-template-columns:170px minmax(0,1fr) 270px;gap:18px;align-items:center;border:1px solid #e4e7ec;border-radius:14px;background:#fff;padding:14px 16px;margin:0 0 12px}
+  .v21-sum-big{display:flex;align-items:center;gap:10px}.v21-sum-n{font-size:34px;font-weight:900;color:#101828;line-height:1}
+  .v21-sum-l{font-size:12px;font-weight:800;color:#344054}.v21-sum-l span{display:block;font-size:10px;font-weight:600;color:#667085;margin-top:2px}
+  .v21-sum-cap{display:flex;justify-content:space-between;font-size:10px;font-weight:800;color:#667085;margin-bottom:5px}
+  .v21-bar{display:flex;gap:2px;height:14px;border-radius:7px;overflow:hidden;background:#fff}.v21-bar.sm{height:8px;border-radius:4px;width:220px}
+  .v21-seg{display:block;min-width:4px;cursor:pointer}.v21-seg:first-child{border-radius:7px 0 0 7px}.v21-seg:last-child{border-radius:0 7px 7px 0}.v21-seg:only-child{border-radius:7px}.v21-seg.empty{flex:1;background:#f2f4f7;cursor:default}
+  .v21-legend{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:7px}
+  .v21-leg{border:0;background:transparent;padding:2px 4px;border-radius:6px;font:inherit;font-size:11px;color:#475467;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+  .v21-leg i{width:9px;height:9px;border-radius:3px;display:inline-block}.v21-leg b{color:#101828}.v21-leg.on,.v21-leg:hover{background:#f2f4f7}
+  .v21-sum-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .v21-tile{border:1px solid #eaecf0;border-radius:12px;background:#f9fafb;padding:8px 10px;text-align:left;cursor:pointer;font:inherit;display:grid;grid-template-columns:22px 1fr;column-gap:6px;align-items:center}
+  .v21-tile .ic{grid-row:span 2;width:22px;height:22px;border-radius:7px;background:#eaecf0;color:#475467;display:grid;place-items:center;font-weight:900;font-size:12px}
+  .v21-tile b{font-size:18px;line-height:1.1;color:#101828}.v21-tile small{font-size:10px;color:#667085}
+  .v21-tile.bad .ic{background:#fee4e2;color:#d03b3b}.v21-tile.bad b{color:#d03b3b}.v21-tile.warn .ic{background:#fef0c7;color:#93370d}
+  .v21-tile.on{border-color:#c42770;box-shadow:0 0 0 2px #fbe2ee}
+  .v21-filt{font-size:12px;color:#475467;margin:-4px 0 10px}
+  .v21-bm-mini{display:grid;gap:4px;justify-items:end}.v21-bm-name em{color:#d03b3b;font-style:normal;font-weight:800}
+  .v21-bm-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+  .v21-bm-actions .v21-sel{height:34px;width:180px;min-width:0}.v21-bm-actions .v21-q{height:34px;width:230px;min-width:0}.v21-bm-actions .btn{white-space:nowrap}
+  .v21-new{color:#fff!important}
+  @media(max-width:1000px){.v21-sum{grid-template-columns:1fr}.v21-bar.sm{width:160px}}
   .v21-gear{position:relative}
   .v21-gear.has-err::after{content:attr(data-err);position:absolute;top:-5px;right:-5px;min-width:15px;height:15px;padding:0 3px;border-radius:999px;background:#d92d20;color:#fff;font-size:9px;font-weight:900;line-height:15px;text-align:center;border:1.5px solid #fff}
   .v21-set{display:grid;gap:8px}
@@ -8871,7 +8972,7 @@ try{V.jobs=jobList();V.mail=mailList()}catch(_){}
 earlyPaint();
 // if the live start-up already finished before this layer loaded
 try{if(!V.live&&Array.isArray(S.employees)&&S.employees.length&&S.user){V.live=true;V.liveAt=Date.now();afterLive();saveMasters()}}catch(_){}
-try{const bd=el("buildBadge");if(bd)bd.textContent="V21.14";document.title="MEGA Engineering | Project Design Control V21.14"}catch(_){}
+try{const bd=el("buildBadge");if(bd)bd.textContent="V21.15";document.title="MEGA Engineering | Project Design Control V21.15"}catch(_){}
 drawBar();errButton();setTimeout(errButton,1500);
 console.info(`[${BUILD}] loaded`);
 })()}catch(e){try{console.error("[V21] could not load",e)}catch(_){}}
