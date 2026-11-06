@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.15
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.16
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V21.15".
+   3. Paste this whole file and save. The badge at the top shows "V21.16".
 
  >>> ALL SETTINGS ARE IN ONE PLACE: the "MEGA SETTINGS" block, the first
      SCRIPT below (report names, projects list, waiting times, speed,
@@ -74,6 +74,10 @@
                       Assigned to me / Assigned by me), summary graphics
                       (status bar, overdue, due in 7 days), changing
                       "Working as" refreshes the data and opens My Work.
+                      V21.16: ONE place for files - the "Files" tab on every
+                      task: up to 10 files at a time, any type, drag & drop,
+                      download in the same format, "Download all"; upload
+                      tries the file fields in order and shows Zoho's answer.
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -93,7 +97,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V21.15</title>
+<title>MEGA Engineering | Project Design Control V21.16</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -319,7 +323,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.15</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.16</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -433,7 +437,13 @@ var MEGA_SETTINGS={
     WIDGET_LINK:"https://creatorapp.zoho.in/megaengg/mega-engineering-sales/#Page:Design_Control"  // "Open" link in emails
   },
 
-  /* ---------- 8. Error report ---------- */
+  /* ---------- 8. Files (one Files tab on every task) ---------- */
+  FILES:{
+    MAX_FILES_PER_UPLOAD:10,     // how many files can be uploaded at one time
+    FIELDS:["Supporting_File","Drawing_File","Native_File"]   // Design_Tracking file fields, tried in this order
+  },
+
+  /* ---------- 9. Error report ---------- */
   ERRORS:{
     KEEP:60,                     // how many recent errors are kept on this computer
     SLOW_READ_MS:8000            // a read slower than this is written in the report as "slow"
@@ -7616,7 +7626,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V21(){
 "use strict";
-const BUILD="V21.15";
+const BUILD="V21.16";
 
 /* ---------- 0. Small safe helpers ---------- */
 const log=(...a)=>{try{console.warn("[V21]",...a)}catch(_){}};
@@ -8737,64 +8747,150 @@ patch("assignmentEmailHtml",()=>assignmentEmailHtml,f=>{assignmentEmailHtml=f},b
   }catch(e){log("task email",e);return base.apply(this,arguments)}
 });
 
-/* ---- D. Task Files tab on every task ---- */
-const TF_FIELD=AF.supportingFile;
+/* ---- D. ONE place for files: the "Files" tab on every task (V21.16) ----
+   - Only ONE upload option in the whole widget: Files tab → choose up to 10
+     files → Upload. (The upload boxes in Design Files / Start R0 are hidden;
+     files already there are still listed and can be downloaded.)
+   - Any file type: Excel, PDF, Word, DWG/DXF/STEP, ZIP, images…
+   - Anyone who opens the task can download any file, in exactly the format
+     it was uploaded (same name, same extension, same bytes).
+   - Reliable upload: each file is sent on its own; if Zoho refuses the first
+     file field, the next one is tried (Supporting_File → Drawing_File →
+     Native_File) and the one that works is remembered. Every failure is shown
+     with Zoho's exact answer and kept in ⚙ Settings → Error report.
+   Settings: MEGA_SETTINGS.FILES (top of the file). */
+const FS=(()=>{try{return (MEGA_SETTINGS&&MEGA_SETTINGS.FILES)||{}}catch(_){return{}}})();
+const MAX_FILES=Math.max(1,Number(FS.MAX_FILES_PER_UPLOAD)||10);
+const FILE_FIELDS=(Array.isArray(FS.FIELDS)&&FS.FIELDS.length?FS.FIELDS:[AF.supportingFile,AF.drawingFile,AF.nativeFile]).filter(Boolean);
+const TF={sel:[],busy:false,last:null};          // files chosen but not uploaded yet + result of the last upload
 function taskFileList(a){
   const out=[];
-  for(const [f,label] of [[AF.supportingFile,"File"],[AF.drawingFile,"Drawing"],[AF.nativeFile,"Native"]]){
-    try{for(const x of creatorFileEntries(a[f]))out.push({...x,field:f,label})}catch(_){}
+  for(const f of [...new Set([...FILE_FIELDS,AF.supportingFile,AF.drawingFile,AF.nativeFile])]){
+    try{for(const x of creatorFileEntries(a[f]))out.push({...x,field:f,id:idOf(a),where:"Task"})}catch(_){}
   }
   return out;
 }
+function revisionFileList(a){
+  const out=[];
+  try{for(const r of revisionsForAssignment(a))for(const f of [AF.drawingFile,AF.nativeFile,AF.supportingFile]){try{for(const x of creatorFileEntries(r[f]))out.push({...x,field:f,id:idOf(r),where:sc(r[AF.revision])||"Revision"})}catch(_){}}}catch(_){}
+  return out;
+}
 const fileIcon=n=>{const e=String(n||"").split(".").pop().toLowerCase();return /^(dwg|dxf|dgn|step|stp|igs|iges|sat|ifc|rvt|nwd|skp)$/.test(e)?"CAD":/^(xls|xlsx|xlsm|csv)$/.test(e)?"XLS":e==="pdf"?"PDF":/^(doc|docx)$/.test(e)?"DOC":/^(png|jpg|jpeg|gif|bmp|svg)$/.test(e)?"IMG":/^(zip|rar|7z)$/.test(e)?"ZIP":(e||"FILE").slice(0,4).toUpperCase()};
+const kb=n=>n>=1048576?`${(n/1048576).toFixed(1)} MB`:`${Math.max(1,Math.round(n/1024))} KB`;
 function taskFilesHtml(){
   const a=S.current;if(!a)return "";
-  const files=taskFileList(a),revs=(()=>{try{return revisionsForAssignment(a)}catch(_){return[]}})();
-  const revFiles=revs.reduce((n,r)=>n+[AF.drawingFile,AF.nativeFile,AF.supportingFile].reduce((m,f)=>{try{return m+creatorFileEntries(r[f]).length}catch(_){return m}},0),0);
+  const files=taskFileList(a).concat(revisionFileList(a));
   const max=Math.round((CONFIG.MAX_FILE_BYTES||52428800)/1048576);
+  const chosen=TF.sel.length?`<div class="v21-tf-chosen">${TF.sel.map((f,i)=>`<span class="v21-tf-chip">${esc(fileIcon(f.name))} ${esc(f.name)} <small>${kb(f.size)}</small><button type="button" data-v21-tf-drop="${i}" title="Remove">✕</button></span>`).join("")}</div>`:"";
+  const last=TF.last&&String(TF.last.id)===String(idOf(a))?TF.last:null;
   return `<div class="tab-card v21-tf">
-    <div class="section-row" style="margin-top:0"><div><h2>Task Files</h2><p>Upload any file for this task — Excel, PDF, Word, CAD (DWG/DXF), ZIP, images. Download gives back the exact same file. Up to ${max} MB per file.</p></div></div>
-    <div class="v21-tf-up"><input type="file" id="v21TfInput" multiple><button type="button" class="btn primary" data-v21-tf-upload>⬆ Upload selected files</button></div>
-    <div class="v21-tf-list">${files.length?files.map(f=>`<div class="v21-tf-row"><span class="v21-tf-ic">${esc(fileIcon(f.filename))}</span><span class="v21-tf-name" title="${esc(f.filename)}">${esc(f.filename)}</span><span class="v21-sub">${esc(f.label)}</span>
-      <button class="btn sm" data-download-file="${esc(idOf(a))}" data-file-field="${esc(f.field)}" data-file-path="${esc(f.filepath)}" data-file-name="${esc(f.filename)}">⬇ Download</button></div>`).join(""):`<div class="empty compact"><strong>No files yet</strong>Choose files above and click Upload.</div>`}</div>
-    ${revs.length?`<div class="v21-sub" style="margin-top:10px">Revision files: ${revFiles} file${revFiles===1?"":"s"} in ${revs.length} revision${revs.length===1?"":"s"} — see the <button class="btn link sm" data-detail-tab="files">Design Files</button> tab.</div>`:""}
+    <div class="section-row" style="margin-top:0"><div><h2>Files</h2><p>The one place to upload and download files for this task. Any file type (Excel, PDF, Word, CAD DWG/DXF, ZIP, images). Up to ${MAX_FILES} files at a time, ${max} MB each. Download gives back the same file in the same format.</p></div>
+      ${files.length>1?`<button type="button" class="btn" data-v21-tf-all>⬇ Download all (${files.length})</button>`:""}</div>
+    <label class="v21-tf-drop" for="v21TfInput"><input type="file" id="v21TfInput" multiple><b>⬆ Choose files</b><span>or drop them here • up to ${MAX_FILES} files</span></label>
+    ${chosen}
+    ${TF.sel.length?`<div class="v21-tf-go"><button type="button" class="btn primary" data-v21-tf-upload ${TF.busy?"disabled":""}>Upload ${TF.sel.length} file${TF.sel.length===1?"":"s"}</button><button type="button" class="btn" data-v21-tf-clear>Clear</button></div>`:""}
+    ${last&&last.failed.length?`<div class="notice warn" style="margin:10px 0"><b>${last.failed.length} file${last.failed.length===1?"":"s"} not uploaded:</b><br>${last.failed.map(f=>`${esc(f.name)} — ${esc(f.error)}`).join("<br>")}<br><span class="tiny">Details are in ⚙ Settings → Error report.</span></div>`:""}
+    <div class="v21-tf-list">${files.length?files.map(f=>`<div class="v21-tf-row"><span class="v21-tf-ic">${esc(fileIcon(f.filename))}</span><span class="v21-tf-name" title="${esc(f.filename)}">${esc(f.filename)}</span><span class="v21-sub">${esc(f.where)}</span>
+      <button class="btn sm" data-download-file="${esc(f.id)}" data-file-field="${esc(f.field)}" data-file-path="${esc(f.filepath)}" data-file-name="${esc(f.filename)}">⬇ Download</button></div>`).join(""):`<div class="empty compact"><strong>No files yet</strong>Choose files above and click Upload.</div>`}</div>
   </div>`;
 }
+function addChosen(list){
+  const files=Array.from(list||[]);if(!files.length)return;
+  const max=CONFIG.MAX_FILE_BYTES||52428800,big=files.filter(f=>f.size>max),ok=files.filter(f=>f.size<=max);
+  const room=MAX_FILES-TF.sel.length,take=ok.filter(f=>!TF.sel.some(x=>x.name===f.name&&x.size===f.size)).slice(0,Math.max(0,room));
+  TF.sel=TF.sel.concat(take);
+  if(big.length)say(`Too big (max ${Math.round(max/1048576)} MB): ${big.map(f=>f.name).join(", ")}`,"warn");
+  if(ok.length>take.length)say(`Only ${MAX_FILES} files can be uploaded at a time. Upload these first, then add the rest.`,"warn");
+  rerenderFiles();
+}
+function rerenderFiles(){try{const b=el("detailTabBody");if(b&&S.detailTab==="taskfiles")b.innerHTML=taskFilesHtml();else renderView()}catch(_){renderView()}}
+// one file -> Zoho, trying the file fields in order; the working field is remembered on this computer
+async function uploadOne(id,file){
+  if(S.demo)return uploadFile(id,FILE_FIELDS[0],file);
+  const fn=(ZOHO&&ZOHO.CREATOR&&ZOHO.CREATOR.FILE&&ZOHO.CREATOR.FILE.uploadFile)||(ZOHO&&ZOHO.CREATOR&&ZOHO.CREATOR.API&&ZOHO.CREATOR.API.uploadFile);
+  if(typeof fn!=="function")throw new Error("This Zoho page has no file upload function (Widget SDK v2 FILE.uploadFile is missing).");
+  const good=LS.get("fileField","");const order=good&&FILE_FIELDS.includes(good)?[good,...FILE_FIELDS.filter(f=>f!==good)]:FILE_FIELDS;
+  const errs=[];
+  for(const field of order){
+    try{
+      const cfg=withApp({report_name:CONFIG.REPORTS.tracking,id:String(id),field_name:field,file});
+      const res=await creatorWriteCall(()=>fn.call(ZOHO.CREATOR.FILE||ZOHO.CREATOR.API,cfg),`Upload ${file.name}`,{timeout:CONFIG.FILE_TIMEOUT_MS,healthKey:`file-upload:${field}`});
+      if(res&&res.code!=null&&Number(res.code)!==3000)throw new Error(`${res.message||res.description||"Zoho refused the file"} (code ${res.code})`);
+      if(good!==field)LS.set("fileField",field);
+      return {field,res};
+    }catch(e){
+      const m=errorText(e).replace(/\s*\|\s*\{\}/g,"");errs.push(`${field}: ${m}`);
+      if(e&&(e.code==="MEGA_TIMEOUT"||/offline|network|timed out/i.test(m)))break;   // connection problem: other fields will not help
+    }
+  }
+  throw new Error(errs.join(" | "));
+}
 async function uploadTaskFiles(){
-  const a=S.current,inp=el("v21TfInput");if(!a)return;
-  const files=Array.from((inp&&inp.files)||[]);if(!files.length)throw rule("Choose one or more files first.");
-  const big=files.filter(f=>f.size>CONFIG.MAX_FILE_BYTES);if(big.length)throw rule(`Too big (max ${Math.round(CONFIG.MAX_FILE_BYTES/1048576)} MB): ${big.map(f=>f.name).join(", ")}`);
-  const id=idOf(a);let done=0;const failed=[];
+  const a=S.current;if(!a||TF.busy)return;
+  if(!TF.sel.length){const inp=el("v21TfInput");if(inp&&inp.files&&inp.files.length)addChosen(inp.files)}
+  const files=TF.sel.slice(0,MAX_FILES);if(!files.length)throw rule("Choose one or more files first.");
+  if(typeof navigator!=="undefined"&&navigator.onLine===false)throw rule("You are offline. Nothing was uploaded.");
+  const id=idOf(a);const done=[],failed=[];TF.busy=true;
   busy(`Uploading ${files.length} file${files.length===1?"":"s"}…`);
   try{
     for(let i=0;i<files.length;i++){
       try{const lt=el("loadingText");if(lt)lt.textContent=`Uploading ${files[i].name} (${i+1}/${files.length})…`}catch(_){}
-      try{await uploadFile(id,TF_FIELD,files[i]);done++}
-      catch(e){failed.push(files[i].name);window.MEGA_ERR&&MEGA_ERR.add("error",`Upload failed: ${files[i].name} - ${errorText(e)}`,`task ${id}`)}
+      try{await uploadOne(id,files[i]);done.push(files[i])}
+      catch(e){const m=errorText(e);failed.push({name:files[i].name,error:m});window.MEGA_ERR&&MEGA_ERR.add("error",`Upload failed: ${files[i].name} (${kb(files[i].size)})`,`task ${id} | ${m}`)}
     }
-    if(done&&!S.demo){try{const fresh=await getTrackingRecordById(id);if(fresh){Object.assign(a,fresh);const loc=(S.records||[]).find(x=>String(idOf(x))===String(id));if(loc&&loc!==a)Object.assign(loc,fresh)}}catch(e){log("file refresh",e)}}
-    if(done){try{const names=files.filter(f=>!failed.includes(f.name)).map(f=>f.name).join(", ");const data=withActivity(a,{},"Files Uploaded",names,{kind:"files"});await updateRecord(id,data);Object.assign(a,data)}catch(e){log("file activity",e)}}
-  }finally{idle()}
-  say(`${done} file${done===1?"":"s"} uploaded${failed.length?` • ${failed.length} failed: ${failed.join(", ")}`:""}.`,failed.length?"warn":"good");
-  renderView();
+    if(done.length&&!S.demo){                       // read the record again so the new files appear with their real Zoho names
+      let fresh=null;try{fresh=await getTrackingRecordById(id)}catch(e){log("file refresh",e)}
+      if(!fresh){try{const rows=await fetchRecords(CONFIG.REPORTS.tracking,`(ID == ${id})`,1);fresh=rows&&rows[0]}catch(_){}}
+      if(fresh){Object.assign(a,fresh);const loc=(S.records||[]).find(x=>String(idOf(x))===String(id));if(loc&&loc!==a)Object.assign(loc,fresh)}
+    }
+    if(done.length){try{const data=withActivity(a,{},"Files Uploaded",done.map(f=>f.name).join(", "),{kind:"files"});await updateRecord(id,data);Object.assign(a,data)}catch(e){log("file activity",e)}}
+  }finally{TF.busy=false;idle()}
+  TF.sel=failed.length?files.filter(f=>failed.some(x=>x.name===f.name)):[];   // failed files stay selected for "Upload" again
+  TF.last={id,done:done.length,failed};
+  say(`${done.length} file${done.length===1?"":"s"} uploaded${failed.length?` • ${failed.length} not uploaded (see the message on the Files tab)`:""}.`,failed.length?"warn":"good");
+  rerenderFiles();
+}
+async function downloadAll(){
+  const a=S.current;if(!a)return;const files=taskFileList(a).concat(revisionFileList(a));let ok=0;const bad=[];
+  for(const f of files){try{await downloadRevisionFile(f.id,f.field,f.filepath,f.filename);ok++;await wait(600)}catch(e){bad.push(f.filename);window.MEGA_ERR&&MEGA_ERR.add("error",`Download failed: ${f.filename}`,errorText(e))}}
+  say(`${ok} file${ok===1?"":"s"} downloaded${bad.length?` • failed: ${bad.join(", ")}`:""}.`,bad.length?"warn":"good");
 }
 patch("renderDetailTab",()=>renderDetailTab,f=>{renderDetailTab=f},base=>function(){
   if(S.detailTab==="taskfiles"){try{return taskFilesHtml()}catch(e){log("task files",e)}}
   return base.apply(this,arguments);
 });
+let tfTaskId="";
 patch("renderDetailPage",()=>renderDetailPage,f=>{renderDetailPage=f},base=>function(){
+  try{const id=S.current?String(idOf(S.current)):"";if(id!==tfTaskId){tfTaskId=id;TF.sel=[]}}catch(_){}   // another task: forget chosen files
   const r=base.apply(this,arguments);
   try{
     const tabs=document.querySelector("#page .subtabs");
     if(tabs&&S.current&&!tabs.querySelector('[data-detail-tab="taskfiles"]')){
-      const n=taskFileList(S.current).length,b=document.createElement("button");
-      b.className=`subtab ${S.detailTab==="taskfiles"?"active":""}`;b.dataset.detailTab="taskfiles";b.textContent=`📎 Task Files${n?` (${n})`:""}`;
+      const n=taskFileList(S.current).length+revisionFileList(S.current).length,b=document.createElement("button");
+      b.className=`subtab ${S.detailTab==="taskfiles"?"active":""}`;b.dataset.detailTab="taskfiles";b.textContent=`📎 Files${n?` (${n})`:""}`;
       const ov=tabs.querySelector('[data-detail-tab="overview"]');tabs.insertBefore(b,ov?ov.nextSibling:tabs.firstChild);
     }
-  }catch(e){log("task files tab",e)}
+  }catch(e){log("files tab",e)}
   return r;
 });
-try{document.addEventListener("click",e=>{const t=e.target;if(t&&t.closest&&t.closest("[data-v21-tf-upload]")){e.preventDefault();e.stopImmediatePropagation();(typeof guarded==="function"?guarded:(f=>f()))(uploadTaskFiles)}},true)}catch(_){}
+// Design Files tab: no second upload place - a short pointer to the Files tab instead
+patch("renderFilesTab",()=>renderFilesTab,f=>{renderFilesTab=f},base=>function(){
+  const h0=base.apply(this,arguments);
+  return `<div class="notice good v21-onefile">To upload or download files use the <button type="button" class="btn link sm" data-detail-tab="taskfiles">📎 Files</button> tab (up to ${MAX_FILES} files at a time).</div>`+h0;
+});
+try{
+  document.addEventListener("click",e=>{
+    const t=e.target;if(!t||!t.closest)return;let x;
+    if(t.closest("[data-v21-tf-upload]")){e.preventDefault();e.stopImmediatePropagation();return (typeof guarded==="function"?guarded:(f=>f()))(uploadTaskFiles)}
+    if(t.closest("[data-v21-tf-clear]")){e.preventDefault();TF.sel=[];return rerenderFiles()}
+    if((x=t.closest("[data-v21-tf-drop]"))){e.preventDefault();TF.sel.splice(Number(x.dataset.v21TfDrop),1);return rerenderFiles()}
+    if(t.closest("[data-v21-tf-all]")){e.preventDefault();e.stopImmediatePropagation();return (typeof guarded==="function"?guarded:(f=>f()))(downloadAll)}
+  },true);
+  document.addEventListener("change",e=>{const t=e.target;if(t&&t.id==="v21TfInput"){addChosen(t.files);try{t.value=""}catch(_){}}},true);
+  document.addEventListener("dragover",e=>{const z=e.target&&e.target.closest&&e.target.closest(".v21-tf-drop");if(z){e.preventDefault();z.classList.add("over")}},true);
+  document.addEventListener("dragleave",e=>{const z=e.target&&e.target.closest&&e.target.closest(".v21-tf-drop");if(z)z.classList.remove("over")},true);
+  document.addEventListener("drop",e=>{const z=e.target&&e.target.closest&&e.target.closest(".v21-tf-drop");if(z){e.preventDefault();z.classList.remove("over");addChosen(e.dataTransfer&&e.dataTransfer.files)}},true);
+}catch(_){}
 // a damaged download (Zoho sent the file as text) is reported at once
 patch("binaryStringToBlob",()=>binaryStringToBlob,f=>{binaryStringToBlob=f},base=>function(content,mime){
   try{if(typeof content==="string"&&content.indexOf("�")>=0&&!/^text\//.test(String(mime||""))&&window.MEGA_ERR)MEGA_ERR.add("error","Downloaded file may be damaged: Zoho returned it as text (contains replacement characters)",String(mime||""))}catch(_){}
@@ -8925,6 +9021,15 @@ try{
   .v21-bm-table td{padding:8px 10px;border-bottom:1px solid #f2f4f7;vertical-align:top}.v21-bm-table tr{cursor:pointer}.v21-bm-table tbody tr:hover{background:#fff8fb}
   .v21-bm-table tr.v21-fresh{background:#fffbeb}.v21-new{display:inline-block;background:#d92d20;color:#fff;font-size:9px;font-weight:900;border-radius:4px;padding:1px 5px}
   .v21-sub{font-size:10px;color:#667085;margin-top:2px}.v21-pct span{font-size:11px;font-weight:800}
+  /* V21.16 one Files place */
+  .v21-tf-drop{display:flex;align-items:center;gap:12px;padding:16px;border:2px dashed #d780aa;border-radius:12px;background:#fff8fb;cursor:pointer;margin-bottom:10px}
+  .v21-tf-drop.over{background:#fdf0f6;border-color:#c42770}.v21-tf-drop input{display:none}.v21-tf-drop b{color:#c42770;font-size:14px}.v21-tf-drop span{font-size:12px;color:#667085}
+  .v21-tf-chosen{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}.v21-tf-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid #e4e7ec;border-radius:999px;padding:4px 6px 4px 10px;font-size:12px;background:#fff}
+  .v21-tf-chip small{color:#98a2b3}.v21-tf-chip button{border:0;background:#f2f4f7;border-radius:50%;width:18px;height:18px;cursor:pointer;font-size:10px}
+  .v21-tf-go{display:flex;gap:8px;margin-bottom:12px}
+  [data-v21-tf-all]{white-space:nowrap;flex:none}
+  /* only one upload place: hide the other file pickers (files already uploaded stay visible) */
+  .file-box input[type=file],.file-add-note{display:none!important}
   .v21-tf-up{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px;border:1px dashed #d780aa;border-radius:12px;background:#fff8fb;margin-bottom:12px}
   .v21-tf-list{display:grid;gap:6px}.v21-tf-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto;gap:10px;align-items:center;border:1px solid #eaecf0;border-radius:10px;padding:8px 10px}
   .v21-tf-ic{font-size:10px;font-weight:900;color:#c42770;background:#fdf0f6;border-radius:8px;text-align:center;padding:7px 0}.v21-tf-name{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -8972,7 +9077,7 @@ try{V.jobs=jobList();V.mail=mailList()}catch(_){}
 earlyPaint();
 // if the live start-up already finished before this layer loaded
 try{if(!V.live&&Array.isArray(S.employees)&&S.employees.length&&S.user){V.live=true;V.liveAt=Date.now();afterLive();saveMasters()}}catch(_){}
-try{const bd=el("buildBadge");if(bd)bd.textContent="V21.15";document.title="MEGA Engineering | Project Design Control V21.15"}catch(_){}
+try{const bd=el("buildBadge");if(bd)bd.textContent="V21.16";document.title="MEGA Engineering | Project Design Control V21.16"}catch(_){}
 drawBar();errButton();setTimeout(errButton,1500);
 console.info(`[${BUILD}] loaded`);
 })()}catch(e){try{console.error("[V21] could not load",e)}catch(_){}}
