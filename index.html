@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.16
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.17
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V21.16".
+   3. Paste this whole file and save. The badge at the top shows "V21.17".
 
  >>> ALL SETTINGS ARE IN ONE PLACE: the "MEGA SETTINGS" block, the first
      SCRIPT below (report names, projects list, waiting times, speed,
@@ -78,6 +78,11 @@
                       task: up to 10 files at a time, any type, drag & drop,
                       download in the same format, "Download all"; upload
                       tries the file fields in order and shows Zoho's answer.
+                      V21.17: "Assigned by me" works even when Zoho refuses the
+                      Assigned_By search (tries 2 search forms, then reads the
+                      running projects with "Load all running projects");
+                      short network drops / handled Zoho answers are info,
+                      not red errors.
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -97,7 +102,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V21.16</title>
+<title>MEGA Engineering | Project Design Control V21.17</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -323,7 +328,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.16</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.17</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -1069,6 +1074,10 @@ function megaHealthKind(key,status,detail){
   if(/\b(9220|9280)\b|No records (?:exist|found)/i.test(m))return "";
   if(/\b(3330|2945)\b|Invalid criteria/i.test(m))return "api";
   if(String(key).startsWith("meta:")||/Invalid Configuration/i.test(m))return "api";
+  // V21.17: "Improper Configuration" (Zoho refuses a search on a field) and "Failed to fetch"
+  // (a short network drop that the widget retries) are handled where they happen; the
+  // feature itself reports a real problem once if it cannot recover.
+  if(/Improper Configuration|Failed to fetch|\bstatus":0\b/i.test(m))return "api";
   return "error";
 }
 function setHealth(key,status,detail={}){try{if(window.MEGA_ERR&&(status==="error"||status==="slow")){const k=megaHealthKind(key,status,detail);if(k)MEGA_ERR.add(k,`${detail.label||key}: ${status==="error"?(detail.error||"failed"):"slow"}${detail.ms?` (${detail.ms} ms)`:""}`,detail.method||key)}}catch(_){}if(!S.runtime?.health)return;const prev=S.runtime.health.get(key)||{};S.runtime.health.set(key,{...prev,...detail,status,key,at:new Date().toISOString()})}
@@ -7626,7 +7635,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V21(){
 "use strict";
-const BUILD="V21.16";
+const BUILD="V21.17";
 
 /* ---------- 0. Small safe helpers ---------- */
 const log=(...a)=>{try{console.warn("[V21]",...a)}catch(_){}};
@@ -8070,7 +8079,7 @@ async function checkFields(){
   const F=V.fields;if(F.checked||S.demo)return;F.checked=true;
   // V21.12: Zoho answers "Invalid Configuration" when this login may not read the field list.
   // Then the check is skipped for 24 hours (it is only an extra safety check).
-  const off=LS.get("metaOff",0);if(off&&Date.now()-Number(off)<86400000){F.error="Skipped - Zoho does not allow the field list for this login (optional check)";return}
+  const off=LS.get("metaOff",0);if(off&&Date.now()-Number(off)<7*86400000){F.error="Skipped - Zoho does not allow the field list for this login (optional check)";return}
   try{
     if(!ZOHO?.CREATOR?.META?.getFields){F.error="Zoho field list is not available in this SDK.";return}
     const raw=await creatorReadCall(()=>ZOHO.CREATOR.META.getFields(withApp({form_link_name:CONFIG.FORMS.tracking})),"Check Design_Tracking fields",{retries:1,healthKey:"meta:v21-fields"});
@@ -8467,7 +8476,7 @@ patch("activityEntry",()=>activityEntry,f=>{activityEntry=f},base=>function(){
   return e;
 });
 /* ---- A. data: tasks I assigned (all projects) ---- */
-const BM={loading:null,at:0,key:"",error:"",q:"",f:"all",who:""};
+const BM={loading:null,at:0,key:"",error:"",q:"",f:"all",who:"",local:false,all:null};
 function upsertRaw(raw){
   try{
     const r=adaptRecord(raw),id=String(idOf(r));
@@ -8476,6 +8485,14 @@ function upsertRaw(raw){
     S.records.push(r);if(isAssignmentRecord(r))S.assignments.push(r);else if(isRevisionRecord(r))S.revisions.push(r);
   }catch(_){}
 }
+/* V21.17: Zoho answered "Improper Configuration" to the search (Assigned_By == "name").
+   Now: 1) the plain search, 2) a "contains" search are tried; the form that works is
+   remembered. 3) If Zoho refuses both, the page uses the tasks of the projects already
+   read in this session, and a button "Load all running projects" reads every running
+   project with the normal (working) project search. Nothing is ever shown as empty
+   without saying why. */
+const BY_TPL=[`(${AF.assignedBy} == "#")`,`(${AF.assignedBy}.contains("#"))`];
+const isCfgErr=e=>/Improper Configuration|Invalid criteria|\b(2945|3330|3100)\b|not of type/i.test(errorText(e));
 async function loadByMe(force){
   const a=actorNow(),names=[...new Set([a&&a.name,a&&a.email,!a&&S.user].filter(Boolean).map(String))];
   const key=names.join("|");
@@ -8484,17 +8501,47 @@ async function loadByMe(force){
   BM.loading=(async()=>{
     try{
       if(S.demo||!names.length){BM.at=Date.now();BM.key=key;return}
-      const report=await v208DiscoverTrackingReportLink();let ok=0,last=null;
-      for(const n of names){
-        try{const rows=await fetchRecords(report,`(${AF.assignedBy} == "${creatorCriteriaEscape(n)}")`,CONFIG.MAX_REPORT_PAGES);rows.forEach(upsertRaw);ok++}
-        catch(e){last=e}
+      if(force)LS.del("byOff");
+      const off=Number(LS.get("byOff",0))||0;
+      if(off&&Date.now()-off<86400000){BM.local=true;BM.error="";BM.at=Date.now();BM.key=key;return}   // Zoho refused the search today: use project reads
+      const report=await v208DiscoverTrackingReportLink();
+      const good=LS.get("byCrit","");const order=good&&BY_TPL.includes(good)?[good,...BY_TPL.filter(x=>x!==good)]:BY_TPL;
+      let worked=null,cfg=0,last=null;
+      for(const tpl of order){
+        let okAll=true;
+        for(const n of names){
+          try{const rows=await fetchRecords(report,tpl.replace("#",creatorCriteriaEscape(n)),CONFIG.MAX_REPORT_PAGES);rows.forEach(upsertRaw)}
+          catch(e){okAll=false;last=e;if(isCfgErr(e))cfg++;break}
+        }
+        if(okAll){worked=tpl;break}
+        if(last&&!isCfgErr(last))break;                     // network problem: another search form will not help
       }
-      BM.error=(!ok&&last)?errorText(last):"";
-      if(BM.error&&window.MEGA_ERR)MEGA_ERR.add("error",`Assigned by me: could not read tasks - ${BM.error}`,"Assigned_By criteria");
+      if(worked){if(good!==worked)LS.set("byCrit",worked);BM.local=false;BM.error=""}
+      else if(last&&isCfgErr(last)){
+        BM.local=true;BM.error="";LS.set("byOff",Date.now());
+        window.MEGA_ERR&&MEGA_ERR.add("api","Assigned by me: Zoho does not allow searching by Assigned By - showing tasks from read projects (button: Load all running projects)",errorText(last));
+      }else if(last){
+        BM.error=errorText(last).replace(/\s*\|\s*\{.*$/,"");
+        window.MEGA_ERR&&MEGA_ERR.add("error",`Assigned by me: could not read tasks - ${BM.error}`,"network / Zoho");
+      }
       BM.at=Date.now();BM.key=key;
     }finally{BM.loading=null}
   })();
   return BM.loading;
+}
+// Reads Design_Tracking for every running project (the normal project search that works),
+// 2 at a time, with progress. Used when Zoho refuses the "Assigned By" search.
+async function loadAllRunning(){
+  if(BM.all&&BM.all.running)return;
+  let codes=[];try{codes=PM.ok?[...PM.rows.values()].map(x=>String(x.code)):v18ProjectCodes()}catch(_){}
+  codes=codes.filter(c=>{try{return !v208ProjectLoaded(c)}catch(_){return true}});
+  BM.all={running:true,done:0,total:codes.length,failed:[]};renderByMe();
+  let i=0;
+  const worker=async()=>{while(i<codes.length){const c=codes[i++];try{await ensureTrackingForProject(c)}catch(e){BM.all.failed.push(c)}BM.all.done++;if(BM.all.done%4===0&&S.view==="mine"&&MW.tab==="by")renderByMe()}};
+  try{await Promise.all([worker(),worker()])}finally{BM.all.running=false}
+  if(BM.all.failed.length&&window.MEGA_ERR)MEGA_ERR.add("error",`Assigned by me: ${BM.all.failed.length} project(s) could not be read`,BM.all.failed.join(", "));
+  say(`Read ${BM.all.done-BM.all.failed.length} project${BM.all.done===1?"":"s"}${BM.all.failed.length?` • ${BM.all.failed.length} failed`:""}.`,BM.all.failed.length?"warn":"good");
+  if(S.view==="mine"&&MW.tab==="by")renderByMe();navTab();
 }
 function byMeRows(){
   return (S.assignments||[]).filter(a=>{
@@ -8612,6 +8659,7 @@ function renderByMe(){
      <div class="v21-bm-actions"><select data-v21-bm-who class="v21-sel"><option value="">All people (${people.length})</option>${people.map(p=>`<option ${p===BM.who?"selected":""}>${esc(p)}</option>`).join("")}</select>
      <input class="input v21-q" id="v21BmQ" placeholder="Search project, design, tag…" value="${esc(BM.q)}"><button class="btn" data-v21-bm-refresh>↻ Refresh</button></div></div>
     ${BM.loading?`<div class="v21-sub" style="margin:6px 0"><span class="v21-dot spin"></span> Loading your assigned tasks from all projects…</div>`:""}
+    ${BM.local?`<div class="notice warn v21-bm-local" style="margin:6px 0"><b>Showing tasks from the projects read so far.</b> Zoho does not allow searching by “Assigned By” in Design_Tracking_Report, so the widget reads project by project. ${BM.all&&BM.all.running?`<span class="v21-dot spin"></span> Reading project ${BM.all.done} of ${BM.all.total}…`:BM.all&&!BM.all.running?`All ${BM.all.total} running project${BM.all.total===1?"":"s"} read${BM.all.failed.length?` (${BM.all.failed.length} failed)`:""}.`:`<button type="button" class="btn sm primary" data-v21-bm-all>Load all running projects</button>`}</div>`:""}
     ${BM.error?`<div class="notice warn" style="margin:6px 0">Could not read all tasks from Zoho: ${esc(BM.error)}. Tasks of opened projects are still shown.</div>`:""}
     ${summaryHtml(base,"assigned by me")}
     ${body||`<div class="empty"><strong>${all.length?"No task matches this filter":"No tasks assigned by you yet"}</strong>${all.length?"Click “Show all” or clear the search.":"When you assign work, it appears here with live status."}</div>`}`;
@@ -8654,6 +8702,7 @@ try{
     if((x=t.closest("[data-v21-ws]"))){e.preventDefault();const v=x.dataset.v21Ws;if(MW.tab===v)return;MW.tab=v;MW.f="all";return renderView()}
     if((x=t.closest("[data-v21-f]"))&&S.view==="mine"){e.preventDefault();const f=x.dataset.v21F;MW.f=(MW.f===f?"all":f);return MW.tab==="by"?renderByMe():renderMineView()}
     if(t.closest("[data-v21-bm-refresh]")){e.preventDefault();return showByMe(true)}
+    if(t.closest("[data-v21-bm-all]")){e.preventDefault();e.stopImmediatePropagation();return loadAllRunning().catch(err=>log("load all",err))}
     if(t.closest("[data-v21-mw-refresh]")){e.preventDefault();S.cache.myTrackingLoaded=false;S.cache.myTrackingPromise=null;return renderMineView()}
   },true);
   document.addEventListener("change",e=>{const t=e.target;if(t&&t.matches&&t.matches("[data-v21-bm-who]")){BM.who=t.value;renderByMe()}},true);
@@ -9077,7 +9126,7 @@ try{V.jobs=jobList();V.mail=mailList()}catch(_){}
 earlyPaint();
 // if the live start-up already finished before this layer loaded
 try{if(!V.live&&Array.isArray(S.employees)&&S.employees.length&&S.user){V.live=true;V.liveAt=Date.now();afterLive();saveMasters()}}catch(_){}
-try{const bd=el("buildBadge");if(bd)bd.textContent="V21.16";document.title="MEGA Engineering | Project Design Control V21.16"}catch(_){}
+try{const bd=el("buildBadge");if(bd)bd.textContent="V21.17";document.title="MEGA Engineering | Project Design Control V21.17"}catch(_){}
 drawBar();errButton();setTimeout(errButton,1500);
 console.info(`[${BUILD}] loaded`);
 })()}catch(e){try{console.error("[V21] could not load",e)}catch(_){}}
