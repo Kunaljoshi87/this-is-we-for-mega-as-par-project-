@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V21.17
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.0
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V21.17".
+   3. Paste this whole file and save. The badge at the top shows "V22.0".
 
  >>> ALL SETTINGS ARE IN ONE PLACE: the "MEGA SETTINGS" block, the first
      SCRIPT below (report names, projects list, waiting times, speed,
@@ -83,6 +83,15 @@
                       running projects with "Load all running projects");
                       short network drops / handled Zoho answers are info,
                       not red errors.
+   SCRIPT megaV22     V22.0: simple 4-step flow on every task (1 Working ->
+                      2 Submitted for check -> 3 Checked -> 4 Issued), only
+                      the owner works / the checker checks / the assigner
+                      issues, emails FROM who acted TO who must act, pop-up
+                      "Waiting for you", one-click steps on My Work cards,
+                      "To check / issue" switch, files shared between owner,
+                      checker and assigner with a viewer (PDF / images),
+                      Remind, Export to Excel, Projects progress view, Data
+                      check (⚙ Settings).
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -102,7 +111,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V21.17</title>
+<title>MEGA Engineering | Project Design Control V22.0</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -328,7 +337,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V21.17</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.0</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -8201,6 +8210,36 @@ patch("v18ProjectForCode",()=>v18ProjectForCode,f=>{v18ProjectForCode=f},base=>f
   return p;
 });
 const baseRenderProjects=typeof renderProjects==="function"?renderProjects:null;
+/* V22: Projects page has two views - [▦ List] and [▮ Progress].
+   Progress = for every running project: tasks issued out of total, a status bar,
+   overdue tasks and the team. Projects are read when opened, or all at once
+   with "Load all running projects". */
+const PV={mode:"list"};
+function projectProgressHtml(list){
+  const SG=[["todo","Not started","#98a2b3"],["working","Working","#2f6fdb"],["review","In check","#c2459a"],["hold","On hold / Returned","#fab219"],["done","Issued / done","#0ca30c"]];
+  const st=s=>{s=sc(s)||"Not Started";if(s==="Not Started")return"todo";if(/^(Submitted for|Checking|Checked|Reviewing|Reviewed|Approving)/.test(s))return"review";if(/^(Completed|Approved|Issued)$/.test(s))return"done";if(/^(On Hold|Returned)$/.test(s))return"hold";if(s==="Cancelled")return"cancel";return"working"};
+  let loadedN=0;
+  const rows=list.map(x=>{
+    let loaded=false;try{loaded=v208ProjectLoaded(x.code)}catch(_){}
+    const tasks=(S.assignments||[]).filter(a=>sc(a[AF.projectCode])===String(x.code)&&sc(a[AF.assignedFrom])&&st(a[AF.status])!=="cancel");
+    if(loaded)loadedN++;
+    const n=k=>tasks.filter(a=>st(a[AF.status])===k).length,tot=tasks.length,done=n("done"),pct=tot?Math.round(done*100/tot):0;
+    const od=tasks.filter(a=>{try{const d=dateDiffDays(toInputDate(a[AF.targetDate]));return d!=null&&d<0&&st(a[AF.status])!=="done"}catch(_){return false}}).length;
+    const team=[...new Set(tasks.map(a=>sc(a[AF.assignedEmployeeName])).filter(Boolean))];
+    const bar=tot?SG.filter(g=>n(g[0])).map(([k,l,c])=>`<span class="v21-seg" style="flex:${n(k)} 1 0;background:${c}" title="${esc(l)}: ${n(k)}"></span>`).join(""):'<span class="v21-seg empty"></span>';
+    return `<tr class="project-row" data-project-open="${esc(x.code)}"><td class="project-code">${esc(x.code)}</td><td><div class="project-name">${esc(x.name||x.client||"—")}</div><div class="v217-pm-sub">${esc(x.manager||"")}</div></td>
+      <td style="min-width:260px">${loaded?`<div class="v21-bar">${bar}</div><div class="v21-sub">${n("todo")} not started • ${n("working")} working • ${n("review")} in check • ${n("hold")} on hold/returned</div>`:`<span class="tiny muted">Not read yet — click to open, or “Load all”</span>`}</td>
+      <td>${loaded?`<b>${done}</b> / ${tot}<div class="v21-sub">${pct}% issued</div>`:"—"}</td><td>${loaded?(od?`<span class="pill red">${od} overdue</span>`:"0"):"—"}</td><td>${loaded?`${team.length} <span class="v21-sub">${esc(team.slice(0,3).join(", "))}${team.length>3?" …":""}</span>`:"—"}</td></tr>`;
+  }).join("");
+  const legend=SG.map(([k,l,c])=>`<span class="v21-leg"><i style="background:${c}"></i>${esc(l)}</span>`).join("");
+  return `<div class="v21-sum" style="grid-template-columns:1fr auto"><div><div class="v21-legend">${legend}</div><div class="v21-sub">${loadedN} of ${list.length} projects read${BM.all&&BM.all.running?` • reading ${BM.all.done} of ${BM.all.total}…`:""}</div></div>
+    <div>${loadedN<list.length?`<button class="btn primary" data-v22-loadall ${BM.all&&BM.all.running?"disabled":""}>Load all running projects</button>`:""}</div></div>
+    <div class="project-list"><table class="project-table"><thead><tr><th>Project Code</th><th>Project / Manager</th><th>Status of tasks</th><th>Issued</th><th>Overdue</th><th>Team</th></tr></thead><tbody>${rows||`<tr><td colspan="6"><div class="empty compact"><strong>No projects</strong></div></td></tr>`}</tbody></table></div>`;
+}
+try{document.addEventListener("click",e=>{const t=e.target;if(!t||!t.closest)return;let x;
+  if((x=t.closest("[data-v22-pv]"))){e.preventDefault();PV.mode=x.dataset.v22Pv;return renderView()}
+  if(t.closest("[data-v22-loadall]")){e.preventDefault();e.stopImmediatePropagation();const r=loadAllRunning();const tick=setInterval(()=>{if(S.view==="projects"&&PV.mode==="progress")renderView()},2500);Promise.resolve(r).finally(()=>{clearInterval(tick);if(S.view==="projects")renderView()});return}
+},true)}catch(_){}
 if(baseRenderProjects)renderProjects=function(){
   try{
     if(!PM.at||Date.now()-PM.at>PM_MAX_AGE)setTimeout(()=>pmLoad(false),0);
@@ -8220,7 +8259,9 @@ if(baseRenderProjects)renderProjects=function(){
         <td>${loaded?(st.overdue?`<span class="pill red">${st.overdue}</span>`:"0"):"—"}</td>
         <td>${loaded?`<div class="project-progress-label"><span>Engineering</span><b>${st.avg}%</b></div>${progressBar(st.avg)}`:`<span class="tiny muted">Open to load</span>`}</td></tr>`;
     };
-    $("page").innerHTML=`<div class="project-index-head"><div class="project-index-title"><h2>Projects</h2><p>Running projects from All_Projects. Completed projects are hidden${PM.hidden?` (${PM.hidden})`:""}.</p></div><div class="actions"><span class="pill brand">${list.length} Projects</span></div></div>
+    const pvSw=`<div class="v21-ws" style="margin:0"><button type="button" class="${PV.mode==="list"?"on":""}" data-v22-pv="list">▦ List</button><button type="button" class="${PV.mode==="progress"?"on":""}" data-v22-pv="progress">▮ Progress</button></div>`;
+    if(PV.mode==="progress"){$("page").innerHTML=`<div class="project-index-head"><div class="project-index-title"><h2>Projects — progress</h2><p>Tasks issued out of total for every running project.</p></div><div class="actions">${pvSw}</div></div>`+projectProgressHtml(list);return}
+    $("page").innerHTML=`<div class="project-index-head"><div class="project-index-title"><h2>Projects</h2><p>Running projects from All_Projects. Completed projects are hidden${PM.hidden?` (${PM.hidden})`:""}.</p></div>${pvSw}<div class="actions"><span class="pill brand">${list.length} Projects</span></div></div>
       <div class="project-list"><table class="project-table"><thead><tr><th>Project Code</th><th>Project Name / Client</th><th>Current Status</th><th>Project Manager</th><th>Design Work</th><th>Open</th><th>Overdue</th><th>Engineering Progress</th></tr></thead><tbody>
       ${list.length?list.map(row).join(""):`<tr><td colspan="8"><div class="empty compact"><strong>No projects found</strong>${q?"Try another search.":"No running project in All_Projects."}</div></td></tr>`}</tbody></table></div>`;
   }catch(e){log("projects list",e);return baseRenderProjects.apply(this,arguments)}
@@ -8587,10 +8628,25 @@ function summaryHtml(list,title){
     ${MW.f!=="all"?`<div class="v21-filt">Showing: <b>${esc(MW.f==="overdue"?"Overdue":MW.f==="soon"?"Due in 7 days":(SEG.find(x=>x[0]===MW.f)||["",""])[1])}</b> <button type="button" class="btn link sm" data-v21-f="all">Show all</button></div>`:""}`;
 }
 const passF=a=>MW.f==="all"?true:MW.f==="overdue"?isOverdue(a):MW.f==="soon"?dueSoon(a):STATE(a[AF.status])===MW.f;
+// V22: the main design task that the widget creates for the assigner ("Rutuja → Rutuja") is a
+// container, not work - it is not listed in "Assigned to me".
+const notSelfRoot=a=>{try{return !(V22().isSelfRoot&&V22().isSelfRoot(a))}catch(_){return true}};
+const V22=()=>window.MEGA_V22||{};
+const myList=()=>{try{return myAssignments().filter(notSelfRoot)}catch(_){return[]}};
 function workSwitch(){
   const n=newCount();
-  let mine=0;try{mine=myAssignments().filter(a=>!["done","cancel"].includes(STATE(a[AF.status]))).length}catch(_){}
-  return `<div class="v21-ws" role="tablist"><button type="button" class="${MW.tab==="to"?"on":""}" data-v21-ws="to">✓ Assigned to me <b>${mine}</b></button><button type="button" class="${MW.tab==="by"?"on":""}" data-v21-ws="by">⇢ Assigned by me${n?` <span class="v21-tabdot">${n} new</span>`:""}</button></div>`;
+  let mine=0,chk=0;try{mine=myList().filter(a=>!["done","cancel"].includes(STATE(a[AF.status]))).length}catch(_){}
+  try{chk=(V22().toCheckRows?V22().toCheckRows():[]).length}catch(_){}
+  return `<div class="v21-ws" role="tablist"><button type="button" class="${MW.tab==="to"?"on":""}" data-v21-ws="to">✓ Assigned to me <b>${mine}</b></button><button type="button" class="${MW.tab==="chk"?"on":""}" data-v21-ws="chk">☑ To check / issue${chk?` <span class="v21-tabdot">${chk}</span>`:" <b>0</b>"}</button><button type="button" class="${MW.tab==="by"?"on":""}" data-v21-ws="by">⇢ Assigned by me${n?` <span class="v21-tabdot">${n} new</span>`:""}</button></div>`;
+}
+// ---- view: To check / issue (I am the checker, or I assigned it and it is checked) ----
+function renderCheckView(){
+  const page=el("page");if(!page)return;
+  if(!S.cache.myTrackingLoaded){renderMineView();return}
+  const rows=(V22().toCheckRows?V22().toCheckRows():[]).sort((x,y)=>(dateDiffDays(toInputDate(x[AF.targetDate]))??9999)-(dateDiffDays(toInputDate(y[AF.targetDate]))??9999));
+  let cards="";try{cards=rows.map(renderWorkCard).join("")}catch(e){log("cards",e)}
+  page.innerHTML=workSwitch()+`<div class="section-row"><div><h2>To check / issue</h2><p>Work submitted to you for checking, and checked work you assigned that is ready to issue.</p></div><div class="actions"><button class="btn" data-v21-xls="chk">⬇ Excel</button><button class="btn" data-v21-mw-refresh>↻ Refresh</button></div></div>
+    ${rows.length?`<div class="cards">${cards}</div>`:`<div class="empty"><div class="ico">☑</div><strong>Nothing waiting for you</strong>When someone submits work for your check, it appears here (you also get an email and a pop-up).</div>`}`;
 }
 function navTab(){
   try{
@@ -8605,14 +8661,14 @@ function renderMineView(){
   const page=el("page");if(!page)return;
   if(!S.cache.myTrackingLoaded){
     page.innerHTML=workSwitch()+`<div class="section-row"><div><h2>My Work</h2><p>Loading your work…</p></div></div><div class="v208-loading-skeleton">${'<div class="v208-sk"></div>'.repeat(4)}</div>`;
-    if(!MW.loadingMine){MW.loadingMine=true;Promise.resolve().then(()=>v208EnsureMyTracking()).catch(e=>log("my work load",e)).finally(()=>{MW.loadingMine=false;if(S.view==="mine"&&MW.tab==="to")renderMineView()})}
+    if(!MW.loadingMine){MW.loadingMine=true;Promise.resolve().then(()=>v208EnsureMyTracking()).catch(e=>log("my work load",e)).finally(()=>{MW.loadingMine=false;if(S.view==="mine"&&MW.tab!=="by")renderView();try{V22().popupCheck&&V22().popupCheck(false)}catch(_){}})}
     return;
   }
   const q=sc(S.globalSearch).trim().toLowerCase(),a=actorNow();
-  let all=[];try{all=myAssignments().filter(x=>searchMatchAssignment(x,q))}catch(e){log(e)}
+  let all=[];try{all=myList().filter(x=>searchMatchAssignment(x,q))}catch(e){log(e)}
   const rows=all.filter(passF).sort((x,y)=>(dateDiffDays(toInputDate(x[AF.targetDate]))??9999)-(dateDiffDays(toInputDate(y[AF.targetDate]))??9999));
   let cards="";try{cards=rows.map(renderWorkCard).join("")}catch(e){log("cards",e)}
-  page.innerHTML=workSwitch()+`<div class="section-row"><div><h2>My Work</h2><p>Work assigned to <b>${esc((a&&a.name)||personDisplay(S.user)||S.user||"you")}</b>. Nearest target date first.</p></div><div class="actions"><button class="btn" data-v21-mw-refresh>↻ Refresh</button></div></div>
+  page.innerHTML=workSwitch()+`<div class="section-row"><div><h2>My Work</h2><p>Work assigned to <b>${esc((a&&a.name)||personDisplay(S.user)||S.user||"you")}</b>. Nearest target date first.</p></div><div class="actions"><button class="btn" data-v21-xls="mine">⬇ Excel</button><button class="btn" data-v21-mw-refresh>↻ Refresh</button></div></div>
     ${summaryHtml(all,"assigned to me")}
     ${rows.length?`<div class="cards">${cards}</div>`:`<div class="empty"><div class="ico">✓</div><strong>${all.length?"No task matches this filter":"No work assigned to you"}</strong>${all.length?"Click “Show all”.":"Design work assigned to you will appear here."}</div>`}`;
 }
@@ -8649,15 +8705,16 @@ function renderByMe(){
         <td>${statusPill(sc(x[AF.status])||"Not Started")}${isOverdue(x)?` <span class="pill red">Overdue</span>`:""}</td>
         <td style="min-width:110px"><div class="v21-pct"><span>${num0(x[AF.progress])}%</span>${progressBar(x[AF.progress])}</div></td>
         <td>${l?`${nw?`<span class="v21-new">NEW</span> `:""}<b>${esc(l.action)}</b><div class="v21-sub">${esc(l.who||"")}${l.who?" • ":""}${esc(timeText(l.time))}</div>`:`<span class="v21-sub">No update yet</span>`}</td>
-        <td>${esc(displayDate(x[AF.targetDate]))}</td></tr>`;
+        <td>${esc(displayDate(x[AF.targetDate]))}</td>
+        <td>${STATE(x[AF.status])!=="done"&&STATE(x[AF.status])!=="cancel"?`<button type="button" class="btn sm" data-v22-remind="${esc(idOf(x))}" title="Email a reminder to ${esc(assignmentDisplayUser(x))}">🔔 Remind</button>`:""}</td></tr>`;
     }).join("");
     return `<section class="v21-bm-card"><div class="v21-bm-head"><div class="avatar">${esc(initials(p))}</div><div class="v21-bm-name"><b>${esc(p)}${fresh?` <span class="v21-new">${fresh} NEW</span>`:""}</b><span>${list.length} task${list.length===1?"":"s"} • ${avg}% average progress${list.filter(isOverdue).length?` • <em>${list.filter(isOverdue).length} overdue</em>`:""}</span></div>
       <div class="v21-bm-mini"><div class="v21-bar sm">${mini||'<span class="v21-seg empty"></span>'}</div><div class="v21-sub">${c("todo")} not started • ${c("working")} working • ${c("review")} in check • ${c("done")} done</div></div></div>
-      <div class="v21-bm-table"><table><thead><tr><th>Project</th><th>Design</th><th>Tag / Scope</th><th>Status</th><th>Progress</th><th>Last update</th><th>Target</th></tr></thead><tbody>${trs}</tbody></table></div></section>`;
+      <div class="v21-bm-table"><table><thead><tr><th>Project</th><th>Design</th><th>Tag / Scope</th><th>Status</th><th>Progress</th><th>Last update</th><th>Target</th><th></th></tr></thead><tbody>${trs}</tbody></table></div></section>`;
   }).join("");
   page.innerHTML=workSwitch()+`<div class="section-row"><div><h2>Assigned by me</h2><p>Tasks <b>${esc((a&&a.name)||S.user||"")}</b> gave to others, with live status. You also get an email when someone changes a status.</p></div>
      <div class="v21-bm-actions"><select data-v21-bm-who class="v21-sel"><option value="">All people (${people.length})</option>${people.map(p=>`<option ${p===BM.who?"selected":""}>${esc(p)}</option>`).join("")}</select>
-     <input class="input v21-q" id="v21BmQ" placeholder="Search project, design, tag…" value="${esc(BM.q)}"><button class="btn" data-v21-bm-refresh>↻ Refresh</button></div></div>
+     <input class="input v21-q" id="v21BmQ" placeholder="Search project, design, tag…" value="${esc(BM.q)}">${(()=>{const od=base.filter(isOverdue).map(x=>idOf(x));return od.length?`<button class="btn" data-v22-remind="${esc(od.join(","))}">🔔 Remind overdue (${od.length})</button>`:""})()}<button class="btn" data-v21-xls="by">⬇ Excel</button><button class="btn" data-v21-bm-refresh>↻ Refresh</button></div></div>
     ${BM.loading?`<div class="v21-sub" style="margin:6px 0"><span class="v21-dot spin"></span> Loading your assigned tasks from all projects…</div>`:""}
     ${BM.local?`<div class="notice warn v21-bm-local" style="margin:6px 0"><b>Showing tasks from the projects read so far.</b> Zoho does not allow searching by “Assigned By” in Design_Tracking_Report, so the widget reads project by project. ${BM.all&&BM.all.running?`<span class="v21-dot spin"></span> Reading project ${BM.all.done} of ${BM.all.total}…`:BM.all&&!BM.all.running?`All ${BM.all.total} running project${BM.all.total===1?"":"s"} read${BM.all.failed.length?` (${BM.all.failed.length} failed)`:""}.`:`<button type="button" class="btn sm primary" data-v21-bm-all>Load all running projects</button>`}</div>`:""}
     ${BM.error?`<div class="notice warn" style="margin:6px 0">Could not read all tasks from Zoho: ${esc(BM.error)}. Tasks of opened projects are still shown.</div>`:""}
@@ -8670,7 +8727,7 @@ function showByMe(force){
 }
 // "My Work" now draws the switch + the chosen view. The old "byme" view name still works.
 patch("renderMyWork",()=>renderMyWork,f=>{renderMyWork=f},base=>function(){
-  try{if(MW.tab==="by")return showByMe(false);return renderMineView()}
+  try{if(MW.tab==="by")return showByMe(false);if(MW.tab==="chk")return renderCheckView();return renderMineView()}
   catch(e){log("my work",e);return base.apply(this,arguments)}
 });
 // When "Working as" changes: refresh all data for the new person and open My Work (page 1).
@@ -8703,6 +8760,9 @@ try{
     if((x=t.closest("[data-v21-f]"))&&S.view==="mine"){e.preventDefault();const f=x.dataset.v21F;MW.f=(MW.f===f?"all":f);return MW.tab==="by"?renderByMe():renderMineView()}
     if(t.closest("[data-v21-bm-refresh]")){e.preventDefault();return showByMe(true)}
     if(t.closest("[data-v21-bm-all]")){e.preventDefault();e.stopImmediatePropagation();return loadAllRunning().catch(err=>log("load all",err))}
+    if((x=t.closest("[data-v21-xls]"))){e.preventDefault();e.stopImmediatePropagation();try{const k=x.dataset.v21Xls,f=V22().exportRows;if(!f)return;
+      if(k==="mine")return f(myList(),"My_Work");if(k==="chk")return f(V22().toCheckRows(),"To_Check");if(k==="by")return f(byMeRows(),"Assigned_by_me");
+      if(k==="project"){const c=String(S.projectWorkspace?.code||"");return f((S.assignments||[]).filter(a=>sc(a[AF.projectCode])===c),`Project_${c}`)}}catch(err){log("excel",err)}return}
     if(t.closest("[data-v21-mw-refresh]")){e.preventDefault();S.cache.myTrackingLoaded=false;S.cache.myTrackingPromise=null;return renderMineView()}
   },true);
   document.addEventListener("change",e=>{const t=e.target;if(t&&t.matches&&t.matches("[data-v21-bm-who]")){BM.who=t.value;renderByMe()}},true);
@@ -8739,6 +8799,7 @@ function statusEmailHtml(a,from,to,who,data){
 }
 function queueStatusMail(rec,from,to,data){
   if(!EMAIL_STATUS_ON||S.demo)return;
+  if(window.MEGA_FLOW_BUSY)return;          // V22 flow step: it sends its own email (FROM who acted, TO who must act)
   const a=isAssignmentRecord(rec)?rec:(isRevisionRecord(rec)?parentOfRevision(rec):null);if(!a)return;
   const byVal=sc(a[AF.assignedBy]);if(!byVal)return;
   const k=`${idOf(a)}|${to}`;if(Date.now()-(recentMail.get(k)||0)<120000)return;recentMail.set(k,Date.now());
@@ -8828,19 +8889,23 @@ const fileIcon=n=>{const e=String(n||"").split(".").pop().toLowerCase();return /
 const kb=n=>n>=1048576?`${(n/1048576).toFixed(1)} MB`:`${Math.max(1,Math.round(n/1024))} KB`;
 function taskFilesHtml(){
   const a=S.current;if(!a)return "";
-  const files=taskFileList(a).concat(revisionFileList(a));
+  // V22: this task + the tasks under it + the reference task above it (assigner, checker and owner see the same files)
+  const fam=(()=>{try{return V22().familyFiles?V22().familyFiles(a):null}catch(_){return null}})();
+  const files=fam||taskFileList(a).concat(revisionFileList(a));
+  const up=(()=>{try{return V22().canUpload?V22().canUpload(a):true}catch(_){return true}})();
   const max=Math.round((CONFIG.MAX_FILE_BYTES||52428800)/1048576);
   const chosen=TF.sel.length?`<div class="v21-tf-chosen">${TF.sel.map((f,i)=>`<span class="v21-tf-chip">${esc(fileIcon(f.name))} ${esc(f.name)} <small>${kb(f.size)}</small><button type="button" data-v21-tf-drop="${i}" title="Remove">✕</button></span>`).join("")}</div>`:"";
   const last=TF.last&&String(TF.last.id)===String(idOf(a))?TF.last:null;
   return `<div class="tab-card v21-tf">
     <div class="section-row" style="margin-top:0"><div><h2>Files</h2><p>The one place to upload and download files for this task. Any file type (Excel, PDF, Word, CAD DWG/DXF, ZIP, images). Up to ${MAX_FILES} files at a time, ${max} MB each. Download gives back the same file in the same format.</p></div>
       ${files.length>1?`<button type="button" class="btn" data-v21-tf-all>⬇ Download all (${files.length})</button>`:""}</div>
-    <label class="v21-tf-drop" for="v21TfInput"><input type="file" id="v21TfInput" multiple><b>⬆ Choose files</b><span>or drop them here • up to ${MAX_FILES} files</span></label>
+    ${up?`<label class="v21-tf-drop" for="v21TfInput"><input type="file" id="v21TfInput" multiple><b>⬆ Choose files</b><span>or drop them here • up to ${MAX_FILES} files</span></label>`:`<div class="notice" style="margin-bottom:10px">You can view and download the files. Upload is for the task owner, the checker and the person who assigned it.</div>`}
     ${chosen}
     ${TF.sel.length?`<div class="v21-tf-go"><button type="button" class="btn primary" data-v21-tf-upload ${TF.busy?"disabled":""}>Upload ${TF.sel.length} file${TF.sel.length===1?"":"s"}</button><button type="button" class="btn" data-v21-tf-clear>Clear</button></div>`:""}
     ${last&&last.failed.length?`<div class="notice warn" style="margin:10px 0"><b>${last.failed.length} file${last.failed.length===1?"":"s"} not uploaded:</b><br>${last.failed.map(f=>`${esc(f.name)} — ${esc(f.error)}`).join("<br>")}<br><span class="tiny">Details are in ⚙ Settings → Error report.</span></div>`:""}
-    <div class="v21-tf-list">${files.length?files.map(f=>`<div class="v21-tf-row"><span class="v21-tf-ic">${esc(fileIcon(f.filename))}</span><span class="v21-tf-name" title="${esc(f.filename)}">${esc(f.filename)}</span><span class="v21-sub">${esc(f.where)}</span>
-      <button class="btn sm" data-download-file="${esc(f.id)}" data-file-field="${esc(f.field)}" data-file-path="${esc(f.filepath)}" data-file-name="${esc(f.filename)}">⬇ Download</button></div>`).join(""):`<div class="empty compact"><strong>No files yet</strong>Choose files above and click Upload.</div>`}</div>
+    <div class="v21-tf-list">${files.length?files.map(f=>`<div class="v21-tf-row v22-fr"><span class="v21-tf-ic">${esc(fileIcon(f.filename))}</span><span class="v21-tf-name" title="${esc(f.filename)}">${esc(f.filename)}<small class="v21-sub" style="display:block;font-weight:500">${esc([f.who?"by "+f.who:"",f.rev,f.where].filter(Boolean).join(" • "))}${f.time?" • "+esc(timeText(f.time)):""}</small></span>
+      <span>${(V22().canView&&V22().canView(f.filename))?`<button class="btn sm" data-v22-view data-id="${esc(f.id)}" data-field="${esc(f.field)}" data-path="${esc(f.filepath)}" data-name="${esc(f.filename)}">👁 View</button>`:""}</span>
+      <button class="btn sm" data-download-file="${esc(f.id)}" data-file-field="${esc(f.field)}" data-file-path="${esc(f.filepath)}" data-file-name="${esc(f.filename)}">⬇ Download</button></div>`).join(""):`<div class="empty compact"><strong>No files yet</strong>${up?"Choose files above and click Upload.":"Files uploaded on this task will appear here."}</div>`}</div>
   </div>`;
 }
 function addChosen(list){
@@ -8877,6 +8942,7 @@ async function uploadOne(id,file){
 async function uploadTaskFiles(){
   const a=S.current;if(!a||TF.busy)return;
   if(!TF.sel.length){const inp=el("v21TfInput");if(inp&&inp.files&&inp.files.length)addChosen(inp.files)}
+  try{if(V22().canUpload&&!V22().canUpload(a))throw rule("Only the task owner, the checker or the person who assigned this task can upload files here.")}catch(e){if(e&&e.code==="MEGA_RULE")throw e}
   const files=TF.sel.slice(0,MAX_FILES);if(!files.length)throw rule("Choose one or more files first.");
   if(typeof navigator!=="undefined"&&navigator.onLine===false)throw rule("You are offline. Nothing was uploaded.");
   const id=idOf(a);const done=[],failed=[];TF.busy=true;
@@ -8892,7 +8958,7 @@ async function uploadTaskFiles(){
       if(!fresh){try{const rows=await fetchRecords(CONFIG.REPORTS.tracking,`(ID == ${id})`,1);fresh=rows&&rows[0]}catch(_){}}
       if(fresh){Object.assign(a,fresh);const loc=(S.records||[]).find(x=>String(idOf(x))===String(id));if(loc&&loc!==a)Object.assign(loc,fresh)}
     }
-    if(done.length){try{const data=withActivity(a,{},"Files Uploaded",done.map(f=>f.name).join(", "),{kind:"files"});await updateRecord(id,data);Object.assign(a,data)}catch(e){log("file activity",e)}}
+    if(done.length){try{const data=withActivity(a,{},"Files Uploaded",done.map(f=>f.name).join(", "),{kind:"files",rev:sc(a[AF.revision])||"R0"});await updateRecord(id,data);Object.assign(a,data)}catch(e){log("file activity",e)}}
   }finally{TF.busy=false;idle()}
   TF.sel=failed.length?files.filter(f=>failed.some(x=>x.name===f.name)):[];   // failed files stay selected for "Upload" again
   TF.last={id,done:done.length,failed};
@@ -9029,6 +9095,7 @@ patch("setupModal",()=>setupModal,f=>{setupModal=f;try{const b=el("setupBtn");if
       `<div class="v21-set">
         <button type="button" class="v21-set-row" data-v21-errors><span class="ic ${n?"bad":""}">⚠</span><span><b>Error report</b><small>${all?`${all} saved${n?` • <em>${n} new</em>`:""}`:"No errors"} — see the list and copy the report for the developer</small></span><span class="go">›</span></button>
         <button type="button" class="v21-set-row" data-v21-health-open><span class="ic">●</span><span><b>System Health</b><small>Connection, report reads, saved copies, speed &amp; safety</small></span><span class="go">›</span></button>
+        <button type="button" class="v21-set-row" data-v22-datacheck><span class="ic">✓</span><span><b>Data check</b><small>People without email, designs without Status, tags without Department / Category, tasks with missing data</small></span><span class="go">›</span></button>
         <button type="button" class="v21-set-row" data-v21-setup-old><span class="ic">⚙</span><span><b>Setup / field mapping</b><small>Design_Tracking fields used by the widget</small></span><span class="go">›</span></button>
         <div class="tiny muted" style="margin-top:8px">Values like report names, roles and skipped tags are changed in the MEGA SETTINGS block at the top of the widget code.</div>
       </div>`,`<button class="btn" data-modal="close">Close</button>`);
@@ -9080,7 +9147,7 @@ try{
   /* only one upload place: hide the other file pickers (files already uploaded stay visible) */
   .file-box input[type=file],.file-add-note{display:none!important}
   .v21-tf-up{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px;border:1px dashed #d780aa;border-radius:12px;background:#fff8fb;margin-bottom:12px}
-  .v21-tf-list{display:grid;gap:6px}.v21-tf-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto;gap:10px;align-items:center;border:1px solid #eaecf0;border-radius:10px;padding:8px 10px}
+  .v21-tf-list{display:grid;gap:6px}.v21-tf-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto auto;gap:10px;align-items:center;border:1px solid #eaecf0;border-radius:10px;padding:8px 10px}
   .v21-tf-ic{font-size:10px;font-weight:900;color:#c42770;background:#fdf0f6;border-radius:8px;text-align:center;padding:7px 0}.v21-tf-name{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   /* V21.15 My Work switch + summary graphics */
   .v21-ws{display:inline-flex;gap:4px;padding:4px;border:1px solid #e4e7ec;border-radius:12px;background:#f9fafb;margin:0 0 12px}
@@ -9121,7 +9188,13 @@ try{
   const st=document.createElement("style");st.id="v21Styles";st.textContent=css;document.head.appendChild(st);
 }catch(e){log("styles",e)}
 // public API used by the V20.19 layer for bulk creation
-try{window.MEGA_V21={runBatch,keyOf,build:BUILD,pdsForProject}}catch(_){}
+// V22 uses these: the email outbox, reading all running projects, the My Work switch
+function queueHtmlMail(to,email,subject,html,label){
+  const job={id:`F${Date.now()}${Math.random().toString(36).slice(2,6)}`,at:Date.now(),kind:"html",to,email,subject,html,label:label||"Email"};
+  mailSet(mailList().concat([job]));drawBar();
+  setTimeout(async()=>{try{const ok=await sendMailJob(job);const now=mailList();if(ok)mailSet(now.filter(j=>j.id!==job.id));else{mailSet(now.map(j=>j.id===job.id?job:j));say(`Email to ${to||email} could not be sent - kept in the outbox (top bar → Send now).`,"warn")}drawBar()}catch(e){log(e)}},0);
+}
+try{window.MEGA_V21={runBatch,keyOf,build:BUILD,pdsForProject,queueHtmlMail,loadAllRunning,setMyTab:k=>{MW.tab=k;MW.f="all"}}}catch(_){}
 try{V.jobs=jobList();V.mail=mailList()}catch(_){}
 earlyPaint();
 // if the live start-up already finished before this layer loaded
@@ -9131,5 +9204,436 @@ drawBar();errButton();setTimeout(errButton,1500);
 console.info(`[${BUILD}] loaded`);
 })()}catch(e){try{console.error("[V21] could not load",e)}catch(_){}}
 </script>
+<script id="megaV22">
+/* ======================================================================
+   V22 LAYER - SIMPLE 4-STEP WORK FLOW + TEAM TOOLS
+   ----------------------------------------------------------------------
+   1. Simple flow on every task (no separate "revision" screens):
+        1 Working  ->  2 Submitted for check  ->  3 Checked  ->  4 Issued
+      - Only the task OWNER (the person it is assigned to) can Start,
+        upload work files and Submit.
+      - Only the CHECKER can mark Checked or Return it (with a reason).
+      - The person who ASSIGNED the task (or an admin) Issues it. If the
+        checker is also the assigner, "Checked & Issue" does both.
+      - A returned task goes back to the owner; the next submit is the
+        next revision (R0 -> R1 -> R2 ...).
+      - Every step: instant screen update, saved to Zoho in the background,
+        an email with FROM (who did it) and TO (who must act), and a
+        pop-up for the person who must act next.
+   2. My Work cards get one-click buttons for the next step.
+   3. Files: the assigner and checker see the owner's files (and the owner
+      sees the assigner's reference files); PDF / images open in a viewer.
+   4. Remind button, Export to Excel (CSV), Data check page.
+   Safe like the other layers: every part is wrapped; if a part fails the
+   rest of the widget keeps working (logged as [V22] in the console).
+   No new Creator fields: Status, Progress, Checker, Revision,
+   Return_Reason, Actual_Start/End_Date and Activity_Log already exist.
+   ====================================================================== */
+try{(function V22(){
+"use strict";
+const BUILD="V22.0";
+const log=(...a)=>{try{console.warn("[V22]",...a)}catch(_){}};
+const say=(m,t="warn")=>{try{toast(m,t)}catch(_){}};
+const sc=v=>{try{return String(scalar(v)??"")}catch(_){return v==null?"":String(v)}};
+const esc=s=>{try{return h(s)}catch(_){return String(s??"")}};
+const el=id=>document.getElementById(id);
+const low=v=>sc(v).trim().toLowerCase();
+const L21=()=>window.MEGA_V21||{};
+function rule(m){const e=new Error(m);e.code="MEGA_RULE";return e}
+function patch(label,get,set,make){try{const b=get();if(typeof b!=="function")return log("skipped",label);set(make(b))}catch(e){log("skipped",label,e)}}
+const actor=()=>{try{return (S.v217&&S.v217.actor)||null}catch(_){return null}};
+const roles=()=>{try{const r=(MEGA_SETTINGS&&MEGA_SETTINGS.ROLES)||{};return Object.fromEntries(Object.entries(r).map(([k,v])=>[low(k),low(v)]))}catch(_){return{}}};
+const isAdmin=()=>{const r=roles(),a=actor();if(!Object.keys(r).length)return false;return !!a&&(r[low(a.name)]==="admin"||(a.email&&r[low(a.email)]==="admin"))};
+// "is this value me?" - names and emails both work
+function isMe(v){const a=actor();if(!a)return false;const x=low(v);if(!x)return false;let d="";try{d=low(personDisplay(v))}catch(_){}return x===low(a.name)||(!!a.email&&x===low(a.email))||(!!d&&d===low(a.name))}
+const ownerOf=a=>sc(a[AF.assignedEmployeeName])||(()=>{try{return personDisplay(a[AF.assignedTo])}catch(_){return sc(a[AF.assignedTo])}})();
+const isOwner=a=>isMe(a[AF.assignedEmployeeName])||(!sc(a[AF.assignedEmployeeName])&&isMe(a[AF.assignedTo]));
+const isAssigner=a=>isMe(a[AF.assignedBy]);
+const checkerVal=a=>sc(a[AF.checker])||sc(a[AF.assignedBy]);       // no checker chosen yet -> the assigner checks
+const isChecker=a=>isMe(checkerVal(a));
+const person=v=>{try{return requireAssignmentRecipient(v)}catch(_){return {name:sc(v),email:""}}};
+const isSelfRoot=a=>{try{return !sc(a[AF.assignedFrom])&&low(personDisplay(a[AF.assignedBy])||a[AF.assignedBy])===low(ownerOf(a))}catch(_){return false}};
+const rev=a=>sc(a[AF.revision])||"R0";
+const nextRev=r=>{const m=String(r||"R0").match(/(\d+)/);return "R"+((m?Number(m[1]):0)+1)};
+
+/* ---------- 1. Steps ---------- */
+const STEPS=["Working","Submitted for check","Checked","Issued"];
+function stepOf(a){
+  const s=sc(a[AF.status])||"Not Started";
+  if(["Issued","Completed","Approved"].includes(s))return 4;
+  if(["Checked","Reviewed","Submitted for Review","Reviewing","Submitted for Approval","Approving"].includes(s))return 3;
+  if(["Submitted for Check","Checking"].includes(s))return 2;
+  if(s==="Not Started")return 0;
+  return 1;                                     // In Progress, Returned, On Hold
+}
+const isReturned=a=>sc(a[AF.status])==="Returned";
+// which buttons this person may use on this task
+function allowed(a){
+  const out=[];if(!a||!actor())return out;
+  const st=sc(a[AF.status])||"Not Started",s=stepOf(a);
+  if(st==="Cancelled")return out;
+  if(isOwner(a)){
+    if(st==="Not Started"||st==="On Hold"||st==="Returned")out.push("start");
+    if(s===1&&st!=="On Hold")out.push("submit");
+  }
+  if(s===2&&isChecker(a)){out.push("check");out.push("return")}
+  if(s===3&&(isAssigner(a)||isAdmin())){out.push("issue");out.push("return")}
+  return [...new Set(out)];
+}
+const LABEL={start:"▶ Start",submit:"⬆ Submit for check",check:"✓ Checked",return:"↩ Return",issue:"★ Issue"};
+function waitingFor(a){
+  const s=stepOf(a),st=sc(a[AF.status]);
+  if(s===4)return "Done";
+  if(s===3)return `Waiting for ${person(a[AF.assignedBy]).name||"the assigner"} to issue`;
+  if(s===2)return `Waiting for ${person(checkerVal(a)).name||"the checker"} to check`;
+  if(st==="Returned")return `Returned to ${ownerOf(a)} for correction`;
+  return `${ownerOf(a)} is ${s===0?"to start":"working"}`;
+}
+
+/* ---------- 2. Emails (FROM who acted, TO who must act) ---------- */
+const LINK=(()=>{try{return String(MEGA_SETTINGS.EMAILS.WIDGET_LINK||"")}catch(_){return""}})();
+function mailHtml(a,title,line,toPerson,extra){
+  const d=(()=>{try{return drawingForAssignment(a)||{}}catch(_){return{}}})(),code=sc(a[AF.projectCode]);
+  let pn="";try{const p=v18ProjectForCode(code);pn=p&&p.name&&p.name!==code?p.name:""}catch(_){}
+  const me=actor(),row=(k,v)=>v?`<tr><td style="padding:6px 10px;border:1px solid #e5e7eb;color:#667085;width:140px">${esc(k)}</td><td style="padding:6px 10px;border:1px solid #e5e7eb"><b>${esc(v)}</b></td></tr>`:"";
+  const steps=STEPS.map((s,i)=>`<td style="padding:6px 8px;text-align:center;font-size:12px;border:1px solid #e5e7eb;${stepOf(a)>=i+1?"background:#c42770;color:#fff;font-weight:700":"color:#667085"}">${i+1}. ${esc(s)}</td>`).join("");
+  return `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1f2937;line-height:1.5">
+   <div style="background:#c42770;color:#fff;padding:14px 18px;border-radius:8px 8px 0 0"><div style="font-size:12px;opacity:.9">MEGA ENGINEERING • Design Control</div><div style="font-size:19px;font-weight:700">${esc(title)}</div></div>
+   <div style="padding:16px 18px;border:1px solid #e5e7eb;border-top:0;border-radius:0 0 8px 8px">
+    <table style="border-collapse:collapse;margin-bottom:10px"><tr><td style="padding:4px 10px 4px 0;color:#667085">From</td><td><b>${esc((me&&me.name)||"Design Control")}</b></td></tr><tr><td style="padding:4px 10px 4px 0;color:#667085">To</td><td><b>${esc(toPerson.name||toPerson.email)}</b></td></tr></table>
+    <p>${line}</p>
+    <table style="border-collapse:collapse;width:100%;margin:8px 0"><tr>${steps}</tr></table>
+    <table style="border-collapse:collapse;width:100%">
+     ${row("Project",`${code}${pn?" — "+pn:""}`)}${row("Design",[sc(a[AF.shortName])||d.short,sc(a[AF.drawingDocument])||d.name].filter(Boolean).join(" — "))}
+     ${row("Tag / Equipment",[sc(a[AF.tagNo]),sc(a[AF.equipmentName])].filter(Boolean).join(" — "))}${row("Plant section",[sc(a[AF.plantSection]),sc(a[AF.plantSectionType])].filter(Boolean).join(" / "))}
+     ${row("Task owner",ownerOf(a))}${row("Assigned by",person(a[AF.assignedBy]).name)}${row("Checker",person(checkerVal(a)).name)}
+     ${row("Revision",rev(a))}${row("Target date",displayDate(a[AF.targetDate]))}${extra||""}
+    </table>
+    ${LINK?`<p style="margin-top:14px"><a href="${esc(LINK)}" style="background:#c42770;color:#fff;padding:9px 16px;border-radius:6px;text-decoration:none;font-weight:700">Open Design Control</a></p>`:""}
+    <p style="color:#667085;font-size:12px">Open Design Control → My Work to do the next step.</p>
+   </div></div>`;
+}
+function sendMail(toVal,subject,html,label){
+  const p=person(toVal);
+  if(!p.email||!p.email.includes("@")){window.MEGA_ERR&&MEGA_ERR.add("api",`Email skipped: no email for "${sc(toVal)}" in the Employee list`,label||"");return}
+  const me=actor();if(me&&(low(me.email)===low(p.email)||low(me.name)===low(p.name)))return;   // never email yourself
+  try{if(typeof L21().queueHtmlMail==="function")return L21().queueHtmlMail(p.name,p.email,subject,html,label)}catch(e){log(e)}
+  invokeNotificationCustomApi({email:p.email,name:p.name},subject,html,"flow-email").catch(e=>{window.MEGA_ERR&&MEGA_ERR.add("error",`Email to ${p.email} failed`,errorText(e))});
+}
+const subj=(a,what)=>{const d=(()=>{try{return drawingForAssignment(a)||{}}catch(_){return{}}})();return `[Design Control] ${what} • ${sc(a[AF.projectCode])} • ${sc(a[AF.shortName])||d.short||d.name||""}${sc(a[AF.tagNo])?" • "+sc(a[AF.tagNo]):""} • ${rev(a)}`};
+
+/* ---------- 3. Doing a step: instant on screen, saved in the background ---------- */
+const busyIds=new Set();
+async function save(a,data,action,detail,mails){
+  const id=String(idOf(a));if(busyIds.has(id))throw rule("This task is still saving. Please wait a second.");
+  const before={};for(const k of Object.keys(data).concat([AF.activityLog]))before[k]=a[k];
+  let full=data;try{full=withActivity(a,data,action,detail,{kind:"flow",status:data[AF.status]||"",rev:data[AF.revision]||rev(a)})}catch(_){}
+  Object.assign(a,full);busyIds.add(id);try{renderView()}catch(_){}        // 1) screen changes at once
+  try{
+    window.MEGA_FLOW_BUSY=true;
+    await updateRecord(id,full);                                        // 2) Zoho
+    say(`${action}: saved.`,"good");
+    try{(mails||[]).forEach(m=>sendMail(m.to,m.subject,m.html,action))}catch(e){log("mail",e)}   // 3) emails
+  }catch(e){
+    Object.assign(a,before);                                            // put the screen back
+    say(`Not saved: ${errorText(e)}`,"warn");window.MEGA_ERR&&MEGA_ERR.add("error",`${action} not saved (task ${id})`,errorText(e));
+  }finally{window.MEGA_FLOW_BUSY=false;busyIds.delete(id);try{renderView()}catch(_){}try{popupCheck(true)}catch(_){}}
+}
+function need(a,what){if(!actor())throw rule("Choose your name first: click 'Working as' at the top.");if(!allowed(a).includes(what))throw rule(`Only ${what==="start"||what==="submit"?ownerOf(a)+" (task owner)":what==="check"?person(checkerVal(a)).name+" (checker)":person(a[AF.assignedBy]).name+" (assigned by)"} can do this step.`)}
+async function doStart(a){
+  need(a,"start");const was=sc(a[AF.status]);
+  const data={[AF.status]:"In Progress",[AF.progress]:Math.max(25,Number(sc(a[AF.progress]))||0)};
+  if(!sc(a[AF.actualStart]))data[AF.actualStart]=toCreatorDateTime();
+  const me=actor();
+  await save(a,data,"Started",`${was||"Not Started"} → In Progress`,[{to:a[AF.assignedBy],subject:subj(a,`${me.name} started`),html:mailHtml(a,"Work started",`<b>${esc(me.name)}</b> started working on this task.`,person(a[AF.assignedBy]))}]);
+}
+function openSubmit(a){
+  need(a,"submit");
+  const files=familyFiles(a).filter(f=>f.mine).length,cur=checkerVal(a),r=isRevisedSubmit(a)?nextRev(rev(a)):rev(a);
+  let opts="";try{opts=employeeOptions(person(cur).email||cur,"Select checker…")}catch(_){opts=`<option>${esc(cur)}</option>`}
+  openModal("Submit for check",`${sc(a[AF.projectCode])} • ${sc(a[AF.shortName])||""} • ${r}`,
+   `<div class="v22-steps">${stepsHtml(a)}</div>
+    <div class="field"><label>Checker *</label><select id="v22Checker">${opts}</select><div class="tiny muted">The checker gets an email and a pop-up. Default: the person who assigned the task.</div></div>
+    <div class="field" style="margin-top:10px"><label>Note for the checker</label><textarea id="v22Note" placeholder="Optional: what to check, what changed in ${esc(r)}"></textarea></div>
+    <div class="notice ${files?"good":"warn"}" style="margin-top:10px">${files?`${files} file${files===1?"":"s"} uploaded by you on this task.`:"No file uploaded yet. Upload your work in the 📎 Files tab first (you can still submit)."}</div>`,
+   `<button class="btn" data-modal="close">Cancel</button><button class="btn primary" data-v22-do="submit-ok" data-id="${esc(idOf(a))}">Submit ${esc(r)} for check</button>`);
+}
+const isRevisedSubmit=a=>{try{return parseActivityLog(a).some(x=>x&&x.kind==="flow"&&x.status==="Submitted for Check")&&sc(a[AF.status])!=="Submitted for Check"}catch(_){return false}};
+async function doSubmit(a){
+  need(a,"submit");
+  const chk=sc(el("v22Checker")&&el("v22Checker").value)||checkerVal(a),note=sc(el("v22Note")&&el("v22Note").value).trim();
+  if(!chk)throw rule("Choose the checker.");
+  const p=person(chk),r=isRevisedSubmit(a)?nextRev(rev(a)):rev(a);
+  try{closeModal()}catch(_){}
+  const data={[AF.status]:"Submitted for Check",[AF.progress]:70,[AF.checker]:p.email||chk,[AF.revision]:r};
+  if(note)data[AF.remark]=note;
+  const me=actor(),line=`<b>${esc(me.name)}</b> submitted <b>${esc(r)}</b> for your check.${note?`<br><br><i>Note:</i> ${esc(note)}`:""}`;
+  const mails=[{to:p.email||chk,subject:subj({...a,...data},`${me.name} submitted for check`),html:mailHtml({...a,...data},"Please check this work",line,p)}];
+  if(low(p.email)!==low(person(a[AF.assignedBy]).email))mails.push({to:a[AF.assignedBy],subject:subj({...a,...data},`${me.name} submitted for check`),html:mailHtml({...a,...data},"Submitted for check",`<b>${esc(me.name)}</b> submitted ${esc(r)} to <b>${esc(p.name)}</b> for check.`,person(a[AF.assignedBy]))});
+  await save(a,data,"Submitted for check",`${r} → checker ${p.name}${note?": "+note:""}`,mails);
+}
+function openCheck(a,what){
+  need(a,what==="return"?"return":what==="issue"?"issue":"check");
+  const canIssue=what==="check"&&(isAssigner(a)||isAdmin());
+  const title=what==="return"?"Return for correction":what==="issue"?"Issue this work":"Mark as checked";
+  openModal(title,`${sc(a[AF.projectCode])} • ${sc(a[AF.shortName])||""} • ${rev(a)} • owner ${ownerOf(a)}`,
+   `<div class="v22-steps">${stepsHtml(a)}</div>
+    ${sc(a[AF.remark])?`<div class="notice" style="margin:8px 0"><b>Note from ${esc(ownerOf(a))}:</b> ${esc(sc(a[AF.remark]))}</div>`:""}
+    <div class="tiny muted" style="margin:6px 0">Files of this task: open the 📎 Files tab to view or download them.</div>
+    <div class="field"><label>${what==="return"?"Reason (what must be corrected) *":"Comment"}</label><textarea id="v22Note" placeholder="${what==="return"?"Write what must be corrected":"Optional comment"}"></textarea></div>`,
+   `<button class="btn" data-modal="close">Cancel</button>${what==="return"?`<button class="btn danger" data-v22-do="return-ok" data-id="${esc(idOf(a))}">↩ Return to ${esc(ownerOf(a))}</button>`:what==="issue"?`<button class="btn primary" data-v22-do="issue-ok" data-id="${esc(idOf(a))}">★ Issue</button>`:`<button class="btn primary" data-v22-do="check-ok" data-id="${esc(idOf(a))}">✓ Checked</button>${canIssue?`<button class="btn primary" data-v22-do="checkissue-ok" data-id="${esc(idOf(a))}">✓ Checked &amp; Issue</button>`:""}`}`);
+}
+async function doCheck(a,alsoIssue){
+  need(a,"check");const note=sc(el("v22Note")&&el("v22Note").value).trim();try{closeModal()}catch(_){}
+  const me=actor();
+  if(alsoIssue){
+    const data={[AF.status]:"Issued",[AF.progress]:100,[AF.actualEnd]:toCreatorDate(new Date().toISOString().slice(0,10))};
+    return save(a,data,"Checked & issued",note||"Checked and issued",[{to:a[AF.assignedTo]||a[AF.assignedEmployeeName],subject:subj(a,`Issued by ${me.name}`),html:mailHtml({...a,...data},"Your work is issued ✓",`<b>${esc(me.name)}</b> checked and issued <b>${esc(rev(a))}</b>.${note?`<br><br><i>Comment:</i> ${esc(note)}`:""}`,person(a[AF.assignedTo]||a[AF.assignedEmployeeName]))}]);
+  }
+  const data={[AF.status]:"Checked",[AF.progress]:90};
+  const mails=[{to:a[AF.assignedTo]||a[AF.assignedEmployeeName],subject:subj(a,`Checked by ${me.name}`),html:mailHtml({...a,...data},"Your work is checked",`<b>${esc(me.name)}</b> checked <b>${esc(rev(a))}</b>. Next: issue by ${esc(person(a[AF.assignedBy]).name)}.${note?`<br><br><i>Comment:</i> ${esc(note)}`:""}`,person(a[AF.assignedTo]||a[AF.assignedEmployeeName]))}];
+  if(!isAssigner(a))mails.push({to:a[AF.assignedBy],subject:subj(a,`Ready to issue`),html:mailHtml({...a,...data},"Ready to issue",`<b>${esc(me.name)}</b> checked ${esc(rev(a))} of ${esc(ownerOf(a))}. Please issue it.`,person(a[AF.assignedBy]))});
+  await save(a,data,"Checked",note||"Checked",mails);
+}
+async function doReturn(a){
+  if(!allowed(a).includes("return"))need(a,"return");
+  const note=sc(el("v22Note")&&el("v22Note").value).trim();if(!note)throw rule("Write the reason, so the owner knows what to correct.");
+  try{closeModal()}catch(_){}
+  const me=actor(),data={[AF.status]:"Returned",[AF.progress]:50,[AF.returnReason]:note};
+  await save(a,data,"Returned",note,[{to:a[AF.assignedTo]||a[AF.assignedEmployeeName],subject:subj(a,`Returned by ${me.name}`),html:mailHtml({...a,...data},"Returned for correction",`<b>${esc(me.name)}</b> returned <b>${esc(rev(a))}</b> for correction.<br><br><b>Reason:</b> ${esc(note)}<br><br>Correct it, upload the new files and submit again (it becomes ${esc(nextRev(rev(a)))}).`,person(a[AF.assignedTo]||a[AF.assignedEmployeeName]))}]);
+}
+async function doIssue(a){
+  need(a,"issue");const note=sc(el("v22Note")&&el("v22Note").value).trim();try{closeModal()}catch(_){}
+  const me=actor(),data={[AF.status]:"Issued",[AF.progress]:100,[AF.actualEnd]:toCreatorDate(new Date().toISOString().slice(0,10))};
+  const mails=[{to:a[AF.assignedTo]||a[AF.assignedEmployeeName],subject:subj(a,`Issued by ${me.name}`),html:mailHtml({...a,...data},"Your work is issued ✓",`<b>${esc(me.name)}</b> issued <b>${esc(rev(a))}</b>. Well done.${note?`<br><br><i>Comment:</i> ${esc(note)}`:""}`,person(a[AF.assignedTo]||a[AF.assignedEmployeeName]))}];
+  if(low(person(checkerVal(a)).email)!==low(me.email))mails.push({to:checkerVal(a),subject:subj(a,`Issued by ${me.name}`),html:mailHtml({...a,...data},"Issued",`<b>${esc(me.name)}</b> issued ${esc(rev(a))} that you checked.`,person(checkerVal(a)))});
+  await save(a,data,"Issued",note||"Issued",mails);
+}
+function act(what,id){
+  const a=assignmentById(id);if(!a)return say("Task not found. Click Refresh.");
+  const run=f=>(typeof guarded==="function"?guarded(f):f());
+  if(what==="start")return run(()=>doStart(a));
+  if(what==="submit")return run(()=>openSubmit(a));
+  if(what==="check")return run(()=>openCheck(a,"check"));
+  if(what==="return")return run(()=>openCheck(a,"return"));
+  if(what==="issue")return run(()=>openCheck(a,"issue"));
+  if(what==="submit-ok")return run(()=>doSubmit(a));
+  if(what==="check-ok")return run(()=>doCheck(a,false));
+  if(what==="checkissue-ok")return run(()=>doCheck(a,true));
+  if(what==="return-ok")return run(()=>doReturn(a));
+  if(what==="issue-ok")return run(()=>doIssue(a));
+}
+
+/* ---------- 4. Screens: step bar, task panel, My Work card buttons ---------- */
+function stepsHtml(a){
+  const s=stepOf(a),ret=isReturned(a);
+  return `<div class="v22-bar">${STEPS.map((x,i)=>`<div class="v22-st ${s>i+1||s===4?"done":s===i+1?(ret&&i===0?"ret":"cur"):""}"><span>${s>i+1||s===4?"✓":i+1}</span><b>${esc(i===0&&ret?"Returned":x)}</b></div>`).join("")}</div>`;
+}
+function buttons(a,small){
+  return allowed(a).map(k=>`<button type="button" class="btn ${small?"sm":""} ${k==="return"?"":"primary"} v22-btn" data-v22-act="${k}" data-id="${esc(idOf(a))}" ${busyIds.has(String(idOf(a)))?"disabled":""}>${LABEL[k]}</button>`).join("");
+}
+function panel(a){
+  if(!a||isSelfRoot(a))return "";
+  const own=ownerOf(a),by=person(a[AF.assignedBy]).name,chk=person(checkerVal(a)).name;
+  return `<div class="v22-panel">
+    <div class="v22-ph"><div><b>Work flow</b><span>${esc(waitingFor(a))}</span></div><span class="pill">${esc(rev(a))}</span></div>
+    ${stepsHtml(a)}
+    <div class="v22-people"><div><small>Task owner</small><b>${esc(own)}</b></div><div><small>Assigned by</small><b>${esc(by||"—")}</b></div><div><small>Checker</small><b>${esc(chk||"—")}</b></div><div><small>Target</small><b>${esc(displayDate(a[AF.targetDate]))}</b></div></div>
+    ${isReturned(a)&&sc(a[AF.returnReason])?`<div class="notice warn" style="margin-top:8px"><b>Returned:</b> ${esc(sc(a[AF.returnReason]))}</div>`:""}
+    <div class="v22-acts">${buttons(a,false)||`<span class="tiny muted">${actor()?"No step for you on this task — you can view it and its files.":"Choose your name ('Working as') to work on tasks."}</span>`}<button type="button" class="btn" data-detail-tab="taskfiles">📎 Files</button></div>
+  </div>`;
+}
+patch("renderWorkCard",()=>renderWorkCard,f=>{renderWorkCard=f},base=>function(a){
+  let html=base.apply(this,arguments);
+  try{
+    const s=stepOf(a),chip=`<span class="rev-chip v22-chip s${s}">${s===0?"Not started":`Step ${Math.max(1,s)}/4 · ${esc(isReturned(a)?"Returned":STEPS[Math.max(1,s)-1])}`} · ${esc(rev(a))}</span>`;
+    html=html.replace(/<span class="rev-chip">[\s\S]*?<\/span>/,chip);
+    const b=buttons(a,true);if(b)html=html.replace('<div class="actions">',`<div class="actions">${b}`);
+    if(isReturned(a)&&sc(a[AF.returnReason]))html=html.replace('<div class="work-meta">',`<div class="v22-ret">↩ ${esc(sc(a[AF.returnReason]).slice(0,140))}</div><div class="work-meta">`);
+  }catch(e){log("card",e)}
+  return html;
+});
+// task page: flow panel on Overview; old Design Files / Revision History tabs are replaced by Files + the flow
+patch("renderDetailTab",()=>renderDetailTab,f=>{renderDetailTab=f},base=>function(){
+  if(S.detailTab==="files"||S.detailTab==="revisions")S.detailTab="taskfiles";
+  const html=base.apply(this,arguments);
+  try{if((S.detailTab||"overview")==="overview")return panel(S.current)+html}catch(e){log("panel",e)}
+  return html;
+});
+patch("renderDetailPage",()=>renderDetailPage,f=>{renderDetailPage=f},base=>function(){
+  if(S.detailTab==="files"||S.detailTab==="revisions")S.detailTab="taskfiles";
+  const r=base.apply(this,arguments);
+  try{document.querySelectorAll('#page .subtabs [data-detail-tab="files"],#page .subtabs [data-detail-tab="revisions"]').forEach(x=>x.remove())}catch(_){}
+  return r;
+});
+
+/* ---------- 5. Lists used by My Work ---------- */
+// waiting for me: tasks to check (I am checker) + tasks to issue (I assigned, checked)
+function toCheckRows(){
+  try{return (S.assignments||[]).filter(a=>{const s=stepOf(a);return (s===2&&isChecker(a))||(s===3&&isAssigner(a))})}catch(_){return[]}
+}
+const returnedToMe=()=>{try{return (S.assignments||[]).filter(a=>isReturned(a)&&isOwner(a))}catch(_){return[]}};
+
+/* ---------- 6. Pop-up: "waiting for you" ---------- */
+const seenK=()=>`MEGA_V22_SEEN::${low((actor()||{}).name)}`;
+function popupCheck(quiet){
+  try{
+    if(!actor()||S.demo&&quiet)return;
+    const list=toCheckRows().concat(returnedToMe());
+    const key=x=>`${idOf(x)}|${sc(x[AF.status])}|${rev(x)}`;
+    let seen=[];try{seen=JSON.parse(localStorage.getItem(seenK())||"[]")}catch(_){}
+    const fresh=list.filter(x=>!seen.includes(key(x)));
+    if(!fresh.length)return;
+    try{localStorage.setItem(seenK(),JSON.stringify(list.map(key).concat(seen).slice(0,400)))}catch(_){}
+    const open=!el("modalBackdrop")?.classList.contains("hidden");
+    if(open){say(`${fresh.length} task${fresh.length===1?"":"s"} waiting for you. See My Work → To check.`,"good");return}
+    openModal("Waiting for you",`${fresh.length} new item${fresh.length===1?"":"s"}`,
+      `<div class="v22-pop">${fresh.slice(0,12).map(x=>`<div class="v22-pop-row"><span class="v22-chip s${stepOf(x)}">${esc(isReturned(x)?"Returned to you":stepOf(x)===2?"To check":"To issue")}</span><div><b>${esc(sc(x[AF.projectCode]))} • ${esc(sc(x[AF.shortName])||"")}${sc(x[AF.tagNo])?" • "+esc(sc(x[AF.tagNo])):""}</b><small>${esc(ownerOf(x))} • ${esc(rev(x))}${isReturned(x)&&sc(x[AF.returnReason])?" • "+esc(sc(x[AF.returnReason]).slice(0,80)):""}</small></div><button class="btn sm primary" data-v22-open="${esc(idOf(x))}">Open</button></div>`).join("")}</div>`,
+      `<button class="btn" data-modal="close">Later</button><button class="btn primary" data-v22-gocheck>Open My Work</button>`);
+  }catch(e){log("popup",e)}
+}
+setInterval(()=>{try{if(S.v21&&S.v21.live)popupCheck(true)}catch(_){}},60000);
+
+/* ---------- 7. Files: who uploaded, family files, viewer ---------- */
+function uploadsInfo(a){       // file name -> {who, rev, time} from the activity history
+  const m=new Map();
+  try{for(const x of parseActivityLog(a)){if(!/Files Uploaded/i.test(x.action||""))continue;for(const n of String(x.detail||"").replace(/\s+—\s+by\s+.*$/,"").split(/,\s*/).filter(Boolean))m.set(n.trim(),{who:sc(x.actor),rev:x.rev||"",time:x.time})}}catch(_){}
+  return m;
+}
+function fileEntries(a,label){
+  const out=[];
+  for(const f of [AF.supportingFile,AF.drawingFile,AF.nativeFile]){try{for(const x of creatorFileEntries(a[f]))out.push({...x,field:f,id:idOf(a)})}catch(_){}}
+  const info=uploadsInfo(a);
+  return out.map(x=>{const i=info.get(x.filename)||{};let who=i.who||"";try{who=personDisplay(who)||who}catch(_){}return {...x,where:label,who:who||ownerOf(a),rev:i.rev||"",time:i.time||"",mine:isMe(who||ownerOf(a))}});
+}
+// this task + every task under it (owner's work) + the task above it (reference from the assigner)
+function familyFiles(a){
+  if(!a)return[];
+  let out=fileEntries(a,"This task");
+  try{const kids=[];const walk=(id,g)=>{if(g>6)return;for(const k of assignmentChildren(id)){kids.push(k);walk(idOf(k),g+1)}};walk(idOf(a),0);
+    for(const k of kids)out=out.concat(fileEntries(k,`${ownerOf(k)}'s task`))}catch(_){}
+  try{const pid=sc(a[AF.assignedFrom]);const p=pid?assignmentById(pid):null;if(p)out=out.concat(fileEntries(p,"Reference (assigner)"))}catch(_){}
+  try{for(const r of revisionsForAssignment(a))for(const f of [AF.drawingFile,AF.nativeFile,AF.supportingFile])for(const x of creatorFileEntries(r[f]))out.push({...x,field:f,id:idOf(r),where:`Old ${sc(r[AF.revision])||"revision"}`,who:ownerOf(a),rev:sc(r[AF.revision]),time:""})}catch(_){}
+  return out;
+}
+const canUpload=a=>!!a&&!!actor()&&(isOwner(a)||isChecker(a)||isAssigner(a)||isAdmin());
+const canView=n=>/\.(pdf|png|jpe?g|gif|webp|bmp|svg|txt|csv)$/i.test(String(n||""));
+async function preview(id,field,path,name){
+  busy(`Opening ${name}…`);let url="",blob=null;
+  try{const res=await readFile(id,field,path);blob=await creatorFileResponseToBlob(res,name);const typed=new Blob([blob],{type:mimeTypeForFile(name)});url=URL.createObjectURL(typed)}
+  finally{idle()}
+  let body="";
+  if(/\.pdf$/i.test(name))body=`<iframe class="v22-view" src="${url}"></iframe>`;
+  else if(/\.(txt|csv)$/i.test(name)){let t="";try{t=await blob.text()}catch(_){}body=`<pre class="v22-view txt">${esc(t.slice(0,200000))}</pre>`}
+  else body=`<div class="v22-view img"><img src="${url}" alt="${esc(name)}"></div>`;
+  openModal(name,"Viewer",body,`<a class="btn" href="${url}" target="_blank" rel="noopener">Open in new tab</a><a class="btn primary" href="${url}" download="${esc(name)}">⬇ Download</a><button class="btn" data-modal="close">Close</button>`);
+  try{document.querySelector("#modalBackdrop .modal")?.classList.add("v218-wide")}catch(_){}
+}
+
+/* ---------- 8. Remind ---------- */
+const remindK=id=>`MEGA_V22_REMIND::${id}`;
+function remind(ids){
+  const me=actor();if(!me)throw rule("Choose your name first.");
+  let sent=0,skipped=0;
+  for(const id of ids){
+    const a=assignmentById(id);if(!a)continue;
+    const last=Number(localStorage.getItem(remindK(id))||0);if(Date.now()-last<6*3600000){skipped++;continue}
+    const od=(()=>{try{const d=dateDiffDays(toInputDate(a[AF.targetDate]));return d!=null&&d<0?`${Math.abs(d)} day${Math.abs(d)===1?"":"s"} overdue`:""}catch(_){return""}})();
+    sendMail(a[AF.assignedTo]||a[AF.assignedEmployeeName],subj(a,`Reminder from ${me.name}`),mailHtml(a,"Reminder",`<b>${esc(me.name)}</b> reminds you about this task: <b>${esc(waitingFor(a))}</b>${od?` — <span style="color:#d03b3b">${od}</span>`:""}.`,person(a[AF.assignedTo]||a[AF.assignedEmployeeName])),"Reminder");
+    try{localStorage.setItem(remindK(id),String(Date.now()))}catch(_){}sent++;
+  }
+  say(`${sent} reminder${sent===1?"":"s"} sent${skipped?` • ${skipped} skipped (already reminded in the last 6 hours)`:""}.`,sent?"good":"warn");
+}
+
+/* ---------- 9. Export to Excel (CSV) ---------- */
+function exportRows(rows,name){
+  const head=["Project","Project name","Design","Design name","Tag","Equipment","Plant section","Section type","Task owner","Assigned by","Checker","Status","Step","Revision","Progress %","Start","Target","Overdue","Return reason"];
+  const line=a=>{let pn="",d={};try{const p=v18ProjectForCode(sc(a[AF.projectCode]));pn=p&&p.name||""}catch(_){}try{d=drawingForAssignment(a)||{}}catch(_){}
+    const od=(()=>{try{const x=dateDiffDays(toInputDate(a[AF.targetDate]));return x!=null&&x<0&&stepOf(a)<4?"Yes":""}catch(_){return""}})();
+    return [sc(a[AF.projectCode]),pn,sc(a[AF.shortName])||d.short||"",sc(a[AF.drawingDocument])||d.name||"",sc(a[AF.tagNo]),sc(a[AF.equipmentName]),sc(a[AF.plantSection]),sc(a[AF.plantSectionType]),ownerOf(a),person(a[AF.assignedBy]).name,person(checkerVal(a)).name,sc(a[AF.status])||"Not Started",stepOf(a)?`${stepOf(a)}/4`:"0/4",rev(a),sc(a[AF.progress])||"0",displayDate(a[AF.startDate]),displayDate(a[AF.targetDate]),od,sc(a[AF.returnReason])]};
+  const q=v=>{v=String(v??"");return /[",\n;]/.test(v)?`"${v.replace(/"/g,'""')}"`:v};
+  const csv="﻿"+[head].concat(rows.map(line)).map(r=>r.map(q).join(",")).join("\r\n");
+  const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})),x=document.createElement("a");
+  x.href=url;x.download=`${name}_${new Date().toISOString().slice(0,10)}.csv`;document.body.appendChild(x);x.click();x.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
+  say(`${rows.length} row${rows.length===1?"":"s"} exported (opens in Excel).`,"good");
+}
+
+/* ---------- 10. Data check ---------- */
+function dataCheck(){
+  const emp=(S.employees||[]).filter(e=>!sc(e.email)||!sc(e.email).includes("@"));
+  const des=(S.drawings||[]).filter(d=>{try{return !sc(pick(d.raw,["Status"],""))}catch(_){return false}});
+  const eq=(S.equipment||[]).filter(e=>!sc(e.department)||!sc(e.equipmentCategory));
+  const tasks=(S.assignments||[]).filter(a=>sc(a[AF.assignedFrom])&&(!toInputDate(a[AF.targetDate])||!person(a[AF.assignedTo]||a[AF.assignedEmployeeName]).email||(stepOf(a)===2&&!sc(a[AF.checker]))));
+  const projs=[...new Set((S.equipment||[]).map(e=>sc(e.project)).filter(Boolean))];
+  const sec=(t,n,rows,hint)=>`<div class="v22-dc"><div class="v22-dc-h"><b>${esc(t)}</b><span class="pill ${n?"red":"green"}">${n?n+" to fix":"OK"}</span></div><div class="tiny muted">${esc(hint)}</div>${n?`<div class="v22-dc-list">${rows.slice(0,150).join("")}${n>150?`<div class="tiny muted">+ ${n-150} more</div>`:""}</div>`:""}</div>`;
+  openModal("Data check","Master data problems that break filters, emails and skip rules",
+    sec("People without email",emp.length,emp.map(e=>`<div>${esc(e.name||"(no name)")}</div>`),"Employee report: these people get no emails.")+
+    sec("Designs without Status",des.length,des.map(d=>`<div>${esc(d.short?d.short+" — ":"")}${esc(d.name)}</div>`),"Design Master (All_Drawing_Types): designs without Status are hidden.")+
+    sec("Tags without Department Code or Equipment Category",eq.length,eq.map(e=>`<div>${esc(sc(e.project))} • <b>${esc(e.tag||e.name)}</b> — ${!sc(e.department)?"no Department":""}${!sc(e.department)&&!sc(e.equipmentCategory)?", ":""}${!sc(e.equipmentCategory)?"no Category":""}</div>`),`Equipment Master, projects opened so far: ${projs.join(", ")||"none — open a project first"}.`)+
+    sec("Tasks with missing data",tasks.length,tasks.map(a=>`<div data-v22-open="${esc(idOf(a))}" class="v22-link">${esc(sc(a[AF.projectCode]))} • ${esc(sc(a[AF.shortName]))} • ${esc(ownerOf(a))} — ${!toInputDate(a[AF.targetDate])?"no target date ":""}${!person(a[AF.assignedTo]||a[AF.assignedEmployeeName]).email?"owner has no email ":""}${stepOf(a)===2&&!sc(a[AF.checker])?"no checker":""}</div>`),"Loaded tasks only."),
+    `<button class="btn" data-modal="close">Close</button>`);
+  try{document.querySelector("#modalBackdrop .modal")?.classList.add("v218-wide")}catch(_){}
+}
+
+/* ---------- 11. New-task email: FROM / TO block ---------- */
+patch("assignmentEmailHtml",()=>assignmentEmailHtml,f=>{assignmentEmailHtml=f},base=>function(recipient,records){
+  let html=base.apply(this,arguments);
+  try{const f=(records||[])[0]||{},by=(()=>{try{return personDisplay(f[AF.assignedBy])||sc(f[AF.assignedBy])}catch(_){return sc(f[AF.assignedBy])}})();
+    const blk=`<table style="border-collapse:collapse;margin:4px 0 10px"><tr><td style="padding:4px 10px 4px 0;color:#667085">From (assigned by)</td><td><b>${esc(by)}</b></td></tr><tr><td style="padding:4px 10px 4px 0;color:#667085">To (task owner)</td><td><b>${esc(recipient.name||recipient.email)}</b></td></tr><tr><td style="padding:4px 10px 4px 0;color:#667085">Flow</td><td>1 Working → 2 Submit for check → 3 Checked → 4 Issued</td></tr></table>`;
+    html=html.replace(/(<p>Hello[\s\S]*?<\/p>)/,`$1${blk}`);
+  }catch(e){log("mail block",e)}
+  return html;
+});
+
+/* ---------- 12. Clicks ---------- */
+document.addEventListener("click",e=>{
+  const t=e.target;if(!t||!t.closest)return;let x;
+  if((x=t.closest("[data-v22-act]"))){e.preventDefault();e.stopImmediatePropagation();return act(x.dataset.v22Act,x.dataset.id)}
+  if((x=t.closest("[data-v22-do]"))){e.preventDefault();e.stopImmediatePropagation();return act(x.dataset.v22Do,x.dataset.id)}
+  if((x=t.closest("[data-v22-open]"))){e.preventDefault();e.stopImmediatePropagation();try{closeModal()}catch(_){}return (typeof guarded==="function"?guarded:(f=>f()))(()=>openAssignment(x.dataset.v22Open))}
+  if(t.closest("[data-v22-gocheck]")){e.preventDefault();e.stopImmediatePropagation();try{closeModal()}catch(_){}try{L21().setMyTab&&L21().setMyTab("chk")}catch(_){}S.view="mine";return renderView()}
+  if((x=t.closest("[data-v22-view]"))){e.preventDefault();e.stopImmediatePropagation();return (typeof guarded==="function"?guarded:(f=>f()))(()=>preview(x.dataset.id,x.dataset.field,x.dataset.path,x.dataset.name))}
+  if((x=t.closest("[data-v22-remind]"))){e.preventDefault();e.stopImmediatePropagation();return (typeof guarded==="function"?guarded:(f=>f()))(()=>remind(String(x.dataset.v22Remind).split(",").filter(Boolean)))}
+  if(t.closest("[data-v22-datacheck]")){e.preventDefault();e.stopImmediatePropagation();return dataCheck()}
+},true);
+
+// Excel button on a project page
+patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){
+  const r=base.apply(this,arguments);
+  try{if(S.view==="project"&&!document.querySelector("[data-v21-xls='project']")){const b=document.querySelector("#page [data-v18-assign]");if(b&&b.parentNode){const x=document.createElement("button");x.className="btn";x.dataset.v21Xls="project";x.textContent="⬇ Excel";b.parentNode.insertBefore(x,b)}}}catch(_){}
+  return r;
+});
+/* ---------- 13. Styles ---------- */
+try{const st=document.createElement("style");st.id="v22Styles";st.textContent=`
+.v22-panel{border:1px solid #e4e7ec;border-radius:14px;background:#fff;padding:12px 14px;margin-bottom:12px}
+.v22-ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.v22-ph b{display:block;font-size:14px}.v22-ph span{font-size:12px;color:#667085}
+.v22-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:4px 0 10px}
+.v22-st{display:flex;align-items:center;gap:7px;padding:8px 10px;border-radius:10px;background:#f2f4f7;color:#667085;font-size:12px}
+.v22-st span{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#fff;font-weight:900;font-size:11px;flex:none}
+.v22-st.done{background:#ecfdf3;color:#067647}.v22-st.done span{background:#0ca30c;color:#fff}
+.v22-st.cur{background:#fdf0f6;color:#c42770;box-shadow:inset 0 0 0 2px #c42770}.v22-st.cur span{background:#c42770;color:#fff}
+.v22-st.ret{background:#fffaeb;color:#93370d;box-shadow:inset 0 0 0 2px #fab219}.v22-st.ret span{background:#fab219;color:#111}
+.v22-people{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.v22-people div{background:#f9fafb;border-radius:10px;padding:7px 10px}.v22-people small{display:block;font-size:10px;color:#667085}.v22-people b{font-size:12px}
+.v22-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.v22-chip.s2{background:#fdf0f6;color:#c42770}.v22-chip.s3{background:#f4ebff;color:#6941c6}.v22-chip.s4{background:#ecfdf3;color:#067647}.v22-chip.s1{background:#eff8ff;color:#175cd3}
+.v22-ret{margin:6px 0;padding:6px 9px;border-radius:8px;background:#fffaeb;color:#93370d;font-size:11px}
+.work-card .work-foot{flex-wrap:wrap;gap:8px;align-items:center}.work-card .actions{flex-wrap:wrap;gap:6px;justify-content:flex-end;margin-left:auto}.v22-btn{white-space:nowrap}.work-card .rev-chip{white-space:nowrap}
+/* the old revision start / status editor is replaced by the 4-step flow above */
+.v19-overview-grid>.v19-info-card:first-child,[data-act="edit-assignment"],[data-act="new-revision"]{display:none!important}.v19-overview-grid{grid-template-columns:1fr!important}
+.v22-pop{display:grid;gap:6px}.v22-pop-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;border:1px solid #eaecf0;border-radius:10px;padding:8px 10px}.v22-pop-row small{display:block;color:#667085;font-size:11px}
+.v22-pop-row .v22-chip{font-size:10px;font-weight:800;border-radius:999px;padding:3px 8px}
+.v22-view{width:100%;height:70vh;border:0;border-radius:10px;background:#f2f4f7}.v22-view.img{display:grid;place-items:center;overflow:auto}.v22-view.img img{max-width:100%;max-height:68vh}.v22-view.txt{overflow:auto;padding:10px;font-size:12px;white-space:pre-wrap}
+.v22-dc{border:1px solid #eaecf0;border-radius:12px;padding:10px 12px;margin-bottom:8px}.v22-dc-h{display:flex;justify-content:space-between;align-items:center}.v22-dc-list{max-height:180px;overflow:auto;font-size:12px;margin-top:6px;display:grid;gap:3px}
+.v22-link{cursor:pointer;color:#c42770}
+@media(max-width:900px){.v22-bar,.v22-people{grid-template-columns:1fr 1fr}}`;document.head.appendChild(st)}catch(e){log("styles",e)}
+
+window.MEGA_V22={build:BUILD,stepOf,allowed,toCheckRows,returnedToMe,familyFiles,canUpload,canView,exportRows,remind,isSelfRoot,ownerOf,isOwner,isChecker,isAssigner,waitingFor,popupCheck,dataCheck};
+// first pop-up after the start-up data is in
+setTimeout(()=>{try{popupCheck(false)}catch(_){}},12000);
+try{const bd=el("buildBadge");if(bd)bd.textContent=BUILD;document.title=`MEGA Engineering | Project Design Control ${BUILD}`}catch(_){}
+console.info(`[${BUILD}] loaded`);
+})()}catch(e){try{console.error("[V22] could not load",e)}catch(_){}}
+</script>
+
 </body>
 </html>
