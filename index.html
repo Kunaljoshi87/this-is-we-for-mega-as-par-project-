@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.0
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.1
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V22.0".
+   3. Paste this whole file and save. The badge at the top shows "V22.1".
 
  >>> ALL SETTINGS ARE IN ONE PLACE: the "MEGA SETTINGS" block, the first
      SCRIPT below (report names, projects list, waiting times, speed,
@@ -92,6 +92,11 @@
                       checker and assigner with a viewer (PDF / images),
                       Remind, Export to Excel, Projects progress view, Data
                       check (⚙ Settings).
+                      V22.1: Project "Dashboard · Pending" tracker (every
+                      design → sections / tags, what is pending, by design /
+                      by section / tag × design matrix, Excel). Revisions:
+                      always filled (R0), +1 automatically on Return, "New
+                      revision" at any stage with reason + history.
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -111,7 +116,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V22.0</title>
+<title>MEGA Engineering | Project Design Control V22.1</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -337,7 +342,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.0</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.1</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -6741,6 +6746,35 @@ function existingFor(a,u){
   }catch(_){}
   return out;
 }
+/* V22.1 - SCOPE REPORT for the project "Pending tracker" dashboard.
+   For every active design of the OPEN project it lists every work item the design
+   needs (whole project / each plant section / each section type / each tag / each
+   tag + PDS type - the same list the Assign screen shows, BOM skip rules included)
+   and the tasks that cover each item. Matching uses the same rule as the Assign
+   screen and the duplicate check (matchScope), so the numbers are the same everywhere. */
+function scopeReport(code){
+  const out=[];code=String(code||"");
+  const designs=(()=>{try{return v211ActiveDrawings()}catch(_){return S.drawings||[]}})();
+  const projTasks=(S.assignments||[]).filter(t=>sc(t[AF.projectCode])===code&&sc(t[AF.status])!=="Cancelled");
+  for(const d of designs){
+    try{
+      let pds=false;try{pds=v205IsPdsDrawingMaster(d)}catch(_){}
+      let mode=pds?MODE_PDS:v211ScopeModeForDrawing(d);if(!pds&&isProjectMode(mode))mode="Project Wise";
+      const root=(()=>{try{return v211DesignRoot(code,d)}catch(_){return null}})();
+      const a={parentId:root?String(idOf(root)):"",drawingId:String(d.id||""),code,mode,f:{},q:""};
+      const did=String(d.id||""),dn=N(d.name||"");
+      // every task of this design in this project, except the main design task itself
+      const cand=projTasks.filter(t=>(sc(t[AF.drawingMasterId])===did||(dn&&N(sc(t[AF.drawingDocument]))===dn))&&!(root&&String(idOf(t))===String(idOf(root)))&&!(typeof v211IsDesignOwnerRoot==="function"&&v211IsDesignOwnerRoot(t)));
+      const units=unitsFor(a).map(u=>{
+        const v=unitView(a,u);
+        return {key:u.key,label:unitLabel(a,u),section:sc(v.section||u.section),type:sc(v.type||u.type),tag:sc(v.tag||u.tag),name:sc(v.name||u.name),pdsType:mode===MODE_PDS?sc(u.typeLabel):"",tasks:cand.filter(t=>{try{return matchScope(a,t,u)}catch(_){return false}})};
+      });
+      out.push({drawing:d,mode,root,units,skipped:a._skipped||0,unmatched:cand.filter(t=>!units.some(u=>u.tasks.includes(t)))});
+    }catch(e){log("scope report",d&&d.name,e)}
+  }
+  return out;
+}
+try{window.MEGA_SCOPE={report:scopeReport,ready:async code=>{await ensureEquipmentForProject(code);let pds=false;try{pds=(v211ActiveDrawings()||[]).some(d=>v205IsPdsDrawingMaster(d))}catch(_){}if(pds)await pdsReady(code)}}}catch(_){}
 function visibleUnits(a){
   const fields=assignFields(a),units=unitsFor(a);fPrune(a,fields,units);let rows=units.filter(u=>fMatch(a,fields,u,"\u0000"));
   const q=N(a.q);
@@ -9231,7 +9265,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V22(){
 "use strict";
-const BUILD="V22.0";
+const BUILD="V22.1";
 const log=(...a)=>{try{console.warn("[V22]",...a)}catch(_){}};
 const say=(m,t="warn")=>{try{toast(m,t)}catch(_){}};
 const sc=v=>{try{return String(scalar(v)??"")}catch(_){return v==null?"":String(v)}};
@@ -9278,9 +9312,10 @@ function allowed(a){
   }
   if(s===2&&isChecker(a)){out.push("check");out.push("return")}
   if(s===3&&(isAssigner(a)||isAdmin())){out.push("issue");out.push("return")}
+  if(isOwner(a)||isAssigner(a)||isAdmin())out.push("newrev");            // new revision: any stage
   return [...new Set(out)];
 }
-const LABEL={start:"▶ Start",submit:"⬆ Submit for check",check:"✓ Checked",return:"↩ Return",issue:"★ Issue"};
+const LABEL={start:"▶ Start",submit:"⬆ Submit for check",check:"✓ Checked",return:"↩ Return",issue:"★ Issue",newrev:"＋ New revision"};
 function waitingFor(a){
   const s=stepOf(a),st=sc(a[AF.status]);
   if(s===4)return "Done";
@@ -9326,8 +9361,9 @@ const subj=(a,what)=>{const d=(()=>{try{return drawingForAssignment(a)||{}}catch
 const busyIds=new Set();
 async function save(a,data,action,detail,mails){
   const id=String(idOf(a));if(busyIds.has(id))throw rule("This task is still saving. Please wait a second.");
+  if(data[AF.revision]===undefined&&!sc(a[AF.revision]))data={...data,[AF.revision]:"R0"};      // the revision is always filled in
   const before={};for(const k of Object.keys(data).concat([AF.activityLog]))before[k]=a[k];
-  let full=data;try{full=withActivity(a,data,action,detail,{kind:"flow",status:data[AF.status]||"",rev:data[AF.revision]||rev(a)})}catch(_){}
+  let full=data;try{full=withActivity(a,data,action,detail,{kind:"flow",status:data[AF.status]||"",rev:(data[AF.status]==="Returned"?rev(a):(data[AF.revision]||rev(a)))})}catch(_){}
   Object.assign(a,full);busyIds.add(id);try{renderView()}catch(_){}        // 1) screen changes at once
   try{
     window.MEGA_FLOW_BUSY=true;
@@ -9339,7 +9375,7 @@ async function save(a,data,action,detail,mails){
     say(`Not saved: ${errorText(e)}`,"warn");window.MEGA_ERR&&MEGA_ERR.add("error",`${action} not saved (task ${id})`,errorText(e));
   }finally{window.MEGA_FLOW_BUSY=false;busyIds.delete(id);try{renderView()}catch(_){}try{popupCheck(true)}catch(_){}}
 }
-function need(a,what){if(!actor())throw rule("Choose your name first: click 'Working as' at the top.");if(!allowed(a).includes(what))throw rule(`Only ${what==="start"||what==="submit"?ownerOf(a)+" (task owner)":what==="check"?person(checkerVal(a)).name+" (checker)":person(a[AF.assignedBy]).name+" (assigned by)"} can do this step.`)}
+function need(a,what){if(!actor())throw rule("Choose your name first: click 'Working as' at the top.");if(!allowed(a).includes(what))throw rule(what==="newrev"?`Only ${ownerOf(a)} (task owner) or ${person(a[AF.assignedBy]).name} (assigned by) can start a new revision.`:`Only ${what==="start"||what==="submit"?ownerOf(a)+" (task owner)":what==="check"?person(checkerVal(a)).name+" (checker)":person(a[AF.assignedBy]).name+" (assigned by)"} can do this step.`)}
 async function doStart(a){
   need(a,"start");const was=sc(a[AF.status]);
   const data={[AF.status]:"In Progress",[AF.progress]:Math.max(25,Number(sc(a[AF.progress]))||0)};
@@ -9358,7 +9394,27 @@ function openSubmit(a){
     <div class="notice ${files?"good":"warn"}" style="margin-top:10px">${files?`${files} file${files===1?"":"s"} uploaded by you on this task.`:"No file uploaded yet. Upload your work in the 📎 Files tab first (you can still submit)."}</div>`,
    `<button class="btn" data-modal="close">Cancel</button><button class="btn primary" data-v22-do="submit-ok" data-id="${esc(idOf(a))}">Submit ${esc(r)} for check</button>`);
 }
-const isRevisedSubmit=a=>{try{return parseActivityLog(a).some(x=>x&&x.kind==="flow"&&x.status==="Submitted for Check")&&sc(a[AF.status])!=="Submitted for Check"}catch(_){return false}};
+/* V22.1 REVISIONS
+   - R0 = the first version. The number is always written in the task's Revision field.
+   - Return for correction  -> the number goes up at once (R0 -> R1): the corrected
+     files are uploaded as R1 and the next submit is R1.
+   - "New revision" button  -> at ANY stage (also after Issue) the owner or the person
+     who assigned it can start the next revision with a reason; the task goes back
+     to step 1 (Working) and the number goes up.
+   - Tasks returned with V22.0 (number not raised yet) are raised at the next submit. */
+const isRevisedSubmit=a=>{
+  try{
+    const L=parseActivityLog(a).filter(x=>x&&x.kind==="flow");
+    let lastSub=-1,lastRet=-1;L.forEach((x,i)=>{if(x.status==="Submitted for Check")lastSub=i;if(x.status==="Returned")lastRet=i});
+    if(lastSub<0||lastRet<lastSub)return false;
+    return String(L[lastSub].rev||"R0")===rev(a)&&sc(a[AF.status])!=="Submitted for Check";   // returned but number not raised yet (V22.0)
+  }catch(_){return false}
+};
+function revHistory(a){
+  const m=new Map();
+  try{for(const x of parseActivityLog(a)){if(!x||(x.kind!=="flow"&&x.kind!=="files"))continue;const r=x.rev||"R0";if(!m.has(r))m.set(r,[]);m.get(r).push(x)}}catch(_){}
+  return [...m.entries()].sort((x,y)=>Number(String(y[0]).replace(/\D/g,""))-Number(String(x[0]).replace(/\D/g,"")));
+}
 async function doSubmit(a){
   need(a,"submit");
   const chk=sc(el("v22Checker")&&el("v22Checker").value)||checkerVal(a),note=sc(el("v22Note")&&el("v22Note").value).trim();
@@ -9399,8 +9455,28 @@ async function doReturn(a){
   if(!allowed(a).includes("return"))need(a,"return");
   const note=sc(el("v22Note")&&el("v22Note").value).trim();if(!note)throw rule("Write the reason, so the owner knows what to correct.");
   try{closeModal()}catch(_){}
-  const me=actor(),data={[AF.status]:"Returned",[AF.progress]:50,[AF.returnReason]:note};
-  await save(a,data,"Returned",note,[{to:a[AF.assignedTo]||a[AF.assignedEmployeeName],subject:subj(a,`Returned by ${me.name}`),html:mailHtml({...a,...data},"Returned for correction",`<b>${esc(me.name)}</b> returned <b>${esc(rev(a))}</b> for correction.<br><br><b>Reason:</b> ${esc(note)}<br><br>Correct it, upload the new files and submit again (it becomes ${esc(nextRev(rev(a)))}).`,person(a[AF.assignedTo]||a[AF.assignedEmployeeName]))}]);
+  const old=rev(a),nr=nextRev(old);
+  const me=actor(),data={[AF.status]:"Returned",[AF.progress]:50,[AF.returnReason]:note,[AF.revision]:nr};
+  await save(a,data,"Returned",`${old} returned → correct as ${nr}: ${note}`,[{to:a[AF.assignedTo]||a[AF.assignedEmployeeName],subject:subj({...a,...data},`Returned by ${me.name}`),html:mailHtml({...a,...data},"Returned for correction",`<b>${esc(me.name)}</b> returned <b>${esc(old)}</b> for correction.<br><br><b>Reason:</b> ${esc(note)}<br><br>Correct it as <b>${esc(nr)}</b>, upload the new files and submit again.`,person(a[AF.assignedTo]||a[AF.assignedEmployeeName]))}]);
+}
+function openNewRev(a){
+  need(a,"newrev");const nr=nextRev(rev(a));
+  openModal(`New revision ${nr}`,`${sc(a[AF.projectCode])} • ${sc(a[AF.shortName])||""} • now ${rev(a)} (${sc(a[AF.status])||"Not Started"})`,
+   `<div class="v22-steps">${stepsHtml(a)}</div>
+    <div class="notice" style="margin:8px 0">The task goes back to <b>step 1 (Working)</b> as <b>${esc(nr)}</b>. ${esc(ownerOf(a))} works on it and submits it for check again. Files and history of ${esc(rev(a))} stay.</div>
+    <div class="field"><label>Reason for ${esc(nr)} *</label><textarea id="v22Note" placeholder="e.g. Client comments, vendor data changed, scope change"></textarea></div>`,
+   `<button class="btn" data-modal="close">Cancel</button><button class="btn primary" data-v22-do="newrev-ok" data-id="${esc(idOf(a))}">Start ${esc(nr)}</button>`);
+}
+async function doNewRev(a){
+  need(a,"newrev");const note=sc(el("v22Note")&&el("v22Note").value).trim();if(!note)throw rule("Write the reason for the new revision.");
+  try{closeModal()}catch(_){}
+  const old=rev(a),nr=nextRev(old),me=actor();
+  const data={[AF.revision]:nr,[AF.status]:"In Progress",[AF.progress]:25,[AF.remark]:`${nr}: ${note}`};
+  const nb={...a,...data},line=`<b>${esc(me.name)}</b> started a new revision <b>${esc(nr)}</b> (was ${esc(old)}).<br><br><b>Reason:</b> ${esc(note)}`;
+  const mails=[];
+  if(!isOwner(a))mails.push({to:a[AF.assignedTo]||a[AF.assignedEmployeeName],subject:subj(nb,`New revision ${nr} by ${me.name}`),html:mailHtml(nb,`New revision ${nr}`,line+"<br><br>Please work on it and submit it for check.",person(a[AF.assignedTo]||a[AF.assignedEmployeeName]))});
+  if(!isAssigner(a))mails.push({to:a[AF.assignedBy],subject:subj(nb,`New revision ${nr} by ${me.name}`),html:mailHtml(nb,`New revision ${nr}`,line,person(a[AF.assignedBy]))});
+  await save(a,data,`New revision ${nr}`,`${old} → ${nr}: ${note}`,mails);
 }
 async function doIssue(a){
   need(a,"issue");const note=sc(el("v22Note")&&el("v22Note").value).trim();try{closeModal()}catch(_){}
@@ -9417,6 +9493,8 @@ function act(what,id){
   if(what==="check")return run(()=>openCheck(a,"check"));
   if(what==="return")return run(()=>openCheck(a,"return"));
   if(what==="issue")return run(()=>openCheck(a,"issue"));
+  if(what==="newrev")return run(()=>openNewRev(a));
+  if(what==="newrev-ok")return run(()=>doNewRev(a));
   if(what==="submit-ok")return run(()=>doSubmit(a));
   if(what==="check-ok")return run(()=>doCheck(a,false));
   if(what==="checkissue-ok")return run(()=>doCheck(a,true));
@@ -9430,7 +9508,7 @@ function stepsHtml(a){
   return `<div class="v22-bar">${STEPS.map((x,i)=>`<div class="v22-st ${s>i+1||s===4?"done":s===i+1?(ret&&i===0?"ret":"cur"):""}"><span>${s>i+1||s===4?"✓":i+1}</span><b>${esc(i===0&&ret?"Returned":x)}</b></div>`).join("")}</div>`;
 }
 function buttons(a,small){
-  return allowed(a).map(k=>`<button type="button" class="btn ${small?"sm":""} ${k==="return"?"":"primary"} v22-btn" data-v22-act="${k}" data-id="${esc(idOf(a))}" ${busyIds.has(String(idOf(a)))?"disabled":""}>${LABEL[k]}</button>`).join("");
+  return allowed(a).filter(k=>!(small&&k==="newrev")).map(k=>`<button type="button" class="btn ${small?"sm":""} ${k==="return"?"":"primary"} v22-btn" data-v22-act="${k}" data-id="${esc(idOf(a))}" ${busyIds.has(String(idOf(a)))?"disabled":""}>${LABEL[k]}</button>`).join("");
 }
 function panel(a){
   if(!a||isSelfRoot(a))return "";
@@ -9440,6 +9518,7 @@ function panel(a){
     ${stepsHtml(a)}
     <div class="v22-people"><div><small>Task owner</small><b>${esc(own)}</b></div><div><small>Assigned by</small><b>${esc(by||"—")}</b></div><div><small>Checker</small><b>${esc(chk||"—")}</b></div><div><small>Target</small><b>${esc(displayDate(a[AF.targetDate]))}</b></div></div>
     ${isReturned(a)&&sc(a[AF.returnReason])?`<div class="notice warn" style="margin-top:8px"><b>Returned:</b> ${esc(sc(a[AF.returnReason]))}</div>`:""}
+    ${(()=>{const hs=revHistory(a);if(!hs.length)return "";return `<details class="v22-revs" ${hs.length>1?"open":""}><summary>Revision history (${hs.length})</summary>${hs.map(([r,list])=>`<div class="v22-rev"><b>${esc(r)}</b><div>${list.slice(-6).map(x=>`<span>${esc(x.action)}${x.actor?` • ${esc(x.actor)}`:""}${x.time?` • ${esc(new Date(x.time).toLocaleString())}`:""}${x.detail&&x.kind==="flow"&&/Return|revision/i.test(x.action)?` — ${esc(String(x.detail).slice(0,120))}`:""}</span>`).join("")}</div></div>`).join("")}</details>`})()}
     <div class="v22-acts">${buttons(a,false)||`<span class="tiny muted">${actor()?"No step for you on this task — you can view it and its files.":"Choose your name ('Working as') to work on tasks."}</span>`}<button type="button" class="btn" data-detail-tab="taskfiles">📎 Files</button></div>
   </div>`;
 }
@@ -9603,6 +9682,160 @@ patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){
   try{if(S.view==="project"&&!document.querySelector("[data-v21-xls='project']")){const b=document.querySelector("#page [data-v18-assign]");if(b&&b.parentNode){const x=document.createElement("button");x.className="btn";x.dataset.v21Xls="project";x.textContent="⬇ Excel";b.parentNode.insertBefore(x,b)}}}catch(_){}
   return r;
 });
+/* ---------- 14. PROJECT "PENDING TRACKER" DASHBOARD (V22.1) ----------
+   Project → Dashboard tab. For the open project it shows, for every active
+   design (drawing / document), every item that design needs - the whole
+   project, each plant section, section type, tag, or tag + PDS type - and
+   whether it is Not assigned / Not started / Working / Returned / In check /
+   To issue / Issued, with owner, revision and target.
+   Three views:  By design  |  By section  |  By tag (tag × design matrix)
+   Filters: Pending only, Section, Design, search. Export to Excel.
+   Accuracy: items come from the same lists as the Assign screen (Equipment
+   Master / PD Sheet, BOM skip rules included) and tasks are matched with the
+   same rule as the duplicate check. Tasks that match no item are listed too. */
+const TR={view:"design",pend:true,sec:"",des:"",q:"",open:new Set(),loading:false,loadedFor:"",err:""};
+const UST={na:["Not assigned","#475467","#f2f4f7"],todo:["Not started","#344054","#eaecf0"],work:["Working","#175cd3","#eff8ff"],ret:["Returned","#93370d","#fffaeb"],check:["In check","#c11574","#fdf2fa"],toissue:["To issue","#6941c6","#f4ebff"],done:["Issued","#067647","#ecfdf3"]};
+const UORDER=["na","todo","ret","work","check","toissue","done"];
+function unitState(u){
+  const ts=u.tasks||[];if(!ts.length)return {st:"na",owners:[],rev:"",target:"",late:false};
+  const steps=ts.map(stepOf),min=Math.min(...steps);
+  let st=min>=4?"done":min===3?"toissue":min===2?"check":min===1?(ts.some(t=>isReturned(t)&&stepOf(t)===1)?"ret":"work"):"todo";
+  const owners=[...new Set(ts.map(ownerOf).filter(Boolean))];
+  const revs=ts.map(rev).sort((x,y)=>Number(String(y).replace(/\D/g,""))-Number(String(x).replace(/\D/g,"")));
+  const tg=ts.map(t=>toInputDate(t[AF.targetDate])).filter(Boolean).sort().pop()||"";
+  const late=ts.some(t=>{try{const d=dateDiffDays(toInputDate(t[AF.targetDate]));return d!=null&&d<0&&stepOf(t)<4}catch(_){return false}});
+  return {st,owners,rev:revs[0]||"",target:tg,late};
+}
+const chip=(st,short)=>{const x=UST[st]||UST.na;return `<span class="v22-u" style="color:${x[1]};background:${x[2]}">${esc(short?x[0].split(" ").map(w=>w[0]).join(""):x[0])}</span>`};
+const modeLabel=m=>m==="Project Wise"?"Whole project":m==="PDS"?"Tag + PDS type":m||"—";
+function trackerData(){
+  const code=String(S.projectWorkspace&&S.projectWorkspace.code||"");
+  let rep=[];try{rep=(window.MEGA_SCOPE&&MEGA_SCOPE.report)?MEGA_SCOPE.report(code):[]}catch(e){log("tracker",e)}
+  const rows=[];
+  for(const g of rep){for(const u of g.units){const s=unitState(u);rows.push({g,u,...s,design:g.drawing,short:g.drawing.short||"",dname:g.drawing.name||"",section:u.section||(g.mode==="Project Wise"?"(Whole project)":""),type:u.type,tag:u.tag,name:u.name,pds:u.pdsType})}}
+  return {code,rep,rows};
+}
+function trFilter(rows){
+  const q=low(TR.q);
+  return rows.filter(r=>(!TR.pend||r.st!=="done")&&(!TR.sec||r.section===TR.sec)&&(!TR.des||String(r.design.id)===TR.des)&&(!q||[r.short,r.dname,r.section,r.type,r.tag,r.name,r.pds,r.owners.join(" ")].join(" ").toLowerCase().includes(q)));
+}
+function segBar(counts,total){
+  const col={na:"#98a2b3",todo:"#d0d5dd",work:"#2f6fdb",ret:"#fab219",check:"#c2459a",toissue:"#7a5af8",done:"#0ca30c"};
+  if(!total)return `<div class="v21-bar sm"><span class="v21-seg empty"></span></div>`;
+  return `<div class="v21-bar sm">${UORDER.filter(k=>counts[k]).map(k=>`<span class="v21-seg" style="flex:${counts[k]} 1 0;background:${col[k]}" title="${esc(UST[k][0])}: ${counts[k]}"></span>`).join("")}</div>`;
+}
+const countBy=list=>{const c={};for(const r of list)c[r.st]=(c[r.st]||0)+1;return c};
+function trackerHtml(){
+  const code=String(S.projectWorkspace&&S.projectWorkspace.code||"");
+  if(TR.loadedFor!==code&&!TR.loading&&window.MEGA_SCOPE){
+    TR.loading=true;TR.err="";
+    Promise.resolve(MEGA_SCOPE.ready(code)).catch(e=>{TR.err=errorText(e)}).finally(()=>{TR.loading=false;TR.loadedFor=code;if(S.view==="project"&&S.projectWorkspace.tab==="dashboard")renderView()});
+  }
+  const {rows,rep}=trackerData(),all=rows,list=trFilter(rows),c=countBy(all),tot=all.length,pend=tot-(c.done||0);
+  const secs=[...new Set(all.map(r=>r.section).filter(Boolean))].sort((x,y)=>x.localeCompare(y,undefined,{numeric:true}));
+  const kpi=(n,l,cls,k)=>`<button type="button" class="v22-k ${cls||""}" ${k?`data-v22-trk-st="${k}"`:""}><b>${n}</b><small>${esc(l)}</small></button>`;
+  let body="";
+  if(TR.view==="design"){
+    body=rep.filter(g=>!TR.des||String(g.drawing.id)===TR.des).map(g=>{
+      const gr=list.filter(r=>r.g===g),allg=all.filter(r=>r.g===g),cg=countBy(allg),done=cg.done||0;
+      if(!gr.length&&(TR.pend||TR.sec||TR.q))return "";
+      const id=String(g.drawing.id),open=TR.open.has(id)||!!TR.q||!!TR.sec||!!TR.des;
+      const tbl=`<div class="v21-bm-table"><table><thead><tr><th>Section</th><th>Type</th><th>Tag</th><th>Equipment</th>${g.mode==="PDS"?"<th>PDS type</th>":""}<th>Status</th><th>Owner</th><th>Rev</th><th>Target</th></tr></thead><tbody>${gr.map(r=>`<tr ${r.u.tasks[0]?`data-open-assignment="${esc(idOf(r.u.tasks[0]))}"`:""}><td>${esc(r.section||"—")}</td><td>${esc(r.type||"—")}</td><td><b>${esc(r.tag||"—")}</b></td><td>${esc(r.name||"—")}</td>${g.mode==="PDS"?`<td>${esc(r.pds||"—")}</td>`:""}<td>${chip(r.st)}${r.late?' <span class="pill red">Overdue</span>':""}</td><td>${esc(r.owners.join(", ")||"—")}</td><td>${esc(r.rev||"—")}</td><td>${esc(r.target?displayDate(r.target):"—")}</td></tr>`).join("")||`<tr><td colspan="9" class="tiny muted">Nothing pending.</td></tr>`}</tbody></table></div>`;
+      return `<section class="v21-bm-card"><div class="v21-bm-head v22-dh" data-v22-trk-open="${esc(id)}"><span class="v22-caret">${open?"▾":"▸"}</span><div class="v21-bm-name"><b>${esc(g.drawing.short?g.drawing.short+" — ":"")}${esc(g.drawing.name)}</b><span>${esc(modeLabel(g.mode))} • ${allg.length} item${allg.length===1?"":"s"} • <b>${allg.length-done}</b> pending • ${cg.na||0} not assigned${g.skipped?` • ${g.skipped} skipped (BOM rule)`:""}${g.unmatched.length?` • <em>${g.unmatched.length} task(s) match no item</em>`:""}</span></div>
+        <div class="v21-bm-mini">${segBar(cg,allg.length)}<div class="v21-sub">${done}/${allg.length} issued</div></div></div>${open?tbl+(g.unmatched.length?`<div class="tiny muted" style="padding:6px 12px">Tasks that match no current item (item removed from the master or scope changed): ${g.unmatched.map(t=>`<a class="v22-link" data-v22-open="${esc(idOf(t))}">${esc(sc(t[AF.tagNo])||sc(t[AF.plantSection])||sc(t[AF.criteria])||idOf(t))} (${esc(ownerOf(t))})</a>`).join(", ")}</div>`:""):""}</section>`;
+    }).join("")||`<div class="empty"><strong>${TR.pend?"Nothing pending":"No items"}</strong>${TR.pend?"All items of this project are issued for the chosen filter.":"No active designs for this project."}</div>`;
+  }else if(TR.view==="section"){
+    const m=new Map();for(const r of list){const k=r.section||"(No section)";if(!m.has(k))m.set(k,[]);m.get(k).push(r)}
+    body=`<div class="v21-bm-card"><div class="v21-bm-table"><table><thead><tr><th>Plant section</th><th>Items</th><th>Status</th><th>Pending by design</th></tr></thead><tbody>${[...m.entries()].sort((x,y)=>x[0].localeCompare(y[0],undefined,{numeric:true})).map(([s,l])=>{const cs=countBy(l),byD=new Map();for(const r of l){if(r.st==="done")continue;const k=String(r.design.id);if(!byD.has(k))byD.set(k,{d:r.design,n:0});byD.get(k).n++}
+      return `<tr><td><b>${esc(s)}</b></td><td>${l.length}<div class="v21-sub">${l.length-(cs.done||0)} pending</div></td><td style="min-width:170px">${segBar(cs,l.length)}<div class="v21-sub">${UORDER.filter(k=>cs[k]).map(k=>`${cs[k]} ${UST[k][0].toLowerCase()}`).join(" • ")}</div></td><td>${[...byD.values()].map(x=>`<button type="button" class="v22-dchip" data-v22-trk-go="${esc(String(x.d.id))}" data-sec="${esc(s)}">${esc(x.d.short||x.d.name)} <b>${x.n}</b></button>`).join("")||'<span class="tiny muted">All issued</span>'}</td></tr>`}).join("")||`<tr><td colspan="4"><div class="empty compact"><strong>Nothing to show</strong></div></td></tr>`}</tbody></table></div></div>`;
+  }else{
+    /* Tag view: every tag of the project (Equipment Master) × every design.
+       Tag-level designs (Tag Wise / Tag + PDS) show the tag's own item; section-level
+       designs show the item of the tag's section (or section + type); whole-project
+       designs show the project item. "·" = this design does not need this tag (e.g. BOM skip rule). */
+    const code0=String(S.projectWorkspace&&S.projectWorkspace.code||"");
+    let eqs=[];try{eqs=(S.cache.equipmentByProject.get(code0)||[]).filter(x=>x&&x.tag)}catch(_){}
+    const uniq=new Map();for(const x of eqs)if(!uniq.has(x.tag))uniq.set(x.tag,x);
+    const q=low(TR.q);
+    const cellFor=(g,x)=>{
+      const R=all.filter(r=>r.g===g);
+      if(g.mode==="Tag Wise"||g.mode==="PDS"){const l=R.filter(r=>r.tag===x.tag);return l.length?{rows:l,via:""}:null}
+      if(g.mode==="Section Wise"){const l=R.filter(r=>r.section===x.plantSection);return l.length?{rows:l,via:`section ${x.plantSection}`}:null}
+      if(g.mode==="Section Type Wise"){const l=R.filter(r=>r.section===x.plantSection&&r.type===x.plantSectionType);return l.length?{rows:l,via:`${x.plantSection} › ${x.plantSectionType}`}:null}
+      return R.length?{rows:R,via:"whole project"}:null;
+    };
+    const cols=rep.filter(g=>!TR.des||String(g.drawing.id)===TR.des);
+    const tags=[...uniq.values()].filter(x=>(!TR.sec||x.plantSection===TR.sec)&&(!q||[x.tag,x.name,x.plantSection,x.plantSectionType].join(" ").toLowerCase().includes(q))).sort((a,b)=>String(a.tag).localeCompare(String(b.tag),undefined,{numeric:true}));
+    const lines=[];
+    for(const x of tags){
+      const cells=cols.map(g=>cellFor(g,x));
+      if(TR.pend&&!cells.some(c=>c&&c.rows.some(r=>r.st!=="done")))continue;
+      lines.push({x,cells});
+    }
+    const cellHtml=c=>{
+      if(!c)return '<span class="tiny muted" title="Not needed for this design">·</span>';
+      const w=c.rows.slice().sort((a,b)=>UORDER.indexOf(a.st)-UORDER.indexOf(b.st))[0],done=c.rows.filter(r=>r.st==="done").length;
+      const tip=`${w.dname}${c.via?" (via "+c.via+")":""} • ${c.rows.map(r=>`${r.pds?r.pds+": ":""}${UST[r.st][0]}${r.owners.length?" ("+r.owners.join(", ")+")":""}${r.rev?" "+r.rev:""}`).join(" | ")}`;
+      return `<span class="${c.via?"v22-via":""}" title="${esc(tip)}" ${w.u.tasks[0]?`data-open-assignment="${esc(idOf(w.u.tasks[0]))}"`:""}>${chip(w.st)}${c.rows.length>1?`<small class="v22-frac">${done}/${c.rows.length}</small>`:""}</span>`;
+    };
+    body=lines.length?`<div class="v21-bm-card"><div class="v21-bm-table v22-mx"><table><thead><tr><th class="v22-stick">Tag</th><th>Equipment</th><th>Section</th>${cols.map(g=>`<th title="${esc(g.drawing.name)} (${esc(modeLabel(g.mode))})">${esc(g.drawing.short||g.drawing.name)}</th>`).join("")}</tr></thead><tbody>${lines.slice(0,600).map(({x,cells})=>`<tr><td class="v22-stick"><b>${esc(x.tag)}</b></td><td>${esc(x.name||"")}</td><td>${esc([x.plantSection,x.plantSectionType].filter(Boolean).join(" › "))}</td>${cells.map(c=>`<td>${cellHtml(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+      <div class="tiny muted" style="padding:6px 12px">${lines.length>600?"First 600 tags shown - use the filters. ":""}Faded = the design is assigned per section / whole project, so the tag follows that item. 2/4 = items issued out of items for this tag (e.g. PDS types). · = not needed for this design.</div></div>`
+      :`<div class="empty"><strong>${tags.length?"Nothing pending for these tags":"No tags"}</strong>${tags.length?"Untick “Pending only” to see all tags.":"This project has no tags in the Equipment Master (or it is still loading)."}</div>`;
+  }
+  const dopts=rep.map(g=>`<option value="${esc(String(g.drawing.id))}" ${TR.des===String(g.drawing.id)?"selected":""}>${esc(g.drawing.short?g.drawing.short+" — ":"")}${esc(g.drawing.name)}</option>`).join("");
+  return `<div class="v22-trk">
+   <div class="section-row" style="margin-top:0"><div><h2>Pending tracker</h2><p>Every drawing / document of project ${esc(code)} and what is pending in it — per section and per tag.</p></div>
+     <div class="actions"><button class="btn" data-v22-trk-xls>⬇ Excel</button><button class="btn" data-v22-trk-reload>↻ Refresh</button></div></div>
+   ${TR.loading?`<div class="notice" style="margin-bottom:8px"><span class="v21-dot spin"></span> Reading Equipment and PD Sheet for this project… numbers update in a moment.</div>`:""}
+   ${TR.err?`<div class="notice warn" style="margin-bottom:8px">Could not read all data: ${esc(TR.err)}</div>`:""}
+   <div class="v22-kpis">${kpi(rep.length,"Designs")}${kpi(tot,"Items needed")}${kpi(pend,"Pending","bad")}${kpi(c.na||0,"Not assigned","",`na`)}${kpi((c.todo||0)+(c.work||0)+(c.ret||0),"Working / not started","",`work`)}${kpi((c.check||0)+(c.toissue||0),"In check / to issue","",`check`)}${kpi(c.done||0,"Issued","good","done")}
+     <div class="v22-kbar">${segBar(c,tot)}<div class="v21-sub">${tot?Math.round((c.done||0)*100/tot):0}% issued</div></div></div>
+   <div class="v22-trk-tools">
+     <div class="v21-ws" style="margin:0"><button type="button" class="${TR.view==="design"?"on":""}" data-v22-trk-view="design">By design</button><button type="button" class="${TR.view==="section"?"on":""}" data-v22-trk-view="section">By section</button><button type="button" class="${TR.view==="tag"?"on":""}" data-v22-trk-view="tag">By tag</button></div>
+     <label class="v22-tg"><input type="checkbox" data-v22-trk-pend ${TR.pend?"checked":""}> Pending only</label>
+     <select data-v22-trk-sec class="v21-sel"><option value="">All sections (${secs.length})</option>${secs.map(s=>`<option ${s===TR.sec?"selected":""}>${esc(s)}</option>`).join("")}</select>
+     <select data-v22-trk-des class="v21-sel"><option value="">All designs (${rep.length})</option>${dopts}</select>
+     <input class="input v21-q" id="v22TrkQ" placeholder="Search tag, equipment, section, person…" value="${esc(TR.q)}">
+     ${TR.view==="design"?`<button type="button" class="btn sm" data-v22-trk-all>${TR.open.size?"Collapse all":"Expand all"}</button>`:""}
+   </div>
+   ${body}</div>`;
+}
+patch("renderProjectDashboardV18",()=>renderProjectDashboardV18,f=>{renderProjectDashboardV18=f},base=>function(){
+  try{return trackerHtml()}catch(e){log("tracker",e);return base.apply(this,arguments)}
+});
+function trackerXls(){
+  const {code,rows}=trackerData(),list=trFilter(rows);
+  const head=["Project","Design","Design name","Scope","Plant section","Section type","Tag","Equipment","PDS type","Status","Owner(s)","Revision","Target","Overdue"];
+  const q=v=>{v=String(v??"");return /[",\n;]/.test(v)?`"${v.replace(/"/g,'""')}"`:v};
+  const csv="﻿"+[head].concat(list.map(r=>[code,r.short,r.dname,modeLabel(r.g.mode),r.section,r.type,r.tag,r.name,r.pds,UST[r.st][0],r.owners.join(" / "),r.rev,r.target?displayDate(r.target):"",r.late?"Yes":""])).map(x=>x.map(q).join(",")).join("\r\n");
+  const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})),a=document.createElement("a");a.href=url;a.download=`Pending_${code}_${new Date().toISOString().slice(0,10)}.csv`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
+  say(`${list.length} item${list.length===1?"":"s"} exported.`,"good");
+}
+const trRedraw=()=>{try{renderView()}catch(_){}};
+document.addEventListener("click",e=>{
+  const t=e.target;if(!t||!t.closest)return;let x;
+  if((x=t.closest("[data-v22-trk-view]"))){e.preventDefault();TR.view=x.dataset.v22TrkView;return trRedraw()}
+  if((x=t.closest("[data-v22-trk-open]"))){e.preventDefault();const id=x.dataset.v22TrkOpen;if(TR.open.has(id))TR.open.delete(id);else TR.open.add(id);return trRedraw()}
+  if(t.closest("[data-v22-trk-all]")){e.preventDefault();if(TR.open.size)TR.open.clear();else{try{for(const g of MEGA_SCOPE.report(S.projectWorkspace.code))TR.open.add(String(g.drawing.id))}catch(_){}}return trRedraw()}
+  if((x=t.closest("[data-v22-trk-go]"))){e.preventDefault();TR.view="design";TR.des=x.dataset.v22TrkGo;TR.sec=x.dataset.sec||"";return trRedraw()}
+  if((x=t.closest("[data-v22-trk-st]"))){e.preventDefault();TR.view="design";TR.pend=x.dataset.v22TrkSt!=="done";if(x.dataset.v22TrkSt==="done"){TR.pend=false}TR.q="";return trRedraw()}
+  if(t.closest("[data-v22-trk-xls]")){e.preventDefault();e.stopImmediatePropagation();return trackerXls()}
+  if(t.closest("[data-v22-trk-reload]")){e.preventDefault();e.stopImmediatePropagation();const c=String(S.projectWorkspace.code||"");TR.loadedFor="";return (typeof guarded==="function"?guarded:(f=>f()))(async()=>{busy("Refreshing project…");try{await ensureTrackingForProject(c,true);await ensureEquipmentForProject(c,true)}finally{idle()}trRedraw()})}
+},true);
+document.addEventListener("change",e=>{const t=e.target;if(!t||!t.matches)return;
+  if(t.matches("[data-v22-trk-pend]")){TR.pend=t.checked;return trRedraw()}
+  if(t.matches("[data-v22-trk-sec]")){TR.sec=t.value;return trRedraw()}
+  if(t.matches("[data-v22-trk-des]")){TR.des=t.value;return trRedraw()}
+},true);
+let trT=null;
+document.addEventListener("input",e=>{const t=e.target;if(t&&t.id==="v22TrkQ"){TR.q=t.value;clearTimeout(trT);trT=setTimeout(()=>{const pos=t.selectionStart;trRedraw();const n=el("v22TrkQ");if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}},300)}},true);
+// the project tab is now called "Dashboard · Pending"
+patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){
+  const r=base.apply(this,arguments);
+  try{const b=document.querySelector('#page [data-project-tab="dashboard"]');if(b&&!b.dataset.v22)b.dataset.v22="1",b.textContent="Dashboard · Pending"}catch(_){}
+  return r;
+});
+
 /* ---------- 13. Styles ---------- */
 try{const st=document.createElement("style");st.id="v22Styles";st.textContent=`
 .v22-panel{border:1px solid #e4e7ec;border-radius:14px;background:#fff;padding:12px 14px;margin-bottom:12px}
@@ -9615,6 +9848,8 @@ try{const st=document.createElement("style");st.id="v22Styles";st.textContent=`
 .v22-st.ret{background:#fffaeb;color:#93370d;box-shadow:inset 0 0 0 2px #fab219}.v22-st.ret span{background:#fab219;color:#111}
 .v22-people{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.v22-people div{background:#f9fafb;border-radius:10px;padding:7px 10px}.v22-people small{display:block;font-size:10px;color:#667085}.v22-people b{font-size:12px}
 .v22-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.v22-revs{margin-top:10px;border:1px solid #eaecf0;border-radius:10px;padding:6px 10px;font-size:12px}.v22-revs summary{cursor:pointer;font-weight:800;color:#344054}
+.v22-rev{display:grid;grid-template-columns:44px 1fr;gap:8px;padding:6px 0;border-top:1px solid #f2f4f7}.v22-rev b{color:#c42770}.v22-rev span{display:block;color:#475467}
 .v22-chip.s2{background:#fdf0f6;color:#c42770}.v22-chip.s3{background:#f4ebff;color:#6941c6}.v22-chip.s4{background:#ecfdf3;color:#067647}.v22-chip.s1{background:#eff8ff;color:#175cd3}
 .v22-ret{margin:6px 0;padding:6px 9px;border-radius:8px;background:#fffaeb;color:#93370d;font-size:11px}
 .work-card .work-foot{flex-wrap:wrap;gap:8px;align-items:center}.work-card .actions{flex-wrap:wrap;gap:6px;justify-content:flex-end;margin-left:auto}.v22-btn{white-space:nowrap}.work-card .rev-chip{white-space:nowrap}
@@ -9625,6 +9860,18 @@ try{const st=document.createElement("style");st.id="v22Styles";st.textContent=`
 .v22-view{width:100%;height:70vh;border:0;border-radius:10px;background:#f2f4f7}.v22-view.img{display:grid;place-items:center;overflow:auto}.v22-view.img img{max-width:100%;max-height:68vh}.v22-view.txt{overflow:auto;padding:10px;font-size:12px;white-space:pre-wrap}
 .v22-dc{border:1px solid #eaecf0;border-radius:12px;padding:10px 12px;margin-bottom:8px}.v22-dc-h{display:flex;justify-content:space-between;align-items:center}.v22-dc-list{max-height:180px;overflow:auto;font-size:12px;margin-top:6px;display:grid;gap:3px}
 .v22-link{cursor:pointer;color:#c42770}
+.v22-trk .v22-kpis{display:grid;grid-template-columns:repeat(7,minmax(0,1fr)) minmax(180px,1.5fr);gap:8px;margin:6px 0 12px}
+.v22-k{border:1px solid #e4e7ec;border-radius:12px;background:#fff;padding:10px;text-align:left;font:inherit;cursor:pointer}.v22-k b{display:block;font-size:22px;color:#101828}.v22-k small{font-size:11px;color:#667085}
+.v22-k.bad b{color:#d03b3b}.v22-k.good b{color:#067647}.v22-kbar{border:1px solid #e4e7ec;border-radius:12px;background:#fff;padding:12px;display:grid;align-content:center;gap:6px}.v22-kbar .v21-bar.sm{width:100%;height:12px}
+.v22-trk-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}.v22-trk-tools .v21-sel{height:34px;min-width:170px}.v22-trk-tools .v21-q{height:34px;width:240px}
+.v22-tg{display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:700;border:1px solid #e4e7ec;border-radius:10px;padding:7px 10px;background:#fff}
+.v22-u{display:inline-block;font-size:10px;font-weight:800;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.v22-dh{cursor:pointer}.v22-caret{font-size:14px;color:#667085;width:14px}.v22-dh em{color:#b54708;font-style:normal}
+.v22-dchip{border:1px solid #e4e7ec;background:#fff;border-radius:999px;padding:3px 9px;margin:2px;font:inherit;font-size:11px;cursor:pointer}.v22-dchip b{color:#d03b3b}
+.v22-mx table{min-width:0}.v22-mx td,.v22-mx th{text-align:center;white-space:nowrap}.v22-mx td:nth-child(2),.v22-mx td:nth-child(3),.v22-mx td:first-child,.v22-mx th:first-child{text-align:left}
+.v22-stick{position:sticky;left:0;background:#fff;z-index:1}
+.v22-via{opacity:.6}.v22-frac{font-size:10px;color:#667085;margin-left:3px}
+@media(max-width:1100px){.v22-trk .v22-kpis{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:900px){.v22-bar,.v22-people{grid-template-columns:1fr 1fr}}`;document.head.appendChild(st)}catch(e){log("styles",e)}
 
 window.MEGA_V22={build:BUILD,stepOf,allowed,toCheckRows,returnedToMe,familyFiles,canUpload,canView,exportRows,remind,isSelfRoot,ownerOf,isOwner,isChecker,isAssigner,waitingFor,popupCheck,dataCheck};
