@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.1
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.2
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V22.1".
+   3. Paste this whole file and save. The badge at the top shows "V22.2".
 
  >>> ALL SETTINGS ARE IN ONE PLACE: the "MEGA SETTINGS" block, the first
      SCRIPT below (report names, projects list, waiting times, speed,
@@ -97,6 +97,10 @@
                       by section / tag × design matrix, Excel). Revisions:
                       always filled (R0), +1 automatically on Return, "New
                       revision" at any stage with reason + history.
+                      V22.2: main design shows who does the work (Rutuja →
+                      Pratik) in the project list and on its page, with each
+                      task's step, revision and buttons (incl. New revision,
+                      and New revision for all tasks).
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -116,7 +120,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V22.1</title>
+<title>MEGA Engineering | Project Design Control V22.2</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -342,7 +346,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.1</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.2</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -7115,7 +7119,12 @@ function nodeRow(a,depth,drawing,index,flat=false){
   const row=`<tr class="v218-tr ${isRoot&&!flat?"v218-root":"v218-child"} ${dim?"v218-dim":""} ${overdueA(a)?"v219-late":""} ${String(V.focusId||"")===id?"v219-current":""}" data-v218-node="${esc(id)}">
     <td><div class="v218-cell" style="--d:${d}">${children.length?`<button type="button" class="v218-tog" data-v218-toggle="${esc(id)}" title="${open?"Collapse":"Expand"}">${open?"−":"+"}</button>`:`<span class="v218-tog-sp"></span>`}${isRoot&&!flat?`<span class="v211-seq">${index+1}</span>`:""}<div class="v218-name-wrap"><div class="v211-task-name v218-link" data-v211-open-node="${esc(id)}" title="Open">${esc(label)}</div><div class="v211-task-sub">${isRoot&&!flat?esc(sub):sub}${isRoot&&!flat&&!drawingIsActive(drawing)?` <span class="pill amber">Inactive design</span>`:""}</div></div>${can?`<button type="button" class="v218-add" data-v211-add-subtask="${esc(id)}" title="Add subtask under this task">＋</button>`:""}</div></td>
     <td>${isRoot?v211ScopeBadge(drawing):`<span class="scope-tag">${esc(level===1?(sc(a[AF.criteria])||"Scope"):"Subtask")}</span>`}</td>
-    <td class="v19-human"><div class="v212-owner-main">${esc(assignmentDisplayUser(a))}</div><div class="v211-task-sub">${isRoot?"Lead":`by ${esc(personDisplay(a[AF.assignedBy])||sc(a[AF.assignedBy])||"—")}`}</div></td>
+    <td class="v19-human">${(()=>{
+      // V22.2: for the main design show the people doing the work ("Pratik, Amit"); the lead is shown small
+      if(isRoot){const ks=kids(a).filter(c=>sc(c[AF.status])!=="Cancelled"),own=[...new Set(ks.map(c=>assignmentDisplayUser(c)).filter(Boolean))];
+        if(own.length)return `<div class="v212-owner-main">${esc(own.slice(0,3).join(", "))}${own.length>3?` +${own.length-3}`:""}</div><div class="v211-task-sub">assigned by ${esc(assignmentDisplayUser(a))}</div>`;
+        return `<div class="v212-owner-main v22-muted">Not assigned yet</div><div class="v211-task-sub">lead ${esc(assignmentDisplayUser(a))}</div>`}
+      return `<div class="v212-owner-main">${esc(assignmentDisplayUser(a))}</div><div class="v211-task-sub">by ${esc(personDisplay(a[AF.assignedBy])||sc(a[AF.assignedBy])||"—")}</div>`})()}</td>
     <td>${statusPill(sc(a[AF.status]))}</td>
     <td class="${overdueA(a)?"v219-late-date":""}">${esc(displayDate(a[AF.targetDate]))}</td>
     <td><div class="v211-progress"><span>${num0(a[AF.progress])}%</span>${progressBar(num0(a[AF.progress]))}</div></td>
@@ -9265,7 +9274,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V22(){
 "use strict";
-const BUILD="V22.1";
+const BUILD="V22.2";
 const log=(...a)=>{try{console.warn("[V22]",...a)}catch(_){}};
 const say=(m,t="warn")=>{try{toast(m,t)}catch(_){}};
 const sc=v=>{try{return String(scalar(v)??"")}catch(_){return v==null?"":String(v)}};
@@ -9494,6 +9503,8 @@ function act(what,id){
   if(what==="return")return run(()=>openCheck(a,"return"));
   if(what==="issue")return run(()=>openCheck(a,"issue"));
   if(what==="newrev")return run(()=>openNewRev(a));
+  if(what==="newrevall")return run(()=>openNewRevAll(a));
+  if(what==="newrevall-ok")return run(()=>doNewRevAll(a));
   if(what==="newrev-ok")return run(()=>doNewRev(a));
   if(what==="submit-ok")return run(()=>doSubmit(a));
   if(what==="check-ok")return run(()=>doCheck(a,false));
@@ -9508,10 +9519,47 @@ function stepsHtml(a){
   return `<div class="v22-bar">${STEPS.map((x,i)=>`<div class="v22-st ${s>i+1||s===4?"done":s===i+1?(ret&&i===0?"ret":"cur"):""}"><span>${s>i+1||s===4?"✓":i+1}</span><b>${esc(i===0&&ret?"Returned":x)}</b></div>`).join("")}</div>`;
 }
 function buttons(a,small){
-  return allowed(a).filter(k=>!(small&&k==="newrev")).map(k=>`<button type="button" class="btn ${small?"sm":""} ${k==="return"?"":"primary"} v22-btn" data-v22-act="${k}" data-id="${esc(idOf(a))}" ${busyIds.has(String(idOf(a)))?"disabled":""}>${LABEL[k]}</button>`).join("");
+  return allowed(a).filter(k=>!(small&&k==="newrev")).map(k=>`<button type="button" class="btn ${small?"sm":""} ${k==="return"||k==="newrev"?"":"primary"} v22-btn" data-v22-act="${k}" data-id="${esc(idOf(a))}" ${busyIds.has(String(idOf(a)))?"disabled":""}>${LABEL[k]}</button>`).join("");
+}
+/* V22.2: the MAIN design task (created for the person who assigns) is not work itself.
+   Its page now shows the work under it: who does it (e.g. Rutuja → Pratik), step,
+   revision, target, and the buttons for each task (Start / Submit / Check / Issue /
+   ＋ New revision), plus "＋ New revision for all tasks" for the assigner. */
+function mainPanel(a){
+  const ks=(()=>{try{return assignmentChildren(idOf(a)).filter(c=>sc(c[AF.status])!=="Cancelled")}catch(_){return[]}})();
+  const lead=ownerOf(a),canAll=ks.some(c=>allowed(c).includes("newrev"));
+  const rows=ks.map(c=>{const s=stepOf(c),where=[sc(c[AF.tagNo]),sc(c[AF.plantSection]),sc(c[AF.plantSectionType])].filter(Boolean).join(" • ")||sc(c[AF.criteria])||"Whole design";
+    return `<tr><td><b>${esc(person(c[AF.assignedBy]).name||lead)}</b> → <b>${esc(ownerOf(c))}</b></td><td>${esc(where)}</td><td><span class="rev-chip v22-chip s${s}">${s===0?"Not started":`Step ${Math.max(1,s)}/4 · ${esc(isReturned(c)?"Returned":STEPS[Math.max(1,s)-1])}`}</span></td><td><b>${esc(rev(c))}</b></td><td>${esc(displayDate(c[AF.targetDate]))}</td>
+      <td class="v22-mp-acts">${buttons(c,false)}<button type="button" class="btn sm" data-v22-open="${esc(idOf(c))}">Open</button></td></tr>`}).join("");
+  return `<div class="v22-panel">
+    <div class="v22-ph"><div><b>Main design — work under it</b><span>Lead: ${esc(lead)} • ${ks.length} task${ks.length===1?"":"s"}. Each task has its own 4-step flow and revision.</span></div>
+      ${canAll&&ks.length>1?`<button type="button" class="btn" data-v22-act="newrevall" data-id="${esc(idOf(a))}">＋ New revision for all tasks</button>`:""}</div>
+    ${ks.length?`<div class="v21-bm-table"><table><thead><tr><th>Assigned</th><th>Scope</th><th>Step</th><th>Rev</th><th>Target</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
+      :`<div class="empty compact"><strong>No work assigned yet</strong><div style="margin-top:8px"><button class="btn sm primary" data-v211-assign-further="${esc(idOf(a))}">Assign work</button></div></div>`}
+  </div>`;
+}
+function openNewRevAll(root){
+  const ks=assignmentChildren(idOf(root)).filter(c=>sc(c[AF.status])!=="Cancelled"&&allowed(c).includes("newrev"));
+  if(!ks.length)throw rule("You can start a new revision only on tasks you own or assigned.");
+  openModal("New revision for all tasks",`${sc(root[AF.projectCode])} • ${sc(root[AF.shortName])||sc(root[AF.drawingDocument])}`,
+   `<div class="notice" style="margin-bottom:8px">Each task below goes back to <b>step 1 (Working)</b> with its next revision number. The owners get an email.</div>
+    <div class="v22-pop">${ks.map(c=>`<div class="v22-pop-row"><span class="v22-chip s1">${esc(rev(c))} → ${esc(nextRev(rev(c)))}</span><div><b>${esc(ownerOf(c))}</b><small>${esc([sc(c[AF.tagNo]),sc(c[AF.plantSection])].filter(Boolean).join(" • ")||"Whole design")}</small></div><span></span></div>`).join("")}</div>
+    <div class="field" style="margin-top:10px"><label>Reason *</label><textarea id="v22Note" placeholder="e.g. Client comments, vendor data changed"></textarea></div>`,
+   `<button class="btn" data-modal="close">Cancel</button><button class="btn primary" data-v22-do="newrevall-ok" data-id="${esc(idOf(root))}">Start new revision (${ks.length})</button>`);
+}
+async function doNewRevAll(root){
+  const note=sc(el("v22Note")&&el("v22Note").value).trim();if(!note)throw rule("Write the reason for the new revision.");
+  try{closeModal()}catch(_){}
+  const ks=assignmentChildren(idOf(root)).filter(c=>sc(c[AF.status])!=="Cancelled"&&allowed(c).includes("newrev"));
+  for(const c of ks){
+    const old=rev(c),nr=nextRev(old),me=actor(),data={[AF.revision]:nr,[AF.status]:"In Progress",[AF.progress]:25,[AF.remark]:`${nr}: ${note}`},nb={...c,...data};
+    const mails=isOwner(c)?[]:[{to:c[AF.assignedTo]||c[AF.assignedEmployeeName],subject:subj(nb,`New revision ${nr} by ${me.name}`),html:mailHtml(nb,`New revision ${nr}`,`<b>${esc(me.name)}</b> started a new revision <b>${esc(nr)}</b> (was ${esc(old)}).<br><br><b>Reason:</b> ${esc(note)}<br><br>Please work on it and submit it for check.`,person(c[AF.assignedTo]||c[AF.assignedEmployeeName]))}];
+    await save(c,data,`New revision ${nr}`,`${old} → ${nr}: ${note}`,mails);
+  }
 }
 function panel(a){
-  if(!a||isSelfRoot(a))return "";
+  if(!a)return "";
+  if(isSelfRoot(a)||(!sc(a[AF.assignedFrom])&&assignmentChildren(idOf(a)).length))return mainPanel(a);
   const own=ownerOf(a),by=person(a[AF.assignedBy]).name,chk=person(checkerVal(a)).name;
   return `<div class="v22-panel">
     <div class="v22-ph"><div><b>Work flow</b><span>${esc(waitingFor(a))}</span></div><span class="pill">${esc(rev(a))}</span></div>
@@ -9536,13 +9584,29 @@ patch("renderWorkCard",()=>renderWorkCard,f=>{renderWorkCard=f},base=>function(a
 patch("renderDetailTab",()=>renderDetailTab,f=>{renderDetailTab=f},base=>function(){
   if(S.detailTab==="files"||S.detailTab==="revisions")S.detailTab="taskfiles";
   const html=base.apply(this,arguments);
-  try{if((S.detailTab||"overview")==="overview")return panel(S.current)+html}catch(e){log("panel",e)}
+  try{if((S.detailTab||"overview")==="overview"){
+    const a=S.current;
+    // main design: only the "work under it" list (the old card said "Assigned to Rutuja", which confused people)
+    if(a&&!sc(a[AF.assignedFrom])&&(isSelfRoot(a)||assignmentChildren(idOf(a)).length))return panel(a);
+    return panel(a)+html}}catch(e){log("panel",e)}
   return html;
 });
 patch("renderDetailPage",()=>renderDetailPage,f=>{renderDetailPage=f},base=>function(){
   if(S.detailTab==="files"||S.detailTab==="revisions")S.detailTab="taskfiles";
   const r=base.apply(this,arguments);
   try{document.querySelectorAll('#page .subtabs [data-detail-tab="files"],#page .subtabs [data-detail-tab="revisions"]').forEach(x=>x.remove())}catch(_){}
+  try{
+    const a=S.current;
+    if(a&&!sc(a[AF.assignedFrom])){
+      const ks=assignmentChildren(idOf(a)).filter(c=>sc(c[AF.status])!=="Cancelled"),own=[...new Set(ks.map(ownerOf).filter(Boolean))];
+      document.querySelectorAll("#page .v19-detail-meta .pill").forEach(p=>{
+        if(/^Assigned To:/.test(p.textContent))p.textContent=`Lead: ${ownerOf(a)}${own.length?" → work: "+own.join(", "):" → no work assigned yet"}`;
+        else if(/^Scope:/.test(p.textContent))p.textContent="Main design";
+      });
+      const st=document.querySelector("#page .v19-detail-header .detail-actions .pill");
+      if(st&&ks.length){const done=ks.filter(c=>stepOf(c)===4).length;st.textContent=`${done}/${ks.length} issued`}
+    }
+  }catch(e){log("main header",e)}
   return r;
 });
 
@@ -9848,6 +9912,7 @@ try{const st=document.createElement("style");st.id="v22Styles";st.textContent=`
 .v22-st.ret{background:#fffaeb;color:#93370d;box-shadow:inset 0 0 0 2px #fab219}.v22-st.ret span{background:#fab219;color:#111}
 .v22-people{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.v22-people div{background:#f9fafb;border-radius:10px;padding:7px 10px}.v22-people small{display:block;font-size:10px;color:#667085}.v22-people b{font-size:12px}
 .v22-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.v22-mp-acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.v22-muted{color:#98a2b3}
 .v22-revs{margin-top:10px;border:1px solid #eaecf0;border-radius:10px;padding:6px 10px;font-size:12px}.v22-revs summary{cursor:pointer;font-weight:800;color:#344054}
 .v22-rev{display:grid;grid-template-columns:44px 1fr;gap:8px;padding:6px 0;border-top:1px solid #f2f4f7}.v22-rev b{color:#c42770}.v22-rev span{display:block;color:#475467}
 .v22-chip.s2{background:#fdf0f6;color:#c42770}.v22-chip.s3{background:#f4ebff;color:#6941c6}.v22-chip.s4{background:#ecfdf3;color:#067647}.v22-chip.s1{background:#eff8ff;color:#175cd3}
