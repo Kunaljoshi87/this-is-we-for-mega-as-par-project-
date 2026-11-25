@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.2
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.4
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V22.2".
+   3. Paste this whole file and save. The badge at the top shows "V22.4".
 
  >>> ALL SETTINGS ARE IN ONE PLACE: the "MEGA SETTINGS" block, the first
      SCRIPT below (report names, projects list, waiting times, speed,
@@ -101,6 +101,13 @@
                       Pratik) in the project list and on its page, with each
                       task's step, revision and buttons (incl. New revision,
                       and New revision for all tasks).
+                      V22.3: Zoho API guard (max calls/minute, no duplicate
+                      reads, automatic 60 s pause on "API call limit"),
+                      fewer reads (My Work 3 instead of 10, no endless
+                      projects re-read, refresh every 5 min).
+                      V22.4: max 2 calls at the same time; Zoho's "too many
+                      calls at the same time" answer = short 5 s pause and
+                      automatic retry (not an error).
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -120,7 +127,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V22.2</title>
+<title>MEGA Engineering | Project Design Control V22.4</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -346,7 +353,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.2</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.4</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -421,7 +428,11 @@ var MEGA_SETTINGS={
     PROJECT_ONLY_READS:true,     // read Equipment / PD Sheet only for the open project (full read = backup)
     SAVED_COPY_HOURS:72,         // saved Equipment / PD Sheet copy is used for this long, then read again
     SAVED_COPY_PROJECTS:6,       // how many projects are kept on this computer
-    SAVED_COPY_MAX_KB:1500       // one project bigger than this is not saved (browser space is small)
+    SAVED_COPY_MAX_KB:1500,      // one project bigger than this is not saved (browser space is small)
+    MAX_PARALLEL_CALLS:2,        // calls sent to Zoho at the same time from one browser (Zoho also limits this per login)
+    MAX_CALLS_PER_MINUTE:40,     // Zoho API calls per minute from ONE browser (the login has a per-minute limit;
+                                 // with several people on the same login keep this low, e.g. 20-30)
+    REFRESH_MINUTES:5            // background refresh of open data (minutes)
   },
 
   /* ---------- 5. Roles and people who left ---------- */
@@ -520,6 +531,102 @@ var MEGA_SETTINGS={
     console.warn=function(){try{var a=[].map.call(arguments,txt).join(" ");if(/^\[V2\d/.test(a)&&!/ loaded$/.test(a))R.add("api",a,"console.warn")}catch(_){}return cw.apply(console,arguments)};
   }catch(_){}
 })();
+
+/* ======================================================================
+   ZOHO API GUARD (V22.3) - stops "You have reached your API call limit"
+   ----------------------------------------------------------------------
+   Zoho Creator allows only a limited number of API calls per minute for
+   one login. All people working on the shared login (e.g. megha@mega.tc)
+   count together. This guard sits in front of every Zoho data / file call:
+   - max calls per minute from this browser (MEGA_SETTINGS.SPEED.MAX_CALLS_PER_MINUTE),
+     max 3 at the same time; extra calls wait their turn (nothing fails);
+   - the same read asked twice at the same moment is sent only once, and an
+     identical read within 15 s is answered from memory;
+   - if Zoho still answers "API call limit" (code 2955 / HTTP 429), ALL calls
+     pause for 60 s and then continue by themselves; a small bar shows the
+     countdown. It is written ONCE in the error report, not 60 times.
+   ====================================================================== */
+(function(){
+  try{
+    var SP=(MEGA_SETTINGS&&MEGA_SETTINGS.SPEED)||{};
+    var G=window.MEGA_API={max:Math.max(5,Number(SP.MAX_CALLS_PER_MINUTE)||40),conc:Math.max(1,Math.min(5,Number(SP.MAX_PARALLEL_CALLS)||2)),win:[],active:0,waiting:0,coolUntil:0,lastLimit:0,episodes:0,calls:0,saved:0,cache:new Map(),flight:new Map()};
+    var sleep=function(ms){return new Promise(function(r){setTimeout(r,ms)})};
+    function txt(e){try{return typeof e==="string"?e:JSON.stringify(e)}catch(_){return String(e)}}
+    G.isLimit=function(e){var s=txt(e);return /2955|API call limit|"status":429|status\W+429/i.test(s)};
+    G.recentLimit=function(ms){return Date.now()-G.lastLimit<(ms||120000)};
+    G.busy=function(){return Date.now()<G.coolUntil||G.waiting>0};
+    // saves (writes) do not wait for the per-minute budget - only for a Zoho pause - so your clicks are never held back
+    function wait(write){var now=Date.now();G.win=G.win.filter(function(t){return now-t<60000});
+      if(now<G.coolUntil)return G.coolUntil-now;
+      if(!write&&G.win.length>=G.max)return 60000-(now-G.win[0])+100;
+      if(G.active>=G.conc+(write?2:0))return 120;return 0}
+    async function acquire(write){G.waiting++;try{for(;;){var w=wait(write);if(!w)break;bar();await sleep(Math.min(w,1000))}}finally{G.waiting--}G.win.push(Date.now());G.active++;G.calls++}
+    function release(){G.active=Math.max(0,G.active-1);bar()}
+    function limitHit(e){
+      // two kinds of Zoho limit (both code 2955):
+      //  "simultaneously initiated" = too many calls AT THE SAME TIME (all people on this login) -> short pause 5 s
+      //  "for a minute"             = too many calls in one minute -> pause 60 s
+      if(/simultaneous/i.test(txt(e))){G.coolUntil=Math.max(G.coolUntil,Date.now()+5000);G.lastLimit=Date.now();G.short=(G.short||0)+1;bar();return}
+      var first=!G.recentLimit(90000);G.lastLimit=Date.now();G.coolUntil=Date.now()+60000;
+      if(first){G.episodes++;try{window.MEGA_ERR&&MEGA_ERR.add("error","Zoho API limit reached (too many calls in one minute on this login) - paused 60 s, then continued automatically",txt(e).slice(0,200))}catch(_){}}
+      bar();
+    }
+    // small countdown bar (bottom-left)
+    function bar(){
+      try{
+        var b=document.getElementById("megaApiBar"),left=Math.ceil((G.coolUntil-Date.now())/1000);
+        if(left>0||G.waiting>3){
+          if(!b){b=document.createElement("div");b.id="megaApiBar";b.style.cssText="position:fixed;left:14px;bottom:14px;z-index:200;background:#fffaeb;border:1px solid #f7d58a;color:#7a4b00;border-radius:10px;padding:8px 12px;font:600 12px Arial,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.12)";document.body.appendChild(b)}
+          b.textContent=left>0?"Zoho is busy (API limit for this login). Continuing automatically in "+left+" s…":"Loading from Zoho… ("+G.waiting+" waiting)";
+          if(!G._tick)G._tick=setInterval(function(){bar();if(Date.now()>G.coolUntil&&G.waiting<=3){clearInterval(G._tick);G._tick=null;var x=document.getElementById("megaApiBar");if(x)x.remove()}},1000);
+        }
+      }catch(_){}
+    }
+    function wrap(obj,name,isRead){
+      var fn=obj&&obj[name];if(typeof fn!=="function"||fn.__megaGov)return;
+      var w=async function(cfg){
+        var self=this,args=arguments,key="";
+        if(isRead){try{key=name+"|"+JSON.stringify(cfg)}catch(_){key=""}
+          if(key){var c=G.cache.get(key);if(c&&Date.now()-c.at<15000){G.saved++;return JSON.parse(c.v)}
+            if(G.flight.has(key)){G.saved++;return G.flight.get(key).then(function(v){return JSON.parse(JSON.stringify(v))})}}}
+        var run=(async function(){
+          for(var attempt=0;attempt<4;attempt++){
+            await acquire(!isRead);
+            try{
+              var r=await fn.apply(self,args);
+              if(r&&(Number(r.code)===2955)){limitHit(r);continue}
+              if(key&&r&&(r.code==null||Number(r.code)===3000)){try{G.cache.set(key,{at:Date.now(),v:JSON.stringify(r)});if(G.cache.size>300)G.cache.delete(G.cache.keys().next().value)}catch(_){}}
+              return r;
+            }catch(e){
+              if(G.isLimit(e)){limitHit(e);continue}
+              // "Improper Configuration" right after a limit is the same limit - wait and retry
+              if(/Improper Configuration/i.test(txt(e))&&G.recentLimit(90000)&&attempt<3){continue}
+              throw e;
+            }finally{release()}
+          }
+          throw {code:2955,message:"Zoho API limit: still busy after waiting. Please try again in a minute."};
+        })();
+        if(key){G.flight.set(key,run);run.then(function(){G.flight.delete(key)},function(){G.flight.delete(key)})}
+        return run;
+      };
+      w.__megaGov=true;obj[name]=w;
+    }
+    // a write changes data: forget cached reads
+    function wrapWrite(obj,name){var fn=obj&&obj[name];if(typeof fn!=="function"||fn.__megaGov2)return;wrap(obj,name,false);var g=obj[name];var w2=function(){G.cache.clear();return g.apply(this,arguments)};w2.__megaGov=true;w2.__megaGov2=true;obj[name]=w2}
+    function install(){
+      try{
+        var D=window.ZOHO&&ZOHO.CREATOR&&ZOHO.CREATOR.DATA,F=window.ZOHO&&ZOHO.CREATOR&&ZOHO.CREATOR.FILE;if(!D)return false;
+        wrap(D,"getRecords",true);wrap(D,"getRecordById",true);
+        ["addRecords","updateRecordById","deleteRecordById","updateRecords","deleteRecords","invokeCustomApi"].forEach(function(n){wrapWrite(D,n)});
+        if(F){wrapWrite(F,"uploadFile");wrap(F,"readFile",false)}
+        return true;
+      }catch(_){return false}
+    }
+    if(!install()){var n=0,iv=setInterval(function(){if(install()||++n>40)clearInterval(iv)},250)}
+    G.install=install;
+  }catch(_){}
+})();
+
 </script>
 <script>
 "use strict";
@@ -1080,7 +1187,13 @@ function assertResp(r,label){
 function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
 function reliabilityNow(){return (typeof performance!=="undefined"&&performance.now)?performance.now():Date.now()}
 function timeoutError(label,ms,write=false){const e=new Error(write?`${label} did not confirm within ${Math.round(ms/1000)} seconds. The server may still have completed it. Refresh before trying again.`:`${label} timed out after ${Math.round(ms/1000)} seconds.`);e.code="MEGA_TIMEOUT";e.isWriteTimeout=write;return e}
-async function withTimeout(factory,ms,label,{write=false}={}){let timer;try{return await Promise.race([Promise.resolve().then(factory),new Promise((_,rej)=>{timer=setTimeout(()=>rej(timeoutError(label,ms,write)),ms)})])}finally{if(timer)clearTimeout(timer)}}
+async function withTimeout(factory,ms,label,{write=false}={}){
+  // V22.3: while the API guard is pausing / queueing calls the clock waits too (no false "timed out")
+  return await new Promise((res,rej)=>{let done=false,deadline=Date.now()+ms;
+    const iv=setInterval(()=>{if(done)return;try{if(window.MEGA_API&&MEGA_API.busy())deadline=Math.max(deadline,Date.now()+Math.min(ms,30000))}catch(_){}if(Date.now()>deadline){done=true;clearInterval(iv);rej(timeoutError(label,ms,write))}},500);
+    Promise.resolve().then(factory).then(v=>{if(!done){done=true;clearInterval(iv);res(v)}},e=>{if(!done){done=true;clearInterval(iv);rej(e)}});
+  });
+}
 function isRetryableReadError(e){if(isNoDataError(e))return false;const t=errorText(e).toLowerCase();return e?.code==="MEGA_TIMEOUT"||/timeout|timed out|network|temporar|429|rate limit|502|503|504|service unavailable|failed to fetch|connection/i.test(t)}
 /* V21.12: which read problems are REAL errors (red ⚠) and which are normal Zoho answers.
    - 9220 / 9280 "No records found"  -> normal (empty project), not recorded
@@ -1090,6 +1203,7 @@ function megaHealthKind(key,status,detail){
   const m=String(detail&&detail.error||"");
   if(status==="slow")return "api";
   if(/\b(9220|9280)\b|No records (?:exist|found)/i.test(m))return "";
+  if(/2955|API call limit|"status":429/i.test(m))return "";            // V22.3: the API guard writes ONE entry per limit episode
   if(/\b(3330|2945)\b|Invalid criteria/i.test(m))return "api";
   if(String(key).startsWith("meta:")||/Invalid Configuration/i.test(m))return "api";
   // V21.17: "Improper Configuration" (Zoho refuses a search on a field) and "Failed to fetch"
@@ -4619,7 +4733,7 @@ async function ensureTrackingForProject(code,force=false){
 async function v208EnsureMyTracking(force=false){
   if(S.cache.myTrackingLoaded&&!force)return S.assignments.filter(a=>currentUserMatches(a[AF.assignedTo])||currentUserMatches(a[AF.checker])||currentUserMatches(a[AF.reviewer])||currentUserMatches(a[AF.approver]));
   if(S.cache.myTrackingPromise&&!force)return await S.cache.myTrackingPromise;
-  const task=(async()=>{if(S.demo){S.cache.myTrackingLoaded=true;return S.assignments}const report=await v208DiscoverTrackingReportLink(),email=String(S.user||"").trim(),name=personDisplay(S.user)||email,queries=[];if(email)for(const f of [AF.assignedTo,AF.checker,AF.reviewer,AF.approver])queries.push(`(${f} == "${creatorCriteriaEscape(email)}")`);if(name&&name!==email)queries.push(`(${AF.assignedEmployeeName} == "${creatorCriteriaEscape(name)}")`);const map=new Map();for(const q of queries){try{for(const r of await fetchRecords(report,q,CONFIG.MAX_REPORT_PAGES))map.set(idOf(r),r)}catch(e){console.warn("My Work scoped query failed",q,e)}}const adapted=[...map.values()].map(adaptRecord);const existing=new Map(S.records.map(r=>[idOf(r),r]));for(const r of adapted)existing.set(idOf(r),r);S.records=[...existing.values()];S.assignments=S.records.filter(isAssignmentRecord);S.revisions=S.records.filter(isRevisionRecord);S.cache.myTrackingLoaded=true;setHealth("tracking-my-work","ok",{label:"Design Tracking — My Work",rows:adapted.length,error:""});return adapted})();
+  const task=(async()=>{if(S.demo){S.cache.myTrackingLoaded=true;return S.assignments}const act=(S.v217&&S.v217.actor)||null,report=await v208DiscoverTrackingReportLink(),email=String((act&&act.email)||S.user||"").trim(),name=(act&&act.name)||personDisplay(S.user)||email,queries=[];/* V22.3: the person in "Working as" (not the shared login); only the fields the 4-step flow uses */if(email)for(const f of [AF.assignedTo,AF.checker])queries.push(`(${f} == "${creatorCriteriaEscape(email)}")`);if(name&&name!==email)queries.push(`(${AF.assignedEmployeeName} == "${creatorCriteriaEscape(name)}")`);const map=new Map();for(const q of queries){try{for(const r of await fetchRecords(report,q,CONFIG.MAX_REPORT_PAGES))map.set(idOf(r),r)}catch(e){console.warn("My Work scoped query failed",q,e)}}const adapted=[...map.values()].map(adaptRecord);const existing=new Map(S.records.map(r=>[idOf(r),r]));for(const r of adapted)existing.set(idOf(r),r);S.records=[...existing.values()];S.assignments=S.records.filter(isAssignmentRecord);S.revisions=S.records.filter(isRevisionRecord);S.cache.myTrackingLoaded=true;setHealth("tracking-my-work","ok",{label:"Design Tracking — My Work",rows:adapted.length,error:""});return adapted})();
   S.cache.myTrackingPromise=task;try{return await task}finally{S.cache.myTrackingPromise=null}
 }
 
@@ -5861,6 +5975,7 @@ patch("v19BackendUserValue",()=>v19BackendUserValue,f=>{v19BackendUserValue=f},b
 patch("v208EnsureMyTracking",()=>v208EnsureMyTracking,f=>{v208EnsureMyTracking=f},base=>async function(force=false){
   const out=await base.apply(this,arguments);
   const a=V.actor;if(!a||S.demo||(!force&&V.loadedFor===empKey(a)))return out;
+  if(a)return out;            // V22.3: the main My Work read already uses the chosen person - no second set of reads
   try{
     const report=await v208DiscoverTrackingReportLink(),q=[],e=s=>typeof creatorCriteriaEscape==="function"?creatorCriteriaEscape(s):String(s).replace(/"/g,'\\"');
     if(a.name)q.push(`(${AF.assignedEmployeeName} == "${e(a.name)}")`);
@@ -7708,7 +7823,7 @@ function patch(label,get,set,make){
 }
 // Settings of this layer. Change numbers here only if needed.
 const CFG={
-  REFRESH_MS:180000,          // background refresh every 3 minutes
+  REFRESH_MS:(()=>{try{const m=Number(MEGA_SETTINGS.SPEED.REFRESH_MINUTES);return m>=2?m*60000:300000}catch(_){return 300000}})(),   // background refresh (MEGA_SETTINGS.SPEED.REFRESH_MINUTES)
   FULL_RELOAD_MS:15*60000,    // full project reload at least every 15 minutes
   MASTER_CACHE_DAYS:7,        // saved Projects/Designs older than this are ignored
   PROJECT_CACHE_HOURS:72,     // saved project data older than this is ignored
@@ -8238,9 +8353,9 @@ async function pmLoad(force){
       else rows=await fetchRecords(PM_REPORT);
       pmApply(rows);PM.error=PM.ok?"":"report is empty";
       if(PM.ok&&!S.demo)LS.set("pm",{v:1,at:PM.at,rows});
-    }catch(e){PM.error=(e&&(e.message||e.code))||"read failed";log("All_Projects",e)}
+    }catch(e){PM.error=(e&&(e.message||e.code))||"read failed";PM.failAt=Date.now();log("All_Projects",e)}
     finally{PM.loading=null}
-    try{if(S.view==="projects")renderView()}catch(_){}
+    try{if(S.view==="projects"&&PM.ok)renderView()}catch(_){}       // V22.3: redraw only when it worked (a failed read redrew -> read again -> endless loop)
   })();
   return PM.loading;
 }
@@ -8285,7 +8400,7 @@ try{document.addEventListener("click",e=>{const t=e.target;if(!t||!t.closest)ret
 },true)}catch(_){}
 if(baseRenderProjects)renderProjects=function(){
   try{
-    if(!PM.at||Date.now()-PM.at>PM_MAX_AGE)setTimeout(()=>pmLoad(false),0);
+    if((!PM.at||Date.now()-PM.at>PM_MAX_AGE)&&!(PM.failAt&&Date.now()-PM.failAt<120000))setTimeout(()=>pmLoad(false),0);   // after a failure wait 2 minutes
     if(!PM.ok)return baseRenderProjects.apply(this,arguments);     // fail-open: old list
     const q=sc(S.globalSearch).trim().toLowerCase();
     const list=[...PM.rows.values()].filter(x=>!q||[x.code,x.name,x.client,x.manager,x.status].join(" ").toLowerCase().includes(q))
@@ -8374,6 +8489,7 @@ patch("ensureEquipmentForProjectImpl",()=>ensureEquipmentForProjectImpl,f=>{ensu
 });
 
 // ---- PD Sheet: only the open project ----
+if(LS.get("pdsBadV",0)!==3){LS.del("pdsBad");LS.set("pdsBadV",3)}   // V22.3: forget "not supported" marks written during the API-limit problem
 const PDP={rows:new Map(),at:new Map(),p:new Map(),full:false,crit:LS.get("pdsCrit",""),bad:new Set(LS.get("pdsBad",[])||[])};
 const PDSL={p:null};
 const belongs=(r,code)=>{try{return v205PdsRowBelongsToProject(r,code)}catch(_){return false}};
@@ -8421,6 +8537,8 @@ async function pdsReadProject(code){
       if(ok.length){if(PDP.crit!==tpl){PDP.crit=tpl;LS.set("pdsCrit",tpl)}return ok}
       if(!rows.length&&PDP.crit===tpl)return [];             // proven way, and this project has no PDS rows
     }catch(err){
+      const em=errorText(err);
+      if((window.MEGA_API&&MEGA_API.recentLimit())||/2955|API call limit|429|Failed to fetch|timed out|offline/i.test(em))throw err;   // busy / network: not a "not supported" answer
       PDP.bad.add(tpl);LS.set("pdsBad",[...PDP.bad]);         // do not try this way again on this computer
       window.MEGA_ERR&&MEGA_ERR.add("api",`PD Sheet project-only read not supported: ${c} - backup used`,err);
     }
@@ -8487,6 +8605,7 @@ patch("systemHealthHtml",()=>systemHealthHtml,f=>{systemHealthHtml=f},base=>func
       ["Parent progress to re-check",String(rollupPending().length)],
       ["Design_Tracking field check",F.error?`Not checked: ${F.error}`:!F.checked?"Pending":F.missing.length?`MISSING: ${F.missing.join(", ")}`:"All required fields found"],
       ["Optional fields not found",F.optional.length?F.optional.join(", "):"None"],
+      ["Zoho API guard",(()=>{try{const g=window.MEGA_API;return g?`${g.calls} calls sent • ${g.saved} saved by cache • max ${g.max}/min, ${g.conc} at a time • minute limit ${g.episodes}× • busy-moment pauses ${g.short||0}×`:"off"}catch(_){return"-"}})()],
       ["Errors saved on this computer",`${ER.list.length} (⚙ Settings → Error report)`],
       ["PD Sheet loading",PDP.full?"All projects loaded":`Project-only (${PDP.crit||"way not proven yet"})${PDP.bad.size?" • backup used for: "+[...PDP.bad].join(" ; "):""}`],
       ["Saved Equipment / PD Sheet copies",copyIndex().map(x=>x.k).join(", ")||"None"],
@@ -8587,7 +8706,8 @@ async function loadByMe(force){
       if(S.demo||!names.length){BM.at=Date.now();BM.key=key;return}
       if(force)LS.del("byOff");
       const off=Number(LS.get("byOff",0))||0;
-      if(off&&Date.now()-off<86400000){BM.local=true;BM.error="";BM.at=Date.now();BM.key=key;return}   // Zoho refused the search today: use project reads
+      if(LS.get("byOffV",0)!==3){LS.del("byOff");LS.set("byOffV",3)}            // V22.3: forget an "off" written during the API-limit problem
+      if(Number(LS.get("byOff",0))&&Date.now()-Number(LS.get("byOff",0))<86400000){BM.local=true;BM.error="";BM.at=Date.now();BM.key=key;return}   // Zoho refused the search today: use project reads
       const report=await v208DiscoverTrackingReportLink();
       const good=LS.get("byCrit","");const order=good&&BY_TPL.includes(good)?[good,...BY_TPL.filter(x=>x!==good)]:BY_TPL;
       let worked=null,cfg=0,last=null;
@@ -8601,7 +8721,7 @@ async function loadByMe(force){
         if(last&&!isCfgErr(last))break;                     // network problem: another search form will not help
       }
       if(worked){if(good!==worked)LS.set("byCrit",worked);BM.local=false;BM.error=""}
-      else if(last&&isCfgErr(last)){
+      else if(last&&isCfgErr(last)&&!(window.MEGA_API&&MEGA_API.recentLimit())){
         BM.local=true;BM.error="";LS.set("byOff",Date.now());
         window.MEGA_ERR&&MEGA_ERR.add("api","Assigned by me: Zoho does not allow searching by Assigned By - showing tasks from read projects (button: Load all running projects)",errorText(last));
       }else if(last){
@@ -8815,7 +8935,7 @@ try{
 // keep the NEW count fresh in the background (every 5 minutes, only when live)
 setInterval(()=>{try{if(V.live&&!S.demo&&actorNow())loadByMe(false).then(()=>{navTab();if(S.view==="mine"){const w=document.querySelector("#page .v21-ws");if(w)w.outerHTML=workSwitch()}}).catch(()=>{})}catch(_){}},5*60000);
 // after start-up, read "Assigned by me" once so the NEW count is right
-setTimeout(()=>{try{if(actorNow()&&!S.demo)loadByMe(false).then(navTab).catch(()=>{})}catch(_){}},8000);
+// V22.3: "Assigned by me" is read when you open it (no extra read at start-up - saves API calls)
 
 /* ---- B. status email to the person who assigned the task ---- */
 const recentMail=new Map();   // same task + same status within 2 minutes = one email
@@ -9085,7 +9205,7 @@ ER.listeners.push(e=>{
 function errReport(){
   const L=[];
   L.push(`MEGA Project Design Control - error report`);
-  L.push(`Build: ${BUILD} | Time: ${new Date().toISOString()} | Online: ${navigator.onLine}`);
+  L.push(`Build: ${(window.MEGA_V22&&MEGA_V22.build)||BUILD} | Time: ${new Date().toISOString()} | Online: ${navigator.onLine}`);
   try{L.push(`User: ${S.user||"-"} | Working as: ${(S.v217&&S.v217.actor&&S.v217.actor.name)||"-"} | View: ${S.view||"-"} | Project: ${S.projectWorkspace?.code||"-"}`)}catch(_){}
   try{L.push(`Live: ${V.live?"yes":"no"} | Projects: ${(S.projects||[]).length} | Designs: ${(S.drawings||[]).length} | People: ${(S.employees||[]).length} | PD Sheet rows in memory: ${(S.pds?.summary||[]).length}${PDP.full?" (all projects)":` (projects: ${[...PDP.rows.keys()].join(", ")||"-"})`}`)}catch(_){}
   try{L.push(`PD Sheet project read: ${PDP.crit||"not proven yet"}${PDP.bad.size?` | not supported: ${[...PDP.bad].join(" ; ")}`:""}`)}catch(_){}
@@ -9274,7 +9394,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V22(){
 "use strict";
-const BUILD="V22.2";
+const BUILD="V22.4";
 const log=(...a)=>{try{console.warn("[V22]",...a)}catch(_){}};
 const say=(m,t="warn")=>{try{toast(m,t)}catch(_){}};
 const sc=v=>{try{return String(scalar(v)??"")}catch(_){return v==null?"":String(v)}};
