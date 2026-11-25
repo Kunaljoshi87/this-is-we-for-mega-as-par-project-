@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.5
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.6
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V22.5".
+   3. Paste this whole file and save. The badge at the top shows "V22.6".
 
  >>> ALL SETTINGS ARE IN ONE PLACE: the "MEGA SETTINGS" block, the first
      SCRIPT below (report names, projects list, waiting times, speed,
@@ -110,6 +110,11 @@
                       automatic retry (not an error).
                       V22.5: error report keeps only errors of the installed
                       version (old ones are cleared after an update).
+                      V22.6: ⚙ Settings → Access check: every report / form /
+                      custom API the widget needs, with View / Add / Edit /
+                      Run needed vs. what this login has, live test and
+                      "Copy list for admin". A refused access is reported
+                      at once in the error report.
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -129,7 +134,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V22.5</title>
+<title>MEGA Engineering | Project Design Control V22.6</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -355,7 +360,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.5</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.6</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -498,7 +503,7 @@ var MEGA_SETTINGS={
     var K="MEGA_ERRLOG",MAX=(MEGA_SETTINGS.ERRORS&&MEGA_SETTINGS.ERRORS.KEEP)||60;
     var R=window.MEGA_ERR={list:[],api:[],seen:0,listeners:[]};
     // V22.5: errors saved by an OLDER version are not shown again after an update (they were already fixed)
-    var BUILD_ID="V22.5";
+    var BUILD_ID="V22.6";
     try{var old=JSON.parse(localStorage.getItem(K)||"[]");if(Array.isArray(old))R.list=old.filter(function(x){return x&&x.build===BUILD_ID}).slice(-MAX);if(Array.isArray(old)&&old.length!==R.list.length){localStorage.setItem(K,JSON.stringify(R.list));localStorage.setItem(K+"_SEEN",String(R.list.length))}}catch(_){}
     try{R.seen=Number(localStorage.getItem(K+"_SEEN")||R.list.length)||0}catch(_){}
     function txt(x){
@@ -586,6 +591,31 @@ var MEGA_SETTINGS={
         }
       }catch(_){}
     }
+    /* V22.6 ACCESS RECORDER: remembers, per report / form / custom API, whether
+       this login could View / Add / Edit (shown in ⚙ Settings → Access check).
+       Kept on this computer in localStorage "MEGA_ACCESS::<login>". */
+    var OPS={getRecords:"view",getRecordById:"view",readFile:"view",addRecords:"add",updateRecordById:"edit",updateRecords:"edit",uploadFile:"edit",deleteRecordById:"delete",deleteRecords:"delete",invokeCustomApi:"run"};
+    G.denied=function(x){var s=txt(x);return /permission|not authori[sz]ed|unauthori[sz]ed|access denied|no access|not allowed|forbidden|"status":40[13]|status\W+40[13]/i.test(s)};
+    G.notFound=function(x){var s=txt(x);return /does not exist|doesn't exist|no such (report|form|api)|invalid (report|form|api)|not found|no report named|no form named/i.test(s)};
+    G.accKey=function(){var u="";try{u=String((typeof S!=="undefined"&&S.user)||"").toLowerCase()}catch(_){}return "MEGA_ACCESS::"+(u||"unknown")};
+    G.access=function(){try{return JSON.parse(localStorage.getItem(G.accKey())||"{}")||{}}catch(_){return {}}};
+    G.recAccess=function(name,cfg,res,threw){
+      try{
+        var op=OPS[name];if(!op||!cfg)return;
+        var tgt=cfg.report_name||cfg.form_name||cfg.api_name||cfg.custom_api_name||"";if(!tgt)return;
+        var code=res&&res.code!=null?Number(res.code):null,state;
+        if(code===9220||code===9280||/No records found/i.test(txt(res))||(!threw&&(code==null||code===3000)))state="ok";   // empty report = access OK
+        else if(G.isLimit(res))return;                        // a busy answer says nothing about access
+        else if(G.denied(res))state="denied";
+        else if(G.notFound(res))state="missing";
+        else if(!threw&&code!=null)state="ok";                // e.g. a field error: the report itself was reachable
+        else return;                                          // network / timeout: unknown
+        var all=G.access(),k=tgt+"|"+op,prev=all[k];
+        all[k]={s:state,at:Date.now(),m:state==="ok"?"":txt(res).slice(0,160)};
+        localStorage.setItem(G.accKey(),JSON.stringify(all));
+        if(state!=="ok"&&(!prev||prev.s!==state)){try{window.MEGA_ERR&&MEGA_ERR.add("error",(state==="denied"?"No access":"Not found / not shared")+": "+tgt+" ("+op+"). Ask the admin to give this access - see ⚙ Settings → Access check",txt(res).slice(0,200))}catch(_){}}
+      }catch(_){}
+    };
     function wrap(obj,name,isRead){
       var fn=obj&&obj[name];if(typeof fn!=="function"||fn.__megaGov)return;
       var w=async function(cfg){
@@ -599,10 +629,12 @@ var MEGA_SETTINGS={
             try{
               var r=await fn.apply(self,args);
               if(r&&(Number(r.code)===2955)){limitHit(r);continue}
+              G.recAccess(name,cfg,r,false);
               if(key&&r&&(r.code==null||Number(r.code)===3000)){try{G.cache.set(key,{at:Date.now(),v:JSON.stringify(r)});if(G.cache.size>300)G.cache.delete(G.cache.keys().next().value)}catch(_){}}
               return r;
             }catch(e){
               if(G.isLimit(e)){limitHit(e);continue}
+              G.recAccess(name,cfg,e,true);
               // "Improper Configuration" right after a limit is the same limit - wait and retry
               if(/Improper Configuration/i.test(txt(e))&&G.recentLimit(90000)&&attempt<3){continue}
               throw e;
@@ -9262,6 +9294,7 @@ patch("setupModal",()=>setupModal,f=>{setupModal=f;try{const b=el("setupBtn");if
       `<div class="v21-set">
         <button type="button" class="v21-set-row" data-v21-errors><span class="ic ${n?"bad":""}">⚠</span><span><b>Error report</b><small>${all?`${all} saved${n?` • <em>${n} new</em>`:""}`:"No errors"} — see the list and copy the report for the developer</small></span><span class="go">›</span></button>
         <button type="button" class="v21-set-row" data-v21-health-open><span class="ic">●</span><span><b>System Health</b><small>Connection, report reads, saved copies, speed &amp; safety</small></span><span class="go">›</span></button>
+        <button type="button" class="v21-set-row" data-v22-access><span class="ic">🔑</span><span><b>Access check</b><small>Which reports and forms this login can View / Add / Edit, and what the admin must give</small></span><span class="go">›</span></button>
         <button type="button" class="v21-set-row" data-v22-datacheck><span class="ic">✓</span><span><b>Data check</b><small>People without email, designs without Status, tags without Department / Category, tasks with missing data</small></span><span class="go">›</span></button>
         <button type="button" class="v21-set-row" data-v21-setup-old><span class="ic">⚙</span><span><b>Setup / field mapping</b><small>Design_Tracking fields used by the widget</small></span><span class="go">›</span></button>
         <div class="tiny muted" style="margin-top:8px">Values like report names, roles and skipped tags are changed in the MEGA SETTINGS block at the top of the widget code.</div>
@@ -9398,7 +9431,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V22(){
 "use strict";
-const BUILD="V22.5";
+const BUILD="V22.6";
 const log=(...a)=>{try{console.warn("[V22]",...a)}catch(_){}};
 const say=(m,t="warn")=>{try{toast(m,t)}catch(_){}};
 const sc=v=>{try{return String(scalar(v)??"")}catch(_){return v==null?"":String(v)}};
@@ -9842,6 +9875,124 @@ function dataCheck(){
   try{document.querySelector("#modalBackdrop .modal")?.classList.add("v218-wide")}catch(_){}
 }
 
+/* ---------- 10b. ACCESS CHECK (V22.6) ----------
+   ⚙ Settings → Access check. Lists every Zoho report / form / custom API the
+   widget uses, the access it NEEDS (View / Add / Edit / Run) and what this
+   login HAS:
+     View  - tested live with one small read ("Test my access now" button)
+     Add / Edit / Run - cannot be tested without saving data, so the widget
+       remembers the answer of the last real save on this computer
+       (✓ worked, ✗ refused, "not used yet").
+   "Copy list for admin" copies what is missing, ready to send to the admin.
+   Nothing here writes to Zoho. */
+const ACC_LIST=()=>{
+  const R=CONFIG.REPORTS||{},F=CONFIG.FORMS||{},M=(typeof MEGA_SETTINGS==="object"&&MEGA_SETTINGS.REPORTS)||{};
+  const pds=(PDS_REPORTS&&PDS_REPORTS.all&&PDS_REPORTS.all[0])||"All_PD_Sheet";
+  return [
+    {g:"Reports everyone needs",type:"Report",name:M.projectList||"All_Projects",need:["view"],use:"Projects list (code, name, status)"},
+    {g:"Reports everyone needs",type:"Report",name:R.projects,need:["view"],use:"Project master used when saving a task"},
+    {g:"Reports everyone needs",type:"Report",name:R.drawings,need:["view"],use:"Design Master (drawings / documents)"},
+    {g:"Reports everyone needs",type:"Report",name:R.equipment,need:["view"],use:"Equipment Master (tags, Department, Category)"},
+    {g:"Reports everyone needs",type:"Report",name:R.employees,need:["view"],use:"People and their email (Assigned To, Checker)"},
+    {g:"Reports everyone needs",type:"Report",name:R.plantSections,need:["view"],use:"Plant sections"},
+    {g:"Reports everyone needs",type:"Report",name:pds,need:["view"],use:"PD Sheet (Assign Tag + PDS work)"},
+    {g:"Design tasks (main)",type:"Report",name:R.tracking,need:["view","edit"],use:"All tasks · status / step updates · revisions · upload & download files"},
+    {g:"Design tasks (main)",type:"Form",name:F.tracking,need:["add"],use:"New task, assign further, new revision"},
+    {g:"Design tasks (main)",type:"Custom API",name:CONFIG.NOTIFICATIONS&&CONFIG.NOTIFICATIONS.assignmentEmailApi,need:["run"],use:"Emails (new task, submitted, returned, issued, remind)"},
+    {g:"Optional (widget works without them)",type:"Form",name:CONFIG.SYSTEM_LOG&&CONFIG.SYSTEM_LOG.form,need:["add"],use:"Error log saved in Zoho"},
+    {g:"Optional (widget works without them)",type:"Form",name:F.dependencies,need:["add"],use:"Design dependencies"},
+    {g:"Optional (widget works without them)",type:"Report",name:R.dependencies,need:["view"],use:"Design dependencies list"}
+  ].filter(x=>x.name);
+};
+const OPN={view:"View",add:"Add",edit:"Edit",run:"Run"};
+const ACC={tested:{},busy:false,at:0};
+function accState(item,op){
+  const all=(window.MEGA_API&&MEGA_API.access&&MEGA_API.access())||{};
+  const live=op==="view"?ACC.tested[item.name]:null,rec=all[item.name+"|"+op];
+  const x=live||rec;if(!x)return {s:"unk",t:op==="view"?"Not tested":"Not used yet"};
+  const when=x.at?new Date(x.at).toLocaleString([], {day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):"";
+  if(x.s==="ok")return {s:"ok",t:live?"Has access":`Worked ${when}`};
+  if(x.s==="denied")return {s:"no",t:"No access",m:x.m};
+  if(x.s==="missing")return {s:"no",t:"Not found / not shared",m:x.m};
+  return {s:"unk",t:x.t||"Could not test",m:x.m};
+}
+async function accTestOne(item){
+  // one small read (200 records max); empty report = still has access
+  try{
+    const r=await withTimeout(()=>ZOHO.CREATOR.DATA.getRecords(withApp({report_name:item.name,max_records:200})),20000,"Access test "+item.name);
+    const c=r&&r.code!=null?Number(r.code):3000;
+    ACC.tested[item.name]={s:(c===3000||c===9220||c===9280)?"ok":(MEGA_API.denied(r)?"denied":MEGA_API.notFound(r)?"missing":"ok"),at:Date.now(),m:""};
+  }catch(e){
+    const api=window.MEGA_API||{};
+    if(e&&(Number(e.code)===9220||Number(e.code)===9280||/No records found/i.test(errorText(e)))){ACC.tested[item.name]={s:"ok",at:Date.now(),m:""};return}   // empty report = access OK
+    ACC.tested[item.name]=api.denied&&api.denied(e)?{s:"denied",at:Date.now(),m:errorText(e)}:api.notFound&&api.notFound(e)?{s:"missing",at:Date.now(),m:errorText(e)}:{s:"unk",t:"Could not test (Zoho busy / network) - try again",at:Date.now(),m:errorText(e)};
+  }
+}
+async function accessCheck(runTest){
+  try{
+    if(runTest&&!ACC.busy&&!S.demo&&window.ZOHO&&ZOHO.CREATOR&&ZOHO.CREATOR.DATA){
+      ACC.busy=true;draw();
+      const items=ACC_LIST().filter(x=>x.type==="Report"&&x.need.includes("view"));
+      for(const it of items){await accTestOne(it);draw()}   // one by one = gentle on the API limit
+      ACC.busy=false;ACC.at=Date.now();
+    }
+  }catch(e){ACC.busy=false;log("access test",e)}
+  draw();
+  function draw(){
+    try{
+      const list=ACC_LIST();let miss=0,groups="";
+      const cell=(it,op)=>{if(!it.need.includes(op))return `<td class="na">—</td>`;const st=accState(it,op);if(st.s==="no")miss++;return `<td class="${st.s}" title="${esc(st.m||"")}"><b>${st.s==="ok"?"✓":st.s==="no"?"✗":"?"}</b> ${esc(st.t)}</td>`};
+      let last="";
+      for(const it of list){
+        if(it.g!==last){groups+=`<tr class="g"><td colspan="7">${esc(it.g)}</td></tr>`;last=it.g}
+        groups+=`<tr><td><b>${esc(it.name)}</b><div class="tiny muted">${esc(it.type)}</div></td><td>${esc(it.use)}</td><td><span class="pill">${it.need.map(o=>OPN[o]).join(" + ")}</span></td>${cell(it,"view")}${cell(it,"add")}${cell(it,"edit")}${cell(it,"run")}</tr>`;
+      }
+      const head=`<div class="v22-acc-top"><div><div class="tiny muted">Zoho login</div><b>${esc(S.user||"(not connected yet)")}</b></div>
+        <div><span class="pill ${miss?"red":"green"}">${miss?miss+" access missing":"No missing access found"}</span>${ACC.at?`<div class="tiny muted">Tested ${new Date(ACC.at).toLocaleTimeString()}</div>`:""}</div></div>`;
+      const help=`<div class="v22-acc-help"><b>How the admin gives access</b> (Zoho Creator → app <i>${esc(S.app||CONFIG.APP_NAME)}</i> → Settings → Users &amp; Permissions → the user's <b>Permission set / Profile</b>):
+        <ol><li><b>Reports</b>: tick <b>View</b> for every report above; for <b>${esc(CONFIG.REPORTS.tracking)}</b> also tick <b>Edit</b>.</li>
+        <li><b>Forms</b>: tick <b>Add</b> for <b>${esc(CONFIG.FORMS.tracking)}</b>.</li>
+        <li><b>Custom API</b> <i>${esc(CONFIG.NOTIFICATIONS&&CONFIG.NOTIFICATIONS.assignmentEmailApi||"")}</i>: User scope = All (or these users).</li>
+        <li>Page <b>Design_Control</b> must be shared with the user.</li></ol>
+        <div class="tiny muted">View is tested live. Add / Edit / Run cannot be tested without saving data, so they show the result of the last real save on this computer ("Not used yet" = no save tried here). A ✗ appears automatically the first time Zoho refuses a save.</div></div>`;
+      const body=`${head}<div class="v22-acc-wrap"><table class="v22-acc"><thead><tr><th>Report / form</th><th>Used for</th><th>Needs</th><th>View</th><th>Add</th><th>Edit</th><th>Run</th></tr></thead><tbody>${groups}</tbody></table></div>${help}`;
+      const foot=`<button class="btn" data-modal="close">Close</button><button class="btn" data-v22-acc-copy>Copy list for admin</button><button class="btn primary" data-v22-acc-test ${ACC.busy?"disabled":""}>${ACC.busy?"Testing…":"Test my access now"}</button>`;
+      const open=document.getElementById("modalBackdrop"),title=document.getElementById("modalTitle");
+      if(open&&!open.classList.contains("hidden")&&title&&title.textContent==="Access check"){
+        const b=open.querySelector(".v22-acc-body");if(b){b.innerHTML=body;const ft=open.querySelector("[data-v22-acc-test]");if(ft){ft.disabled=ACC.busy;ft.textContent=ACC.busy?"Testing…":"Test my access now"}return}
+      }
+      openModal("Access check","Reports and forms this login needs - and what it has",`<div class="v22-acc-body">${body}</div>`,foot);
+      try{document.querySelector("#modalBackdrop .modal")?.classList.add("v218-wide")}catch(_){}
+    }catch(e){log("access check",e)}
+  }
+}
+function accessCopy(){
+  try{
+    const lines=[`Zoho access needed for MEGA Design Control widget`,`App: ${S.app||CONFIG.APP_NAME}`,`User / login: ${S.user||"?"}`,""];
+    const miss=[],all=[];
+    for(const it of ACC_LIST()){
+      const need=it.need.map(o=>OPN[o]).join(" + ");
+      all.push(`- ${it.type} ${it.name}: ${need}  (${it.use})`);
+      for(const op of it.need){const st=accState(it,op);if(st.s==="no")miss.push(`- ${it.type} ${it.name}: ${OPN[op]}  -> ${st.t}`)}
+    }
+    lines.push(miss.length?"MISSING NOW:":"Nothing missing found so far.",...miss,"","FULL LIST THE USER NEEDS:",...all,"","Also: page Design_Control shared with the user.");
+    const t=lines.join("\n");
+    const done=ok=>say(ok?"List copied - paste it in a mail / chat to the admin.":"Copy blocked by the browser.",ok?"good":"warn");
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(()=>done(true),()=>done(fallback(t)));else done(fallback(t));
+    function fallback(x){try{const a=document.createElement("textarea");a.value=x;document.body.appendChild(a);a.select();const ok=document.execCommand("copy");a.remove();return ok}catch(_){return false}}
+  }catch(e){log("access copy",e)}
+}
+try{const st=document.createElement("style");st.textContent=`
+.v22-acc-top{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.v22-acc-wrap{overflow:auto;border:1px solid #e4e7ec;border-radius:10px}
+.v22-acc{width:100%;border-collapse:collapse;font-size:12px;min-width:760px}
+.v22-acc th{background:#f9fafb;text-align:left;padding:7px 8px;font-size:11px;color:#475467;border-bottom:1px solid #e4e7ec}
+.v22-acc td{padding:7px 8px;border-top:1px solid #f2f4f7;vertical-align:top}
+.v22-acc tr.g td{background:#fdf2f8;color:#9e165f;font-weight:800;font-size:11px}
+.v22-acc td.ok{color:#067647}.v22-acc td.no{color:#b42318;background:#fff1f0}.v22-acc td.unk{color:#667085}.v22-acc td.na{color:#d0d5dd;text-align:center}
+.v22-acc-help{margin-top:12px;font-size:12px;background:#f5f9ff;border:1px solid #d6e4fb;border-radius:10px;padding:10px 12px}.v22-acc-help ol{margin:6px 0 6px 18px;padding:0}
+`;document.head.appendChild(st)}catch(_){}
+
 /* ---------- 11. New-task email: FROM / TO block ---------- */
 patch("assignmentEmailHtml",()=>assignmentEmailHtml,f=>{assignmentEmailHtml=f},base=>function(recipient,records){
   let html=base.apply(this,arguments);
@@ -9862,6 +10013,9 @@ document.addEventListener("click",e=>{
   if((x=t.closest("[data-v22-view]"))){e.preventDefault();e.stopImmediatePropagation();return (typeof guarded==="function"?guarded:(f=>f()))(()=>preview(x.dataset.id,x.dataset.field,x.dataset.path,x.dataset.name))}
   if((x=t.closest("[data-v22-remind]"))){e.preventDefault();e.stopImmediatePropagation();return (typeof guarded==="function"?guarded:(f=>f()))(()=>remind(String(x.dataset.v22Remind).split(",").filter(Boolean)))}
   if(t.closest("[data-v22-datacheck]")){e.preventDefault();e.stopImmediatePropagation();return dataCheck()}
+  if(t.closest("[data-v22-access]")){e.preventDefault();e.stopImmediatePropagation();return accessCheck(!ACC.at&&!ACC.busy)}
+  if(t.closest("[data-v22-acc-test]")){e.preventDefault();e.stopImmediatePropagation();return accessCheck(true)}
+  if(t.closest("[data-v22-acc-copy]")){e.preventDefault();e.stopImmediatePropagation();return accessCopy()}
 },true);
 
 // Excel button on a project page
@@ -10063,7 +10217,7 @@ try{const st=document.createElement("style");st.id="v22Styles";st.textContent=`
 @media(max-width:1100px){.v22-trk .v22-kpis{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:900px){.v22-bar,.v22-people{grid-template-columns:1fr 1fr}}`;document.head.appendChild(st)}catch(e){log("styles",e)}
 
-window.MEGA_V22={build:BUILD,stepOf,allowed,toCheckRows,returnedToMe,familyFiles,canUpload,canView,exportRows,remind,isSelfRoot,ownerOf,isOwner,isChecker,isAssigner,waitingFor,popupCheck,dataCheck};
+window.MEGA_V22={build:BUILD,stepOf,allowed,toCheckRows,returnedToMe,familyFiles,canUpload,canView,exportRows,remind,isSelfRoot,ownerOf,isOwner,isChecker,isAssigner,waitingFor,popupCheck,dataCheck,accessCheck};
 // first pop-up after the start-up data is in
 setTimeout(()=>{try{popupCheck(false)}catch(_){}},12000);
 try{const bd=el("buildBadge");if(bd)bd.textContent=BUILD;document.title=`MEGA Engineering | Project Design Control ${BUILD}`}catch(_){}
