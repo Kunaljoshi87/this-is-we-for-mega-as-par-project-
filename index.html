@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.4
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.5
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V22.4".
+   3. Paste this whole file and save. The badge at the top shows "V22.5".
 
  >>> ALL SETTINGS ARE IN ONE PLACE: the "MEGA SETTINGS" block, the first
      SCRIPT below (report names, projects list, waiting times, speed,
@@ -108,6 +108,8 @@
                       V22.4: max 2 calls at the same time; Zoho's "too many
                       calls at the same time" answer = short 5 s pause and
                       automatic retry (not an error).
+                      V22.5: error report keeps only errors of the installed
+                      version (old ones are cleared after an update).
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -127,7 +129,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V22.4</title>
+<title>MEGA Engineering | Project Design Control V22.5</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -353,7 +355,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.4</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.5</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -495,7 +497,9 @@ var MEGA_SETTINGS={
   try{
     var K="MEGA_ERRLOG",MAX=(MEGA_SETTINGS.ERRORS&&MEGA_SETTINGS.ERRORS.KEEP)||60;
     var R=window.MEGA_ERR={list:[],api:[],seen:0,listeners:[]};
-    try{var old=JSON.parse(localStorage.getItem(K)||"[]");if(Array.isArray(old))R.list=old.slice(-MAX)}catch(_){}
+    // V22.5: errors saved by an OLDER version are not shown again after an update (they were already fixed)
+    var BUILD_ID="V22.5";
+    try{var old=JSON.parse(localStorage.getItem(K)||"[]");if(Array.isArray(old))R.list=old.filter(function(x){return x&&x.build===BUILD_ID}).slice(-MAX);if(Array.isArray(old)&&old.length!==R.list.length){localStorage.setItem(K,JSON.stringify(R.list));localStorage.setItem(K+"_SEEN",String(R.list.length))}}catch(_){}
     try{R.seen=Number(localStorage.getItem(K+"_SEEN")||R.list.length)||0}catch(_){}
     function txt(x){
       try{
@@ -514,7 +518,7 @@ var MEGA_SETTINGS={
     // kind: "error" (counted, red) or "api" (slow / failed Zoho reads, listed in the report)
     R.add=function(kind,msg,detail){
       try{
-        var e={t:new Date().toISOString(),kind:kind||"error",msg:txt(msg).slice(0,500),detail:txt(detail).slice(0,800),...ctx()};
+        var e={t:new Date().toISOString(),build:BUILD_ID,kind:kind||"error",msg:txt(msg).slice(0,500),detail:txt(detail).slice(0,800),...ctx()};
         var arr=kind==="api"?R.api:R.list;
         var last=arr[arr.length-1];
         if(last&&last.msg===e.msg&&last.kind===e.kind&&Date.now()-Date.parse(last.t)<3000){last.n=(last.n||1)+1;return} // same error twice in a row
@@ -1203,7 +1207,7 @@ function megaHealthKind(key,status,detail){
   const m=String(detail&&detail.error||"");
   if(status==="slow")return "api";
   if(/\b(9220|9280)\b|No records (?:exist|found)/i.test(m))return "";
-  if(/2955|API call limit|"status":429/i.test(m))return "";            // V22.3: the API guard writes ONE entry per limit episode
+  if(/2955|API call limit|"status":429|simultaneously initiated/i.test(m))return "";            // V22.3: the API guard writes ONE entry per limit episode
   if(/\b(3330|2945)\b|Invalid criteria/i.test(m))return "api";
   if(String(key).startsWith("meta:")||/Invalid Configuration/i.test(m))return "api";
   // V21.17: "Improper Configuration" (Zoho refuses a search on a field) and "Failed to fetch"
@@ -9394,7 +9398,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V22(){
 "use strict";
-const BUILD="V22.4";
+const BUILD="V22.5";
 const log=(...a)=>{try{console.warn("[V22]",...a)}catch(_){}};
 const say=(m,t="warn")=>{try{toast(m,t)}catch(_){}};
 const sc=v=>{try{return String(scalar(v)??"")}catch(_){return v==null?"":String(v)}};
