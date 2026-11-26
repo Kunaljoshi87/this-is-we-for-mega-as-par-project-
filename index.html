@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.9
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.10
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V22.9".
+   3. Paste this whole file and save. The badge at the top shows "V22.10".
 
  >>> ALL SETTINGS ARE IN ONE PLACE: the "MEGA SETTINGS" block, the first
      SCRIPT below (report names, projects list, waiting times, speed,
@@ -131,6 +131,10 @@
                       return); Dashboard shows only pending work (not
                       assigned / not started / started / in check / to issue),
                       designs as compact cards, 3 per line.
+                      V22.10: 💬 Chat & updates - separate module (top-bar
+                      button + task tab), WhatsApp-style messages with names,
+                      files and every status change; pop-up at the top for
+                      new messages / changes. Comments removed from Files tab.
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -150,7 +154,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V22.9</title>
+<title>MEGA Engineering | Project Design Control V22.10</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -376,7 +380,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.9</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.10</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -528,7 +532,7 @@ var MEGA_SETTINGS={
     var K="MEGA_ERRLOG",MAX=(MEGA_SETTINGS.ERRORS&&MEGA_SETTINGS.ERRORS.KEEP)||60;
     var R=window.MEGA_ERR={list:[],api:[],seen:0,listeners:[]};
     // V22.5: errors saved by an OLDER version are not shown again after an update (they were already fixed)
-    var BUILD_ID="V22.9";
+    var BUILD_ID="V22.10";
     try{var old=JSON.parse(localStorage.getItem(K)||"[]");if(Array.isArray(old))R.list=old.filter(function(x){return x&&x.build===BUILD_ID}).slice(-MAX);if(Array.isArray(old)&&old.length!==R.list.length){localStorage.setItem(K,JSON.stringify(R.list));localStorage.setItem(K+"_SEEN",String(R.list.length))}}catch(_){}
     try{R.seen=Number(localStorage.getItem(K+"_SEEN")||R.list.length)||0}catch(_){}
     function txt(x){
@@ -9457,7 +9461,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V22(){
 "use strict";
-const BUILD="V22.9";
+const BUILD="V22.10";
 const log=(...a)=>{try{console.warn("[V22]",...a)}catch(_){}};
 const say=(m,t="warn")=>{try{toast(m,t)}catch(_){}};
 const sc=v=>{try{return String(scalar(v)??"")}catch(_){return v==null?"":String(v)}};
@@ -9562,7 +9566,7 @@ async function save(a,data,action,detail,mails,meta){
   const id=String(idOf(a));if(busyIds.has(id))throw rule("This task is still saving. Please wait a second.");
   if(data[AF.revision]===undefined&&!sc(a[AF.revision]))data={...data,[AF.revision]:"R0"};      // the revision is always filled in
   const before={};for(const k of Object.keys(data).concat([AF.activityLog]))before[k]=a[k];
-  let full=data;try{full=withActivity(a,data,action,detail,{kind:"flow",status:data[AF.status]||"",rev:(data[AF.status]==="Returned"?rev(a):(data[AF.revision]||rev(a))),...(meta||{})})}catch(_){}
+  let full=data;try{full=withActivity(a,data,action,detail,{kind:"flow",status:data[AF.status]||"",rev:(data[AF.status]==="Returned"?rev(a):(data[AF.revision]||rev(a))),by:(actor()||{}).name||"",...(meta||{})})}catch(_){}
   Object.assign(a,full);busyIds.add(id);try{renderView()}catch(_){}        // 1) screen changes at once
   try{
     window.MEGA_FLOW_BUSY=true;
@@ -9822,7 +9826,7 @@ const seenK=()=>`MEGA_V22_SEEN::${low((actor()||{}).name)}`;
 function popupCheck(quiet){
   try{
     if(!actor()||S.demo&&quiet)return;
-    const list=toCheckRows().concat(returnedToMe()).concat(commentsToMe());
+    const list=toCheckRows().concat(returnedToMe());
     const key=x=>x.__c?`${idOf(x)}|c|${x.__c.time}`:`${idOf(x)}|${sc(x[AF.status])}|${rev(x)}`;
     let seen=[];try{seen=JSON.parse(localStorage.getItem(seenK())||"[]")}catch(_){}
     const fresh=list.filter(x=>!seen.includes(key(x)));
@@ -10434,7 +10438,6 @@ patch("renderDetailTab",()=>renderDetailTab,f=>{renderDetailTab=f},base=>functio
     if(S.detailTab==="taskfiles"&&S.current){
       const a=S.current;
       if(/class="v21-tf-drop"/.test(html))html=html.replace(/(<label class="v21-tf-drop"[\s\S]*?<\/label>)/,`${rolePickHtml(a)}$1`);
-      html=html.replace(/<\/div>\s*$/,"")+commentsHtml(a)+"</div>";
     }
   }catch(e){log("files tab",e)}
   return html;
@@ -10445,7 +10448,6 @@ try{new MutationObserver(()=>{try{
   const box=document.querySelector("#page .v21-tf");if(!box||!S.current||S.detailTab!=="taskfiles")return;
   const drop=box.querySelector("label.v21-tf-drop");
   if(drop&&!box.querySelector(".v22-roles")){const ck=el("v22UpChecker")?null:null;drop.insertAdjacentHTML("beforebegin",rolePickHtml(S.current))}
-  if(!box.querySelector(".v22-cm"))box.insertAdjacentHTML("beforeend",commentsHtml(S.current));
 }catch(_){}}).observe(document.body,{childList:true,subtree:true})}catch(_){}
 async function uploadWithFallback(id,file){
   const fields=(FSET().FIELDS||[AF.supportingFile,AF.drawingFile,AF.nativeFile]);let last;
@@ -10509,7 +10511,234 @@ try{const st=document.createElement("style");st.textContent=`
 @media(max-width:700px){.v22-roles{grid-template-columns:1fr}}
 `;document.head.appendChild(st)}catch(_){}
 
-window.MEGA_V22={build:BUILD,stepOf,allowed,toCheckRows,returnedToMe,familyFiles,canUpload,canView,exportRows,remind,isSelfRoot,ownerOf,isOwner,isChecker,isAssigner,waitingFor,popupCheck,dataCheck,accessCheck,issuerVal,isIssuer,sendComment};
+/* ---------- 16. 💬 CHAT & UPDATES (V22.10) - a separate module ----------
+   Like WhatsApp, per design task:
+   - my messages on the RIGHT, other people's on the LEFT with their name in
+     bold, time under each message, files attached as 📎 chips (click = open);
+   - every change of the task (started, submitted, checked, returned, issued,
+     files uploaded, new revision …) appears as a small grey line in the
+     middle, with who did it;
+   - write a message, attach up to 10 files (e.g. marked-up PDF), choose to
+     whom, optional "Return for correction" (checker / issuer);
+   - the receiver gets an email and a pop-up at the TOP of the screen.
+   Where: 💬 button in the top bar (all chats, unread counts) and a
+   "💬 Chat & updates" tab on every task. Messages live in the task's
+   existing Activity_Log (no new field). Nothing else in the widget changes. */
+const CH={open:false,id:"",sel:{},busy:false,poll:null,shown:new Set()};
+const chatSeenK=()=>`MEGA_V22_CHAT::${low((actor()||{}).name)}`;
+function chatSeen(){let m={};try{m=JSON.parse(localStorage.getItem(chatSeenK())||"{}")||{}}catch(_){}if(!m.__since){m.__since=Date.now();try{localStorage.setItem(chatSeenK(),JSON.stringify(m))}catch(_){}}return m}
+function markSeen(id){try{const m=chatSeen(),last=chatMsgs(assignmentById(id)).reduce((t,x)=>Math.max(t,x.t),0);m[id]=Math.max(Number(m[id]||0),last,Date.now());localStorage.setItem(chatSeenK(),JSON.stringify(m))}catch(_){}}
+const byOf=x=>{let b=sc(x.by);if(!b){const m=String(x.detail||"").match(/\s+—\s+by\s+(.+)$/);if(m)b=m[1].trim()}if(!b){try{b=personDisplay(x.actor)||sc(x.actor)}catch(_){b=sc(x.actor)}}return b};
+const clean=t=>String(t||"").replace(/\s+—\s+by\s+.*$/,"");
+function chatMsgs(a){
+  if(!a)return[];
+  const out=[];
+  for(const x of (()=>{try{return parseActivityLog(a)}catch(_){return[]}})()){
+    if(!x)continue;const t=Date.parse(x.time||"")||0,by=byOf(x);
+    if(x.kind==="comment")out.push({t,by,type:"msg",text:clean(x.detail),files:x.files||[],to:x.to||"",ret:!!x.returned,rev:x.rev||""});
+    else{let files=[];if(/Files Uploaded/i.test(x.action||""))files=clean(x.detail).split(/,\s*/).filter(Boolean);
+      out.push({t,by,type:"upd",text:x.action||"Update",detail:/Files Uploaded/i.test(x.action||"")?"":clean(x.detail),files,rev:x.rev||""})}
+  }
+  return out.sort((p,q)=>p.t-q.t);
+}
+const involved=a=>{try{return !!actor()&&(isOwner(a)||isChecker(a)||isIssuer(a)||isAssigner(a))}catch(_){return false}};
+function unread(a){const m=chatSeen(),seen=Number(m[idOf(a)]||m.__since||0);return chatMsgs(a).filter(x=>x.t>seen&&!isMe(x.by)).length}
+function chatList(){
+  return (S.assignments||[]).filter(a=>sc(a[AF.assignedFrom])&&involved(a)).map(a=>{const ms=chatMsgs(a);return {a,last:ms[ms.length-1],n:unread(a)}}).filter(x=>x.last).sort((p,q)=>q.last.t-p.last.t);
+}
+const fmtT=t=>{if(!t)return"";const d=new Date(t),today=new Date().toDateString()===d.toDateString();return today?d.toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}):d.toLocaleString([], {day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})};
+const titleOf=a=>`${sc(a[AF.shortName])||""} — ${sc(a[AF.drawingDocument])||""}`.replace(/^ — /,"");
+const whereOf=a=>[sc(a[AF.projectCode]),sc(a[AF.tagNo]),sc(a[AF.plantSection])].filter(Boolean).join(" • ");
+function fileChip(a,name){
+  try{const f=familyFiles(a).find(x=>x.filename===name);if(f)return `<button type="button" class="v22c-file" data-v22-view data-id="${esc(f.id)}" data-field="${esc(f.field)}" data-path="${esc(f.filepath)}" data-name="${esc(f.filename)}">📎 ${esc(name)}</button>`}catch(_){}
+  return `<span class="v22c-file off">📎 ${esc(name)}</span>`;
+}
+function threadHtml(a){
+  const ms=chatMsgs(a);let day="",h="";
+  for(const m of ms){
+    const d=m.t?new Date(m.t).toDateString():"";if(d&&d!==day){day=d;h+=`<div class="v22c-day"><span>${esc(new Date(m.t).toLocaleDateString([], {weekday:"short",day:"2-digit",month:"short",year:"numeric"}))}</span></div>`}
+    if(m.type==="upd"){h+=`<div class="v22c-upd"><span><b>${esc(m.by||"")}</b> • ${esc(m.text)}${m.rev?` • ${esc(m.rev)}`:""}${m.detail?` — ${esc(m.detail.slice(0,140))}`:""}${m.files.length?` ${m.files.map(n=>fileChip(a,n)).join(" ")}`:""} <i>${esc(fmtT(m.t))}</i></span></div>`;continue}
+    const mine=isMe(m.by),to=person(m.to).name||m.to;
+    h+=`<div class="v22c-msg ${mine?"me":"them"}"><div class="v22c-bub">${mine?"":`<div class="v22c-who">${esc(m.by)}</div>`}${to?`<div class="v22c-to">to ${esc(to)}${m.ret?` • <b>↩ returned for correction</b>`:""}</div>`:""}<div class="v22c-txt">${esc(m.text)}</div>${m.files.length?`<div class="v22c-files">${m.files.map(n=>fileChip(a,n)).join("")}</div>`:""}<div class="v22c-time">${esc(fmtT(m.t))}${m.rev?` • ${esc(m.rev)}`:""}</div></div></div>`;
+  }
+  return h||`<div class="v22c-empty">No messages yet. Write the first one below.</div>`;
+}
+function composerHtml(a){
+  const me=actor();if(!me)return `<div class="v22c-comp"><span class="tiny muted">Choose your name ('Working as') to write.</span></div>`;
+  const ppl=[];const addP=(v,role)=>{const p=person(v);if(!p.name&&!p.email)return;if(ppl.some(x=>low(x.email||x.name)===low(p.email||p.name)))return;ppl.push({...p,role})};
+  addP(a[AF.assignedTo]||a[AF.assignedEmployeeName],"owner");addP(checkerVal(a),"checker");addP(issuerVal(a),"issuer");addP(a[AF.assignedBy],"assigned by");
+  const def=ppl.find(p=>!(low(p.email)===low(me.email)||low(p.name)===low(me.name)))||ppl[0]||{};
+  const sel=CH.sel[idOf(a)]||[],canRet=allowed(a).includes("return");
+  return `<div class="v22c-comp" data-v22c-comp="${esc(idOf(a))}">
+    ${sel.length?`<div class="v22c-chosen">${sel.map((f,i)=>`<span>📎 ${esc(f.name)} <a data-v22c-drop="${i}">✕</a></span>`).join("")}</div>`:""}
+    <div class="v22c-line"><label class="v22c-att" title="Attach files (up to 10)">📎<input type="file" class="v22c-in" multiple hidden></label>
+      <textarea class="v22c-text" rows="1" placeholder="Type a message…"></textarea>
+      <button type="button" class="v22c-send" data-v22c-send="${esc(idOf(a))}" ${CH.busy?"disabled":""} title="Send">${CH.busy?"…":"➤"}</button></div>
+    <div class="v22c-opts">To <select class="v22c-to">${ppl.map(p=>`<option value="${esc(p.email||p.name)}" ${p===def?"selected":""}>${esc(p.name||p.email)} (${esc(p.role)})</option>`).join("")}</select>
+      ${canRet?`<label><input type="checkbox" class="v22c-ret"> ↩ Return for correction (${esc(rev(a))} → ${esc(nextRev(rev(a)))})</label>`:""}</div>
+  </div>`;
+}
+function chatPane(a,inPage){
+  return `<div class="v22c-pane ${inPage?"page":""}"><div class="v22c-head"><div><b>${esc(titleOf(a))}</b><small>${esc(whereOf(a))} • owner ${esc(ownerOf(a))} • ${esc(rev(a))} • ${esc(waitingFor(a))}</small></div>${inPage?"":`<button type="button" class="btn sm" data-v22-open="${esc(idOf(a))}">Open task</button>`}</div>
+    <div class="v22c-thread" data-v22c-thread="${esc(idOf(a))}">${threadHtml(a)}</div>${composerHtml(a)}</div>`;
+}
+function scrollDown(){try{document.querySelectorAll(".v22c-thread").forEach(t=>t.scrollTop=t.scrollHeight)}catch(_){}}
+// --- drawer (💬 button in the top bar)
+function drawer(){
+  let d=el("v22cDrawer");
+  if(!CH.open){if(d)d.remove();stopPoll();return}
+  if(!d){d=document.createElement("div");d.id="v22cDrawer";document.body.appendChild(d)}
+  const list=chatList(),cur=CH.id?assignmentById(CH.id):null;
+  // keep a half-typed message when the drawer redraws
+  const keep=d.querySelector(".v22c-text")?d.querySelector(".v22c-text").value:"";
+  d.innerHTML=`<div class="v22c-dr"><div class="v22c-side"><div class="v22c-sh"><b>💬 Chat &amp; updates</b><button type="button" class="v22c-x" data-v22c-close>✕</button></div>
+      <div class="v22c-list">${list.length?list.map(x=>`<button type="button" class="v22c-item ${CH.id===String(idOf(x.a))?"on":""}" data-v22c-open="${esc(idOf(x.a))}"><div><b>${esc(titleOf(x.a))}</b><small>${esc(whereOf(x.a))} • ${esc(ownerOf(x.a))}</small><span>${x.last.type==="msg"?`<b>${esc(isMe(x.last.by)?"You":x.last.by)}:</b> ${esc(x.last.text.slice(0,60))}`:`${esc(x.last.by)} • ${esc(x.last.text)}`}</span></div><div class="v22c-meta"><i>${esc(fmtT(x.last.t))}</i>${x.n?`<em>${x.n}</em>`:""}</div></button>`).join(""):`<div class="v22c-empty">No chats yet. Your tasks (owner, checker, issuer, assigned by) appear here.</div>`}</div></div>
+    <div class="v22c-main">${cur?chatPane(cur,false):`<div class="v22c-empty big">Choose a chat on the left.</div>`}</div></div>`;
+  if(keep){const t=d.querySelector(".v22c-text");if(t)t.value=keep}
+  scrollDown();
+}
+function openChat(id){CH.open=true;if(id){CH.id=String(id);markSeen(CH.id);refreshOne(CH.id)}drawer();startPoll();topBtn()}
+// while a chat is open: re-read that one task every 20 s (1 small call) so new messages come in
+function startPoll(){stopPoll();CH.poll=setInterval(()=>{const id=CH.id||(S.detailTab==="chat"&&S.current?String(idOf(S.current)):"");if(id&&!document.hidden)refreshOne(id)},20000)}
+function stopPoll(){if(CH.poll){clearInterval(CH.poll);CH.poll=null}}
+async function refreshOne(id){
+  if(S.demo||!id)return;
+  try{const a=assignmentById(id),fresh=await getTrackingRecordById(id);if(a&&fresh&&sc(fresh[AF.activityLog])!==sc(a[AF.activityLog])){Object.assign(a,fresh);redrawChat();notifyCheck()}}catch(e){log("chat refresh",e)}
+}
+function redrawChat(){
+  try{if(CH.open)drawer()}catch(_){}
+  try{const box=document.querySelector("#page .v22c-pane.page");if(box&&S.current){const th=box.querySelector(".v22c-thread");if(th){th.innerHTML=threadHtml(S.current);th.scrollTop=th.scrollHeight}markSeen(String(idOf(S.current)))}}catch(_){}
+  topBtn();
+}
+// --- top bar button with unread count
+function topBtn(){
+  try{
+    const nav=document.querySelector(".nav-actions");if(!nav)return;
+    let b=el("v22cBtn");if(!b){b=document.createElement("button");b.id="v22cBtn";b.className="btn";b.type="button";b.dataset.v22cToggle="1";nav.insertBefore(b,nav.firstChild)}
+    const n=chatList().reduce((t,x)=>t+x.n,0);b.innerHTML=`💬 Chat${n?` <span class="v22c-badge">${n}</span>`:""}`;
+  }catch(_){}
+}
+// --- pop-up at the TOP when a new message / change comes in on one of my designs
+function notifyCheck(){
+  try{
+    if(!actor())return;
+    const m=chatSeen();
+    for(const x of chatList()){
+      const id=String(idOf(x.a));if(CH.open&&CH.id===id)continue;if(S.detailTab==="chat"&&S.current&&String(idOf(S.current))===id)continue;
+      const seen=Number(m[id]||m.__since||0);
+      for(const msg of chatMsgs(x.a).filter(y=>y.t>seen&&!isMe(y.by))){
+        const k=`${id}|${msg.t}`;if(CH.shown.has(k))continue;CH.shown.add(k);toastTop(x.a,msg);
+      }
+    }
+    topBtn();
+  }catch(e){log("chat notify",e)}
+}
+function toastTop(a,m){
+  let w=el("v22cTop");if(!w){w=document.createElement("div");w.id="v22cTop";document.body.appendChild(w)}
+  const n=document.createElement("div");n.className="v22c-pop";n.dataset.v22cOpen=String(idOf(a));
+  n.innerHTML=`<div class="v22c-pop-h"><b>${m.type==="msg"?"💬":"🔔"} ${esc(m.by||"Update")}</b><span>${esc(titleOf(a))} • ${esc(whereOf(a))}</span></div><div class="v22c-pop-t">${esc(m.type==="msg"?m.text.slice(0,160):`${m.text}${m.rev?" • "+m.rev:""}${m.detail?" — "+m.detail.slice(0,100):""}`)}${m.files&&m.files.length?` <i>📎 ${m.files.length}</i>`:""}</div>`;
+  w.appendChild(n);while(w.children.length>4)w.removeChild(w.firstChild);
+  setTimeout(()=>{try{n.classList.add("out");setTimeout(()=>n.remove(),400)}catch(_){}},12000);
+}
+setInterval(()=>{try{if(S.v21&&S.v21.live||S.demo)notifyCheck()}catch(_){}},30000);
+// --- task page tab "💬 Chat & updates"
+patch("renderDetailPage",()=>renderDetailPage,f=>{renderDetailPage=f},base=>function(){
+  const r=base.apply(this,arguments);
+  try{
+    const tabs=document.querySelector("#page .subtabs"),a=S.current;
+    if(tabs&&a&&!tabs.querySelector('[data-detail-tab="chat"]')){
+      const n=unread(a),b=document.createElement("button");
+      b.className=`subtab ${S.detailTab==="chat"?"active":""}`;b.dataset.detailTab="chat";b.innerHTML=`💬 Chat &amp; updates${n?` <span class="v22c-badge">${n}</span>`:""}`;
+      const f=tabs.querySelector('[data-detail-tab="taskfiles"]')||tabs.querySelector('[data-detail-tab="overview"]');tabs.insertBefore(b,f?f.nextSibling:tabs.firstChild);
+    }
+    if(S.detailTab==="chat"&&a){markSeen(String(idOf(a)));setTimeout(scrollDown,0);if(!CH.poll)startPoll()}
+  }catch(e){log("chat tab",e)}
+  try{topBtn()}catch(_){}
+  return r;
+});
+patch("renderDetailTab",()=>renderDetailTab,f=>{renderDetailTab=f},base=>function(){
+  if(S.detailTab==="chat"&&S.current){try{return `<div class="tab-card">${chatPane(S.current,true)}</div>`}catch(e){log("chat pane",e)}}
+  return base.apply(this,arguments);
+});
+patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){const r=base.apply(this,arguments);try{topBtn();if(CH.open)drawer()}catch(_){}return r});
+// --- send
+async function sendChat(id,root){
+  const a=assignmentById(id);if(!a)throw rule("Task not found. Click Refresh.");
+  const me=actor();if(!me)throw rule("Choose your name first: click 'Working as' at the top.");
+  const q=c=>root&&root.querySelector(c);
+  const text=sc(q(".v22c-text")&&q(".v22c-text").value).trim(),files=(CH.sel[id]||[]).slice(0,Number(FSET().MAX_FILES_PER_UPLOAD)||10);
+  if(!text&&!files.length)throw rule("Type a message or attach a file.");
+  const to=sc(q(".v22c-to")&&q(".v22c-to").value)||sc(a[AF.assignedTo]),ret=!!(q(".v22c-ret")&&q(".v22c-ret").checked);
+  if(ret&&!allowed(a).includes("return"))throw rule("Only the checker or the issuer can return this task now.");
+  if(ret&&!text)throw rule("Write what must be corrected.");
+  CH.busy=true;redrawChat();
+  const sent=[],failed=[];
+  try{
+    for(const f of files){try{await uploadWithFallback(id,f);sent.push(f.name)}catch(e){failed.push(f.name);window.MEGA_ERR&&MEGA_ERR.add("error",`Chat file not uploaded: ${f.name}`,errorText(e))}}
+    if(sent.length&&!S.demo){try{const fresh=await getTrackingRecordById(id);if(fresh)Object.assign(a,fresh)}catch(e){log("refresh",e)}}
+    const p=person(to),old=rev(a),nr=nextRev(old),msg=text||`Sent ${sent.length} file(s)`;
+    const data=ret?{[AF.status]:"Returned",[AF.progress]:50,[AF.returnReason]:msg,[AF.revision]:nr}:{};
+    const line=`<b>${esc(me.name)}</b> wrote${ret?` and <b>returned ${esc(old)} for correction</b> (correct it as <b>${esc(nr)}</b>)`:""}:<br><br><div style="border-left:3px solid #c42770;padding:6px 10px;background:#fdf2f8">${esc(msg)}</div>${sent.length?`<br>📎 Files: <b>${sent.map(esc).join(", ")}</b> (open the task → Files or 💬 Chat)`:""}`;
+    const mails=[{to:p.email||to,subject:subj({...a,...data},`${ret?"Returned with message":"Message"} from ${me.name}`),html:mailHtml({...a,...data},ret?"Returned with message":"New message",line,p)}];
+    CH.sel[id]=[];
+    if(ret)await save(a,data,"Returned",`${old} returned → correct as ${nr}: ${msg}`,mails);
+    // the message itself (also when returned)
+    const d2=withActivity(a,{},"Message",msg,{kind:"comment",by:me.name,to:p.email||to,files:sent,returned:ret,rev:old});
+    try{Object.assign(a,d2);redrawChat();await updateRecord(String(idOf(a)),d2);if(!ret)(mails||[]).forEach(m=>sendMail(m.to,m.subject,m.html,"Message"))}
+    catch(e){say(`Message not saved: ${errorText(e)}`,"warn");window.MEGA_ERR&&MEGA_ERR.add("error",`Chat message not saved (task ${id})`,errorText(e))}
+    markSeen(String(id));
+    if(failed.length)say(`Not uploaded: ${failed.join(", ")}`,"warn");
+  }finally{CH.busy=false;redrawChat();try{const t=root&&root.isConnected?root.querySelector(".v22c-text"):document.querySelector(`[data-v22c-comp="${id}"] .v22c-text`);if(t)t.value=""}catch(_){}}
+}
+window.addEventListener("click",e=>{
+  const t=e.target;if(!t||!t.closest)return;let x;
+  if(t.closest("[data-v22c-toggle]")){e.preventDefault();e.stopImmediatePropagation();if(CH.open){CH.open=false;return drawer()}return openChat(CH.id||((chatList()[0]||{}).a?String(idOf(chatList()[0].a)):""))}
+  if(t.closest("[data-v22c-close]")){e.preventDefault();e.stopImmediatePropagation();CH.open=false;return drawer()}
+  if((x=t.closest("[data-v22c-open]"))){e.preventDefault();e.stopImmediatePropagation();x.classList&&x.classList.contains("v22c-pop")&&x.remove();return openChat(x.dataset.v22cOpen)}
+  if((x=t.closest("[data-v22c-send]"))){e.preventDefault();e.stopImmediatePropagation();const root=x.closest("[data-v22c-comp]");return (typeof guarded==="function"?guarded:(f=>f()))(()=>sendChat(x.dataset.v22cSend,root))}
+  if((x=t.closest("[data-v22c-drop]"))){e.preventDefault();e.stopImmediatePropagation();const root=x.closest("[data-v22c-comp]"),id=root.dataset.v22cComp;(CH.sel[id]||[]).splice(Number(x.dataset.v22cDrop),1);return rerenderComp(root)}
+  if((x=t.closest("#v22cDrawer [data-v22-open]"))){CH.open=false;setTimeout(drawer,0)}
+},true);
+function rerenderComp(root){try{const id=root.dataset.v22cComp,a=assignmentById(id),txt=root.querySelector(".v22c-text").value,to=root.querySelector(".v22c-to")&&root.querySelector(".v22c-to").value;const w=document.createElement("div");w.innerHTML=composerHtml(a);const n=w.firstElementChild;root.replaceWith(n);n.querySelector(".v22c-text").value=txt;if(to&&n.querySelector(".v22c-to"))n.querySelector(".v22c-to").value=to;n.querySelector(".v22c-text").focus()}catch(e){log("composer",e)}}
+document.addEventListener("change",e=>{const t=e.target;if(t&&t.classList&&t.classList.contains("v22c-in")){const root=t.closest("[data-v22c-comp]");if(!root)return;const id=root.dataset.v22cComp,max=Number(FSET().MAX_FILES_PER_UPLOAD)||10;CH.sel[id]=(CH.sel[id]||[]).concat([...(t.files||[])]).slice(0,max);rerenderComp(root)}},true);
+document.addEventListener("keydown",e=>{const t=e.target;if(t&&t.classList&&t.classList.contains("v22c-text")&&e.key==="Enter"&&!e.shiftKey){e.preventDefault();const b=t.closest("[data-v22c-comp]")?.querySelector("[data-v22c-send]");if(b)b.click()}},true);
+document.addEventListener("input",e=>{const t=e.target;if(t&&t.classList&&t.classList.contains("v22c-text")){t.style.height="auto";t.style.height=Math.min(140,t.scrollHeight)+"px"}},true);
+try{const st=document.createElement("style");st.textContent=`
+.v22c-badge{display:inline-grid;place-items:center;min-width:17px;height:17px;padding:0 5px;border-radius:999px;background:#25d366;color:#fff;font-size:10px;font-weight:900;margin-left:4px}
+#v22cDrawer{position:fixed;inset:0;z-index:180;background:rgba(16,24,40,.35);display:flex;justify-content:flex-end}
+.v22c-dr{width:min(1000px,100%);height:100%;background:#fff;display:grid;grid-template-columns:320px 1fr;box-shadow:-8px 0 30px rgba(0,0,0,.2)}
+.v22c-side{border-right:1px solid #e4e7ec;display:flex;flex-direction:column;min-height:0;background:#fff}
+.v22c-sh{display:flex;justify-content:space-between;align-items:center;padding:14px 14px;background:#c42770;color:#fff;font-size:15px}.v22c-x{border:0;background:transparent;color:#fff;font-size:18px;cursor:pointer}
+.v22c-list{overflow:auto;flex:1}.v22c-item{display:flex;gap:8px;width:100%;text-align:left;border:0;border-bottom:1px solid #f2f4f7;background:#fff;padding:10px 12px;cursor:pointer;font:inherit}
+.v22c-item:hover{background:#f9fafb}.v22c-item.on{background:#fdf2f8}.v22c-item>div:first-child{flex:1;min-width:0;display:grid;gap:2px}
+.v22c-item b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v22c-item small{font-size:11px;color:#667085;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v22c-item span{font-size:12px;color:#344054;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v22c-meta{display:grid;justify-items:end;gap:4px}.v22c-meta i{font-size:10px;color:#667085;font-style:normal}.v22c-meta em{font-style:normal;background:#25d366;color:#fff;border-radius:999px;min-width:18px;height:18px;display:grid;place-items:center;font-size:10px;font-weight:900;padding:0 5px}
+.v22c-main{display:flex;min-height:0}.v22c-pane{display:flex;flex-direction:column;flex:1;min-height:0;background:#efeae2}
+.v22c-pane.page{height:min(70vh,680px);border-radius:12px;overflow:hidden;border:1px solid #e4e7ec}
+.v22c-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:#f0f2f5;border-bottom:1px solid #e4e7ec}.v22c-head b{display:block;font-size:14px}.v22c-head small{font-size:11px;color:#667085}
+.v22c-thread{flex:1;overflow:auto;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
+.v22c-msg{display:flex}.v22c-msg.me{justify-content:flex-end}.v22c-bub{max-width:72%;padding:7px 10px 5px;border-radius:10px;box-shadow:0 1px 1px rgba(0,0,0,.08);font-size:13px;line-height:1.4}
+.v22c-msg.them .v22c-bub{background:#fff;border-top-left-radius:2px}.v22c-msg.me .v22c-bub{background:#d9fdd3;border-top-right-radius:2px}
+.v22c-who{font-weight:900;color:#c42770;font-size:12.5px;margin-bottom:1px}.v22c-to{font-size:10.5px;color:#667085}.v22c-to b{color:#b42318}.v22c-txt{white-space:pre-wrap;word-break:break-word;font-weight:600;color:#111b21}
+.v22c-time{font-size:10px;color:#667085;text-align:right;margin-top:2px}
+.v22c-files{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}.v22c-file{border:1px solid #d0d5dd;background:#f9fafb;border-radius:7px;padding:3px 7px;font:inherit;font-size:11px;cursor:pointer;color:#175cd3}.v22c-file.off{color:#667085;cursor:default}
+.v22c-upd{display:flex;justify-content:center}.v22c-upd>span{background:#fff8c5;color:#54656f;font-size:11px;border-radius:8px;padding:4px 10px;max-width:85%;text-align:center;box-shadow:0 1px 1px rgba(0,0,0,.05)}.v22c-upd i{font-style:normal;color:#8696a0;margin-left:4px}
+.v22c-day{display:flex;justify-content:center;margin:6px 0}.v22c-day span{background:#e1f2fb;color:#54656f;font-size:11px;border-radius:8px;padding:3px 10px;font-weight:700}
+.v22c-empty{color:#667085;font-size:12px;padding:20px;text-align:center}.v22c-empty.big{margin:auto;font-size:14px}
+.v22c-comp{background:#f0f2f5;padding:8px 10px;display:grid;gap:6px;border-top:1px solid #e4e7ec}
+.v22c-line{display:flex;gap:8px;align-items:flex-end}.v22c-att{font-size:20px;cursor:pointer;padding:6px}
+.v22c-text{flex:1;border:0;border-radius:20px;padding:10px 14px;font:inherit;font-size:14px;resize:none;min-height:20px;max-height:140px;outline:none;background:#fff}
+.v22c-send{width:42px;height:42px;border-radius:50%;border:0;background:#c42770;color:#fff;font-size:17px;cursor:pointer}.v22c-send:disabled{opacity:.6}
+.v22c-opts{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:11.5px;color:#475467}.v22c-opts select{height:26px;font-size:11.5px}
+.v22c-chosen{display:flex;gap:6px;flex-wrap:wrap}.v22c-chosen span{background:#fff;border:1px solid #d0d5dd;border-radius:999px;padding:3px 9px;font-size:11px}.v22c-chosen a{cursor:pointer;color:#b42318;margin-left:3px}
+#v22cTop{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:250;display:grid;gap:8px;width:min(460px,94vw)}
+.v22c-pop{background:#fff;border-left:5px solid #25d366;border-radius:12px;box-shadow:0 10px 30px rgba(16,24,40,.25);padding:10px 14px;cursor:pointer;animation:v22cIn .3s ease;transition:opacity .4s,transform .4s}
+.v22c-pop.out{opacity:0;transform:translateY(-10px)}.v22c-pop-h{display:flex;flex-direction:column}.v22c-pop-h b{font-size:14px;color:#111b21}.v22c-pop-h span{font-size:11px;color:#667085}.v22c-pop-t{font-size:13px;font-weight:600;margin-top:4px;color:#111b21}
+@keyframes v22cIn{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+@media(max-width:760px){.v22c-dr{grid-template-columns:1fr}.v22c-side{display:${"none"}}}
+`;document.head.appendChild(st)}catch(_){}
+
+window.MEGA_V22={build:BUILD,stepOf,allowed,toCheckRows,returnedToMe,familyFiles,canUpload,canView,exportRows,remind,isSelfRoot,ownerOf,isOwner,isChecker,isAssigner,waitingFor,popupCheck,dataCheck,accessCheck,issuerVal,isIssuer,openChat,chatMsgs,notifyCheck};
 // first pop-up after the start-up data is in
 setTimeout(()=>{try{popupCheck(false)}catch(_){}},12000);
 try{const bd=el("buildBadge");if(bd)bd.textContent=BUILD;document.title=`MEGA Engineering | Project Design Control ${BUILD}`}catch(_){}
