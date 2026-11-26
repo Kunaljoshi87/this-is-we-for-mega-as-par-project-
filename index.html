@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.7
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.8
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V22.7".
+   3. Paste this whole file and save. The badge at the top shows "V22.8".
 
  >>> ALL SETTINGS ARE IN ONE PLACE: the "MEGA SETTINGS" block, the first
      SCRIPT below (report names, projects list, waiting times, speed,
@@ -119,6 +119,11 @@
                       the screen, one Zoho call per file, kept in memory
                       (2nd click instant), no double download on slow lines,
                       priority lane for files, saved exactly as stored.
+                      V22.8: Excel / PDF / CAD files were damaged by Zoho's
+                      widget file API (sent as text). Now every file is
+                      downloaded / opened directly from Zoho in a new tab,
+                      exactly as stored (FILES.DOWNLOAD_MODE "web"); "Download
+                      all" shows one link per file.
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -138,7 +143,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V22.7</title>
+<title>MEGA Engineering | Project Design Control V22.8</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -364,7 +369,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.7</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.8</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -487,6 +492,13 @@ var MEGA_SETTINGS={
     MAX_FILES_PER_UPLOAD:10,     // how many files can be uploaded at one time
     DOWNLOAD_TIMEOUT_SEC:300,    // V22.7: big CAD / PDF files get up to 5 minutes (no second download on a slow line)
     KEEP_IN_MEMORY_MB:200,       // V22.7: opened / downloaded files are kept in memory - the 2nd click is instant
+    // V22.8: Zoho's widget file API sends Excel / PDF / CAD files back as TEXT and damages them.
+    // "web" = the file is downloaded / opened directly from Zoho in a new tab, exactly as stored
+    //         (fast, no API call, any type). Text files (txt, csv) still open inside the widget.
+    // "sdk" = old way through the widget API (only if "web" ever stops working).
+    DOWNLOAD_MODE:"web",
+    // Zoho's own download address. {id} {field} {filepath} {report} are filled in by the widget.
+    WEB_DOWNLOAD_URL:"https://creatorapp.zoho.in/file/megaengg/mega-engineering-sales/{report}/{id}/{field}/download?filepath=/{filepath}",
     FIELDS:["Supporting_File","Drawing_File","Native_File"]   // Design_Tracking file fields, tried in this order
   },
 
@@ -509,7 +521,7 @@ var MEGA_SETTINGS={
     var K="MEGA_ERRLOG",MAX=(MEGA_SETTINGS.ERRORS&&MEGA_SETTINGS.ERRORS.KEEP)||60;
     var R=window.MEGA_ERR={list:[],api:[],seen:0,listeners:[]};
     // V22.5: errors saved by an OLDER version are not shown again after an update (they were already fixed)
-    var BUILD_ID="V22.7";
+    var BUILD_ID="V22.8";
     try{var old=JSON.parse(localStorage.getItem(K)||"[]");if(Array.isArray(old))R.list=old.filter(function(x){return x&&x.build===BUILD_ID}).slice(-MAX);if(Array.isArray(old)&&old.length!==R.list.length){localStorage.setItem(K,JSON.stringify(R.list));localStorage.setItem(K+"_SEEN",String(R.list.length))}}catch(_){}
     try{R.seen=Number(localStorage.getItem(K+"_SEEN")||R.list.length)||0}catch(_){}
     function txt(x){
@@ -9438,7 +9450,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V22(){
 "use strict";
-const BUILD="V22.7";
+const BUILD="V22.8";
 const log=(...a)=>{try{console.warn("[V22]",...a)}catch(_){}};
 const say=(m,t="warn")=>{try{toast(m,t)}catch(_){}};
 const sc=v=>{try{return String(scalar(v)??"")}catch(_){return v==null?"":String(v)}};
@@ -9824,7 +9836,7 @@ function familyFiles(a){
   return out;
 }
 const canUpload=a=>!!a&&!!actor()&&(isOwner(a)||isChecker(a)||isAssigner(a)||isAdmin());
-const canView=n=>/\.(pdf|png|jpe?g|gif|webp|bmp|svg|txt|csv|log|json|xml|mp4|webm|mp3|wav)$/i.test(String(n||""));
+const canView=n=>/\.(pdf|png|jpe?g|gif|webp|bmp|svg|txt|csv|log|json|xml|mp4|webm|mp3|wav)$/i.test(String(n||""));   // web mode: PDF / pictures open in a browser tab
 /* ---------- 7b. FAST FILES (V22.7) ----------
    - Download / open does NOT block the screen: a small box (bottom-right)
      shows "Downloading … 12 s" and you can keep working.
@@ -9865,6 +9877,7 @@ async function fileBlob(id,field,path,name,open){
     const t0=Date.now();
     try{
       const res=await withTimeout(()=>ZOHO.CREATOR.FILE.readFile(withApp({report_name:CONFIG.REPORTS.tracking,id:String(id),field_name:field,file_path:fp})),fcTimeout(),`Download ${name}`);
+      if(!isTextFile(name)&&typeof res==="string"&&res.indexOf("\uFFFD")>=0)throw new Error("Zoho sent this file as text (it would be damaged). Set MEGA SETTINGS → FILES → DOWNLOAD_MODE to \"web\".");
       let b=await creatorFileResponseToBlob(res,name);
       if(!b||!b.size)throw new Error("Zoho returned an empty file.");
       const mime=mimeTypeForFile(name);if(mime&&b.type!==mime)b=new Blob([b],{type:mime});   // same bytes, correct type
@@ -9876,6 +9889,41 @@ async function fileBlob(id,field,path,name,open){
   FC.flight.set(k,job);job.then(()=>FC.flight.delete(k),()=>FC.flight.delete(k));
   return job;
 }
+/* V22.8 DIRECT DOWNLOAD FROM ZOHO
+   Zoho's widget file API (FILE.readFile) returns binary files (xlsx, pdf,
+   dwg, zip …) as TEXT - bytes above 127 become "�" and the file is damaged.
+   So in DOWNLOAD_MODE "web" the widget opens Zoho's own download address in
+   a new tab: the browser receives the original file from Zoho, exactly as
+   stored, with your Zoho login. PDF / pictures open in the browser, others
+   are saved to Downloads. No widget API call is used (faster, no limit). */
+const FSET=()=>(typeof MEGA_SETTINGS==="object"&&MEGA_SETTINGS.FILES)||{};
+const isTextFile=n=>/\.(txt|csv|log|json|xml)$/i.test(String(n||""));
+const webMode=n=>String(FSET().DOWNLOAD_MODE||"web").toLowerCase()!=="sdk"&&!isTextFile(n);
+function webUrl(id,field,path){
+  const fp=extractCreatorFilePath(path);if(!fp)throw new Error("This file has no Zoho file path - upload it again.");
+  const t=String(FSET().WEB_DOWNLOAD_URL||"https://creatorapp.zoho.in/file/megaengg/mega-engineering-sales/{report}/{id}/{field}/download?filepath=/{filepath}");
+  return t.replace("{report}",encodeURIComponent(CONFIG.REPORTS.tracking)).replace("{id}",encodeURIComponent(String(id))).replace("{field}",encodeURIComponent(field)).replace("{filepath}",encodeURIComponent(fp.replace(/^\//,"")));
+}
+function openWeb(url,name){
+  // must run straight from the click (browsers allow a new tab only then)
+  let w=null;try{w=window.open(url,"_blank");if(w){try{w.opener=null}catch(_){}}}catch(_){}
+  if(!w){try{if(ZOHO&&ZOHO.CREATOR&&ZOHO.CREATOR.UTIL&&ZOHO.CREATOR.UTIL.navigateParentURL){ZOHO.CREATOR.UTIL.navigateParentURL({action:"open",url,window:"new"});w=true}}catch(_){}}
+  if(!w){   // still blocked: give a link to click
+    openModal(name,"Click to download",`<p>Your browser blocked the new tab. Click the link:</p><p><a class="btn primary" href="${esc(url)}" target="_blank" rel="noopener">⬇ ${esc(name)}</a></p>`,`<button class="btn" data-modal="close">Close</button>`);return;
+  }
+  say(`${name}: opening from Zoho in a new tab (original file).`,"good");
+}
+// "Download all" click is caught on window (before the old handler) because downloadAll is private to the V21 layer
+window.addEventListener("click",e=>{const t=e.target;if(!t||!t.closest||!t.closest("[data-v21-tf-all]"))return;
+  try{const a=S.current;let files=null;try{files=familyFiles(a)}catch(_){}if(!files)return;if(!files.some(f=>webMode(f.filename)))return;e.preventDefault();e.stopImmediatePropagation();dlAllWeb(files)}catch(err){log("download all",err)}},true);
+function dlAllWeb(files){
+  try{
+    const rows=files.map(f=>{let u="";try{u=webMode(f.filename)?webUrl(f.id,f.field,f.filepath):""}catch(_){}
+      return `<div class="v22-dlrow"><span>${esc(f.filename)}<small class="tiny muted"> ${esc(f.who||"")}${f.rev?" • "+esc(f.rev):""}</small></span>${u?`<a class="btn sm primary" href="${esc(u)}" target="_blank" rel="noopener">⬇ Download</a>`:`<button class="btn sm" data-download-file="${esc(f.id)}" data-file-field="${esc(f.field)}" data-file-path="${esc(f.filepath)}" data-file-name="${esc(f.filename)}">⬇ Download</button>`}</div>`}).join("");
+    openModal(`Download files (${files.length})`,"Each file comes straight from Zoho, exactly as stored",`<div class="v22-dl">${rows}</div>`,`<button class="btn" data-modal="close">Close</button>`);
+  }catch(e){log("download all",e)}
+}
+try{const st=document.createElement("style");st.textContent=`.v22-dl{display:grid;gap:6px}.v22-dlrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 10px;border:1px solid #eaecf0;border-radius:9px}.v22-dlrow span{overflow:hidden;text-overflow:ellipsis}`;document.head.appendChild(st)}catch(_){}
 function saveBlob(blob,name){
   const url=URL.createObjectURL(blob),a=document.createElement("a");
   a.href=url;a.download=safeFileName(name,"download");a.style.display="none";document.body.appendChild(a);a.click();a.remove();
@@ -9884,11 +9932,13 @@ function saveBlob(blob,name){
 // every "Download" button in the widget (Files tab, revisions, documents) uses the fast path
 patch("downloadRevisionFile",()=>downloadRevisionFile,f=>{downloadRevisionFile=f},base=>async function(id,field,path,name){
   name=safeFileName(name,"download");
+  if(webMode(name)){try{return openWeb(webUrl(id,field,path),name)}catch(e){return say(`${name}: ${errorText(e)}`,"bad")}}
   try{const b=await fileBlob(id,field,path,name,false);saveBlob(b,name);say(`${name} downloaded (${fmtSize(b.size)}).`,"good")}
   catch(e){try{MEGA_ERR.add("error",`Download ${name}: ${errorText(e)}`,"file")}catch(_){}say(`${name} could not be downloaded: ${errorText(e)}`,"bad")}
 });
 const fmtSize=n=>n>=1048576?(n/1048576).toFixed(1)+" MB":Math.max(1,Math.round(n/1024))+" KB";
 async function preview(id,field,path,name){
+  if(webMode(name)){try{return openWeb(webUrl(id,field,path),name)}catch(e){return say(`${name}: ${errorText(e)}`,"bad")}}
   let blob;
   try{blob=await fileBlob(id,field,path,name,true)}
   catch(e){try{MEGA_ERR.add("error",`Open ${name}: ${errorText(e)}`,"file")}catch(_){}return say(`${name} could not be opened: ${errorText(e)}`,"bad")}
