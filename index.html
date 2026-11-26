@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.8
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.9
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V22.8".
+   3. Paste this whole file and save. The badge at the top shows "V22.9".
 
  >>> ALL SETTINGS ARE IN ONE PLACE: the "MEGA SETTINGS" block, the first
      SCRIPT below (report names, projects list, waiting times, speed,
@@ -124,6 +124,13 @@
                       downloaded / opened directly from Zoho in a new tab,
                       exactly as stored (FILES.DOWNLOAD_MODE "web"); "Download
                       all" shows one link per file.
+                      V22.9: every file opens for everybody (no role check);
+                      Checker + Final checker / issuer chosen at upload (only
+                      they can check / issue); "Comments on files" with
+                      attached files -> email + pop-up to the owner (optional
+                      return); Dashboard shows only pending work (not
+                      assigned / not started / started / in check / to issue),
+                      designs as compact cards, 3 per line.
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -143,7 +150,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V22.8</title>
+<title>MEGA Engineering | Project Design Control V22.9</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -369,7 +376,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.8</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.9</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -521,7 +528,7 @@ var MEGA_SETTINGS={
     var K="MEGA_ERRLOG",MAX=(MEGA_SETTINGS.ERRORS&&MEGA_SETTINGS.ERRORS.KEEP)||60;
     var R=window.MEGA_ERR={list:[],api:[],seen:0,listeners:[]};
     // V22.5: errors saved by an OLDER version are not shown again after an update (they were already fixed)
-    var BUILD_ID="V22.8";
+    var BUILD_ID="V22.9";
     try{var old=JSON.parse(localStorage.getItem(K)||"[]");if(Array.isArray(old))R.list=old.filter(function(x){return x&&x.build===BUILD_ID}).slice(-MAX);if(Array.isArray(old)&&old.length!==R.list.length){localStorage.setItem(K,JSON.stringify(R.list));localStorage.setItem(K+"_SEEN",String(R.list.length))}}catch(_){}
     try{R.seen=Number(localStorage.getItem(K+"_SEEN")||R.list.length)||0}catch(_){}
     function txt(x){
@@ -9450,7 +9457,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V22(){
 "use strict";
-const BUILD="V22.8";
+const BUILD="V22.9";
 const log=(...a)=>{try{console.warn("[V22]",...a)}catch(_){}};
 const say=(m,t="warn")=>{try{toast(m,t)}catch(_){}};
 const sc=v=>{try{return String(scalar(v)??"")}catch(_){return v==null?"":String(v)}};
@@ -9470,6 +9477,13 @@ const isOwner=a=>isMe(a[AF.assignedEmployeeName])||(!sc(a[AF.assignedEmployeeNam
 const isAssigner=a=>isMe(a[AF.assignedBy]);
 const checkerVal=a=>sc(a[AF.checker])||sc(a[AF.assignedBy]);       // no checker chosen yet -> the assigner checks
 const isChecker=a=>isMe(checkerVal(a));
+/* V22.9 FINAL CHECKER / ISSUER: chosen with the checker when files are uploaded
+   (or at Submit). Saved in the task's existing "Approver" field (no new field)
+   and also in the Activity log as a backup. Only this person can issue.
+   Not chosen yet -> the person who assigned the task issues (as before). */
+const roleFromLog=(a,k)=>{try{const L=parseActivityLog(a);for(let i=L.length-1;i>=0;i--)if(L[i]&&L[i][k])return String(L[i][k])}catch(_){}return ""};
+const issuerVal=a=>sc(a[AF.approver])||roleFromLog(a,"issuer")||sc(a[AF.assignedBy]);
+const isIssuer=a=>isMe(issuerVal(a));
 const person=v=>{try{return requireAssignmentRecipient(v)}catch(_){return {name:sc(v),email:""}}};
 const isSelfRoot=a=>{try{return !sc(a[AF.assignedFrom])&&low(personDisplay(a[AF.assignedBy])||a[AF.assignedBy])===low(ownerOf(a))}catch(_){return false}};
 const rev=a=>sc(a[AF.revision])||"R0";
@@ -9496,7 +9510,7 @@ function allowed(a){
     if(s===1&&st!=="On Hold")out.push("submit");
   }
   if(s===2&&isChecker(a)){out.push("check");out.push("return")}
-  if(s===3&&(isAssigner(a)||isAdmin())){out.push("issue");out.push("return")}
+  if(s===3&&(isIssuer(a)||isAdmin())){out.push("issue");out.push("return")}
   if(isOwner(a)||isAssigner(a)||isAdmin())out.push("newrev");            // new revision: any stage
   return [...new Set(out)];
 }
@@ -9504,7 +9518,7 @@ const LABEL={start:"▶ Start",submit:"⬆ Submit for check",check:"✓ Checked"
 function waitingFor(a){
   const s=stepOf(a),st=sc(a[AF.status]);
   if(s===4)return "Done";
-  if(s===3)return `Waiting for ${person(a[AF.assignedBy]).name||"the assigner"} to issue`;
+  if(s===3)return `Waiting for ${person(issuerVal(a)).name||"the issuer"} to issue`;
   if(s===2)return `Waiting for ${person(checkerVal(a)).name||"the checker"} to check`;
   if(st==="Returned")return `Returned to ${ownerOf(a)} for correction`;
   return `${ownerOf(a)} is ${s===0?"to start":"working"}`;
@@ -9526,7 +9540,7 @@ function mailHtml(a,title,line,toPerson,extra){
     <table style="border-collapse:collapse;width:100%">
      ${row("Project",`${code}${pn?" — "+pn:""}`)}${row("Design",[sc(a[AF.shortName])||d.short,sc(a[AF.drawingDocument])||d.name].filter(Boolean).join(" — "))}
      ${row("Tag / Equipment",[sc(a[AF.tagNo]),sc(a[AF.equipmentName])].filter(Boolean).join(" — "))}${row("Plant section",[sc(a[AF.plantSection]),sc(a[AF.plantSectionType])].filter(Boolean).join(" / "))}
-     ${row("Task owner",ownerOf(a))}${row("Assigned by",person(a[AF.assignedBy]).name)}${row("Checker",person(checkerVal(a)).name)}
+     ${row("Task owner",ownerOf(a))}${row("Assigned by",person(a[AF.assignedBy]).name)}${row("Checker",person(checkerVal(a)).name)}${row("Final checker / issuer",person(issuerVal(a)).name)}
      ${row("Revision",rev(a))}${row("Target date",displayDate(a[AF.targetDate]))}${extra||""}
     </table>
     ${LINK?`<p style="margin-top:14px"><a href="${esc(LINK)}" style="background:#c42770;color:#fff;padding:9px 16px;border-radius:6px;text-decoration:none;font-weight:700">Open Design Control</a></p>`:""}
@@ -9544,15 +9558,20 @@ const subj=(a,what)=>{const d=(()=>{try{return drawingForAssignment(a)||{}}catch
 
 /* ---------- 3. Doing a step: instant on screen, saved in the background ---------- */
 const busyIds=new Set();
-async function save(a,data,action,detail,mails){
+async function save(a,data,action,detail,mails,meta){
   const id=String(idOf(a));if(busyIds.has(id))throw rule("This task is still saving. Please wait a second.");
   if(data[AF.revision]===undefined&&!sc(a[AF.revision]))data={...data,[AF.revision]:"R0"};      // the revision is always filled in
   const before={};for(const k of Object.keys(data).concat([AF.activityLog]))before[k]=a[k];
-  let full=data;try{full=withActivity(a,data,action,detail,{kind:"flow",status:data[AF.status]||"",rev:(data[AF.status]==="Returned"?rev(a):(data[AF.revision]||rev(a)))})}catch(_){}
+  let full=data;try{full=withActivity(a,data,action,detail,{kind:"flow",status:data[AF.status]||"",rev:(data[AF.status]==="Returned"?rev(a):(data[AF.revision]||rev(a))),...(meta||{})})}catch(_){}
   Object.assign(a,full);busyIds.add(id);try{renderView()}catch(_){}        // 1) screen changes at once
   try{
     window.MEGA_FLOW_BUSY=true;
-    await updateRecord(id,full);                                        // 2) Zoho
+    try{await updateRecord(id,full)}                                    // 2) Zoho
+    catch(e1){
+      // the "Approver" field is refused (missing / other type): save without it - the issuer stays in the Activity log
+      if(AF.approver&&full[AF.approver]!==undefined&&new RegExp(AF.approver,"i").test(errorText(e1))){const f2={...full};delete f2[AF.approver];await updateRecord(id,f2);window.MEGA_ERR&&MEGA_ERR.add("api","Approver field refused - final checker / issuer kept in the Activity log",errorText(e1))}
+      else throw e1;
+    }
     say(`${action}: saved.`,"good");
     try{(mails||[]).forEach(m=>sendMail(m.to,m.subject,m.html,action))}catch(e){log("mail",e)}   // 3) emails
   }catch(e){
@@ -9560,7 +9579,7 @@ async function save(a,data,action,detail,mails){
     say(`Not saved: ${errorText(e)}`,"warn");window.MEGA_ERR&&MEGA_ERR.add("error",`${action} not saved (task ${id})`,errorText(e));
   }finally{window.MEGA_FLOW_BUSY=false;busyIds.delete(id);try{renderView()}catch(_){}try{popupCheck(true)}catch(_){}}
 }
-function need(a,what){if(!actor())throw rule("Choose your name first: click 'Working as' at the top.");if(!allowed(a).includes(what))throw rule(what==="newrev"?`Only ${ownerOf(a)} (task owner) or ${person(a[AF.assignedBy]).name} (assigned by) can start a new revision.`:`Only ${what==="start"||what==="submit"?ownerOf(a)+" (task owner)":what==="check"?person(checkerVal(a)).name+" (checker)":person(a[AF.assignedBy]).name+" (assigned by)"} can do this step.`)}
+function need(a,what){if(!actor())throw rule("Choose your name first: click 'Working as' at the top.");if(!allowed(a).includes(what))throw rule(what==="newrev"?`Only ${ownerOf(a)} (task owner) or ${person(a[AF.assignedBy]).name} (assigned by) can start a new revision.`:`Only ${what==="start"||what==="submit"?ownerOf(a)+" (task owner)":what==="check"?person(checkerVal(a)).name+" (checker)":person(issuerVal(a)).name+" (final checker / issuer)"} can do this step.`)}
 async function doStart(a){
   need(a,"start");const was=sc(a[AF.status]);
   const data={[AF.status]:"In Progress",[AF.progress]:Math.max(25,Number(sc(a[AF.progress]))||0)};
@@ -9572,9 +9591,11 @@ function openSubmit(a){
   need(a,"submit");
   const files=familyFiles(a).filter(f=>f.mine).length,cur=checkerVal(a),r=isRevisedSubmit(a)?nextRev(rev(a)):rev(a);
   let opts="";try{opts=employeeOptions(person(cur).email||cur,"Select checker…")}catch(_){opts=`<option>${esc(cur)}</option>`}
+  let iopts="";const icur=issuerVal(a);try{iopts=employeeOptions(person(icur).email||icur,"Select final checker / issuer…")}catch(_){iopts=`<option>${esc(icur)}</option>`}
   openModal("Submit for check",`${sc(a[AF.projectCode])} • ${sc(a[AF.shortName])||""} • ${r}`,
    `<div class="v22-steps">${stepsHtml(a)}</div>
     <div class="field"><label>Checker *</label><select id="v22Checker">${opts}</select><div class="tiny muted">The checker gets an email and a pop-up. Default: the person who assigned the task.</div></div>
+    <div class="field" style="margin-top:10px"><label>Final checker / issuer *</label><select id="v22Issuer">${iopts}</select><div class="tiny muted">Only this person can issue. It can be the same person as the checker.</div></div>
     <div class="field" style="margin-top:10px"><label>Note for the checker</label><textarea id="v22Note" placeholder="Optional: what to check, what changed in ${esc(r)}"></textarea></div>
     <div class="notice ${files?"good":"warn"}" style="margin-top:10px">${files?`${files} file${files===1?"":"s"} uploaded by you on this task.`:"No file uploaded yet. Upload your work in the 📎 Files tab first (you can still submit)."}</div>`,
    `<button class="btn" data-modal="close">Cancel</button><button class="btn primary" data-v22-do="submit-ok" data-id="${esc(idOf(a))}">Submit ${esc(r)} for check</button>`);
@@ -9604,18 +9625,19 @@ async function doSubmit(a){
   need(a,"submit");
   const chk=sc(el("v22Checker")&&el("v22Checker").value)||checkerVal(a),note=sc(el("v22Note")&&el("v22Note").value).trim();
   if(!chk)throw rule("Choose the checker.");
-  const p=person(chk),r=isRevisedSubmit(a)?nextRev(rev(a)):rev(a);
+  const iss=sc(el("v22Issuer")&&el("v22Issuer").value)||issuerVal(a);if(!iss)throw rule("Choose the final checker / issuer.");
+  const p=person(chk),pi=person(iss),r=isRevisedSubmit(a)?nextRev(rev(a)):rev(a);
   try{closeModal()}catch(_){}
-  const data={[AF.status]:"Submitted for Check",[AF.progress]:70,[AF.checker]:p.email||chk,[AF.revision]:r};
+  const data={[AF.status]:"Submitted for Check",[AF.progress]:70,[AF.checker]:p.email||chk,[AF.approver]:pi.email||iss,[AF.revision]:r};
   if(note)data[AF.remark]=note;
   const me=actor(),line=`<b>${esc(me.name)}</b> submitted <b>${esc(r)}</b> for your check.${note?`<br><br><i>Note:</i> ${esc(note)}`:""}`;
   const mails=[{to:p.email||chk,subject:subj({...a,...data},`${me.name} submitted for check`),html:mailHtml({...a,...data},"Please check this work",line,p)}];
   if(low(p.email)!==low(person(a[AF.assignedBy]).email))mails.push({to:a[AF.assignedBy],subject:subj({...a,...data},`${me.name} submitted for check`),html:mailHtml({...a,...data},"Submitted for check",`<b>${esc(me.name)}</b> submitted ${esc(r)} to <b>${esc(p.name)}</b> for check.`,person(a[AF.assignedBy]))});
-  await save(a,data,"Submitted for check",`${r} → checker ${p.name}${note?": "+note:""}`,mails);
+  await save(a,data,"Submitted for check",`${r} → checker ${p.name}, issuer ${pi.name}${note?": "+note:""}`,mails,{issuer:pi.email||iss,checker:p.email||chk});
 }
 function openCheck(a,what){
   need(a,what==="return"?"return":what==="issue"?"issue":"check");
-  const canIssue=what==="check"&&(isAssigner(a)||isAdmin());
+  const canIssue=what==="check"&&(isIssuer(a)||isAdmin());
   const title=what==="return"?"Return for correction":what==="issue"?"Issue this work":"Mark as checked";
   openModal(title,`${sc(a[AF.projectCode])} • ${sc(a[AF.shortName])||""} • ${rev(a)} • owner ${ownerOf(a)}`,
    `<div class="v22-steps">${stepsHtml(a)}</div>
@@ -9632,8 +9654,9 @@ async function doCheck(a,alsoIssue){
     return save(a,data,"Checked & issued",note||"Checked and issued",[{to:a[AF.assignedTo]||a[AF.assignedEmployeeName],subject:subj(a,`Issued by ${me.name}`),html:mailHtml({...a,...data},"Your work is issued ✓",`<b>${esc(me.name)}</b> checked and issued <b>${esc(rev(a))}</b>.${note?`<br><br><i>Comment:</i> ${esc(note)}`:""}`,person(a[AF.assignedTo]||a[AF.assignedEmployeeName]))}]);
   }
   const data={[AF.status]:"Checked",[AF.progress]:90};
-  const mails=[{to:a[AF.assignedTo]||a[AF.assignedEmployeeName],subject:subj(a,`Checked by ${me.name}`),html:mailHtml({...a,...data},"Your work is checked",`<b>${esc(me.name)}</b> checked <b>${esc(rev(a))}</b>. Next: issue by ${esc(person(a[AF.assignedBy]).name)}.${note?`<br><br><i>Comment:</i> ${esc(note)}`:""}`,person(a[AF.assignedTo]||a[AF.assignedEmployeeName]))}];
-  if(!isAssigner(a))mails.push({to:a[AF.assignedBy],subject:subj(a,`Ready to issue`),html:mailHtml({...a,...data},"Ready to issue",`<b>${esc(me.name)}</b> checked ${esc(rev(a))} of ${esc(ownerOf(a))}. Please issue it.`,person(a[AF.assignedBy]))});
+  const mails=[{to:a[AF.assignedTo]||a[AF.assignedEmployeeName],subject:subj(a,`Checked by ${me.name}`),html:mailHtml({...a,...data},"Your work is checked",`<b>${esc(me.name)}</b> checked <b>${esc(rev(a))}</b>. Next: issue by ${esc(person(issuerVal(a)).name)}.${note?`<br><br><i>Comment:</i> ${esc(note)}`:""}`,person(a[AF.assignedTo]||a[AF.assignedEmployeeName]))}];
+  if(!isIssuer(a))mails.push({to:issuerVal(a),subject:subj(a,`Ready to issue`),html:mailHtml({...a,...data},"Ready to issue",`<b>${esc(me.name)}</b> checked ${esc(rev(a))} of ${esc(ownerOf(a))}. Please issue it.`,person(issuerVal(a)))});
+  if(!isAssigner(a)&&low(person(issuerVal(a)).email)!==low(person(a[AF.assignedBy]).email))mails.push({to:a[AF.assignedBy],subject:subj(a,`Checked by ${me.name}`),html:mailHtml({...a,...data},"Checked",`<b>${esc(me.name)}</b> checked ${esc(rev(a))} of ${esc(ownerOf(a))}. Next: issue by ${esc(person(issuerVal(a)).name)}.`,person(a[AF.assignedBy]))});
   await save(a,data,"Checked",note||"Checked",mails);
 }
 async function doReturn(a){
@@ -9668,6 +9691,7 @@ async function doIssue(a){
   const me=actor(),data={[AF.status]:"Issued",[AF.progress]:100,[AF.actualEnd]:toCreatorDate(new Date().toISOString().slice(0,10))};
   const mails=[{to:a[AF.assignedTo]||a[AF.assignedEmployeeName],subject:subj(a,`Issued by ${me.name}`),html:mailHtml({...a,...data},"Your work is issued ✓",`<b>${esc(me.name)}</b> issued <b>${esc(rev(a))}</b>. Well done.${note?`<br><br><i>Comment:</i> ${esc(note)}`:""}`,person(a[AF.assignedTo]||a[AF.assignedEmployeeName]))}];
   if(low(person(checkerVal(a)).email)!==low(me.email))mails.push({to:checkerVal(a),subject:subj(a,`Issued by ${me.name}`),html:mailHtml({...a,...data},"Issued",`<b>${esc(me.name)}</b> issued ${esc(rev(a))} that you checked.`,person(checkerVal(a)))});
+  if(!isAssigner(a)&&low(person(a[AF.assignedBy]).email)!==low(person(checkerVal(a)).email))mails.push({to:a[AF.assignedBy],subject:subj(a,`Issued by ${me.name}`),html:mailHtml({...a,...data},"Issued",`<b>${esc(me.name)}</b> issued ${esc(rev(a))} of ${esc(ownerOf(a))}.`,person(a[AF.assignedBy]))});
   await save(a,data,"Issued",note||"Issued",mails);
 }
 function act(what,id){
@@ -9740,7 +9764,7 @@ function panel(a){
   return `<div class="v22-panel">
     <div class="v22-ph"><div><b>Work flow</b><span>${esc(waitingFor(a))}</span></div><span class="pill">${esc(rev(a))}</span></div>
     ${stepsHtml(a)}
-    <div class="v22-people"><div><small>Task owner</small><b>${esc(own)}</b></div><div><small>Assigned by</small><b>${esc(by||"—")}</b></div><div><small>Checker</small><b>${esc(chk||"—")}</b></div><div><small>Target</small><b>${esc(displayDate(a[AF.targetDate]))}</b></div></div>
+    <div class="v22-people"><div><small>Task owner</small><b>${esc(own)}</b></div><div><small>Assigned by</small><b>${esc(by||"—")}</b></div><div><small>Checker</small><b>${esc(chk||"—")}</b></div><div><small>Final checker / issuer</small><b>${esc(person(issuerVal(a)).name||"—")}</b></div><div><small>Target</small><b>${esc(displayDate(a[AF.targetDate]))}</b></div></div>
     ${isReturned(a)&&sc(a[AF.returnReason])?`<div class="notice warn" style="margin-top:8px"><b>Returned:</b> ${esc(sc(a[AF.returnReason]))}</div>`:""}
     ${(()=>{const hs=revHistory(a);if(!hs.length)return "";return `<details class="v22-revs" ${hs.length>1?"open":""}><summary>Revision history (${hs.length})</summary>${hs.map(([r,list])=>`<div class="v22-rev"><b>${esc(r)}</b><div>${list.slice(-6).map(x=>`<span>${esc(x.action)}${x.actor?` • ${esc(x.actor)}`:""}${x.time?` • ${esc(new Date(x.time).toLocaleString())}`:""}${x.detail&&x.kind==="flow"&&/Return|revision/i.test(x.action)?` — ${esc(String(x.detail).slice(0,120))}`:""}</span>`).join("")}</div></div>`).join("")}</details>`})()}
     <div class="v22-acts">${buttons(a,false)||`<span class="tiny muted">${actor()?"No step for you on this task — you can view it and its files.":"Choose your name ('Working as') to work on tasks."}</span>`}<button type="button" class="btn" data-detail-tab="taskfiles">📎 Files</button></div>
@@ -9789,7 +9813,7 @@ patch("renderDetailPage",()=>renderDetailPage,f=>{renderDetailPage=f},base=>func
 /* ---------- 5. Lists used by My Work ---------- */
 // waiting for me: tasks to check (I am checker) + tasks to issue (I assigned, checked)
 function toCheckRows(){
-  try{return (S.assignments||[]).filter(a=>{const s=stepOf(a);return (s===2&&isChecker(a))||(s===3&&isAssigner(a))})}catch(_){return[]}
+  try{return (S.assignments||[]).filter(a=>{const s=stepOf(a);return (s===2&&isChecker(a))||(s===3&&isIssuer(a))})}catch(_){return[]}
 }
 const returnedToMe=()=>{try{return (S.assignments||[]).filter(a=>isReturned(a)&&isOwner(a))}catch(_){return[]}};
 
@@ -9798,8 +9822,8 @@ const seenK=()=>`MEGA_V22_SEEN::${low((actor()||{}).name)}`;
 function popupCheck(quiet){
   try{
     if(!actor()||S.demo&&quiet)return;
-    const list=toCheckRows().concat(returnedToMe());
-    const key=x=>`${idOf(x)}|${sc(x[AF.status])}|${rev(x)}`;
+    const list=toCheckRows().concat(returnedToMe()).concat(commentsToMe());
+    const key=x=>x.__c?`${idOf(x)}|c|${x.__c.time}`:`${idOf(x)}|${sc(x[AF.status])}|${rev(x)}`;
     let seen=[];try{seen=JSON.parse(localStorage.getItem(seenK())||"[]")}catch(_){}
     const fresh=list.filter(x=>!seen.includes(key(x)));
     if(!fresh.length)return;
@@ -9807,16 +9831,23 @@ function popupCheck(quiet){
     const open=!el("modalBackdrop")?.classList.contains("hidden");
     if(open){say(`${fresh.length} task${fresh.length===1?"":"s"} waiting for you. See My Work → To check.`,"good");return}
     openModal("Waiting for you",`${fresh.length} new item${fresh.length===1?"":"s"}`,
-      `<div class="v22-pop">${fresh.slice(0,12).map(x=>`<div class="v22-pop-row"><span class="v22-chip s${stepOf(x)}">${esc(isReturned(x)?"Returned to you":stepOf(x)===2?"To check":"To issue")}</span><div><b>${esc(sc(x[AF.projectCode]))} • ${esc(sc(x[AF.shortName])||"")}${sc(x[AF.tagNo])?" • "+esc(sc(x[AF.tagNo])):""}</b><small>${esc(ownerOf(x))} • ${esc(rev(x))}${isReturned(x)&&sc(x[AF.returnReason])?" • "+esc(sc(x[AF.returnReason]).slice(0,80)):""}</small></div><button class="btn sm primary" data-v22-open="${esc(idOf(x))}">Open</button></div>`).join("")}</div>`,
+      `<div class="v22-pop">${fresh.slice(0,12).map(x=>`<div class="v22-pop-row"><span class="v22-chip s${x.__c?1:stepOf(x)}">${esc(x.__c?"💬 Comment":isReturned(x)?"Returned to you":stepOf(x)===2?"To check":"To issue")}</span><div><b>${esc(sc(x[AF.projectCode]))} • ${esc(sc(x[AF.shortName])||"")}${sc(x[AF.tagNo])?" • "+esc(sc(x[AF.tagNo])):""}</b><small>${x.__c?`${esc(x.__c.by||"")}: ${esc(String(x.__c.detail||"").replace(/\s+—\s+by\s+.*$/,"").slice(0,120))}${(x.__c.files||[]).length?` • 📎 ${x.__c.files.length} file(s)`:""}`:`${esc(ownerOf(x))} • ${esc(rev(x))}${isReturned(x)&&sc(x[AF.returnReason])?" • "+esc(sc(x[AF.returnReason]).slice(0,80)):""}`}</small></div><button class="btn sm primary" data-v22-open="${esc(idOf(x))}">Open</button></div>`).join("")}</div>`,
       `<button class="btn" data-modal="close">Later</button><button class="btn primary" data-v22-gocheck>Open My Work</button>`);
   }catch(e){log("popup",e)}
 }
 setInterval(()=>{try{if(S.v21&&S.v21.live)popupCheck(true)}catch(_){}},60000);
+// V22.9: file comments sent to me in the last 14 days (shown once in the pop-up)
+function commentsToMe(){
+  const out=[];
+  try{for(const a of (S.assignments||[]))for(const c of comments(a))if(c.to&&isMe(c.to)&&!isMe(c.by)&&Date.now()-Date.parse(c.time||0)<14*86400000)out.push(Object.assign(Object.create(a),a,{__c:c}))}catch(_){}
+  return out;
+}
+const comments=a=>{try{return parseActivityLog(a).filter(x=>x&&x.kind==="comment")}catch(_){return[]}};
 
 /* ---------- 7. Files: who uploaded, family files, viewer ---------- */
 function uploadsInfo(a){       // file name -> {who, rev, time} from the activity history
   const m=new Map();
-  try{for(const x of parseActivityLog(a)){if(!/Files Uploaded/i.test(x.action||""))continue;for(const n of String(x.detail||"").replace(/\s+—\s+by\s+.*$/,"").split(/,\s*/).filter(Boolean))m.set(n.trim(),{who:sc(x.actor),rev:x.rev||"",time:x.time})}}catch(_){}
+  try{for(const x of parseActivityLog(a)){if(x&&x.kind==="comment"&&Array.isArray(x.files)){for(const n of x.files)m.set(String(n),{who:sc(x.by),rev:x.rev||"",time:x.time});continue}if(!/Files Uploaded/i.test(x.action||""))continue;for(const n of String(x.detail||"").replace(/\s+—\s+by\s+.*$/,"").split(/,\s*/).filter(Boolean))m.set(n.trim(),{who:sc(x.actor),rev:x.rev||"",time:x.time})}}catch(_){}
   return m;
 }
 function fileEntries(a,label){
@@ -9836,7 +9867,7 @@ function familyFiles(a){
   return out;
 }
 const canUpload=a=>!!a&&!!actor()&&(isOwner(a)||isChecker(a)||isAssigner(a)||isAdmin());
-const canView=n=>/\.(pdf|png|jpe?g|gif|webp|bmp|svg|txt|csv|log|json|xml|mp4|webm|mp3|wav)$/i.test(String(n||""));   // web mode: PDF / pictures open in a browser tab
+const canView=n=>!!String(n||"");   // V22.9: every file can be opened by everybody (no role check): PDF / pictures show in the browser, Excel / Word / CAD open in their program
 /* ---------- 7b. FAST FILES (V22.7) ----------
    - Download / open does NOT block the screen: a small box (bottom-right)
      shows "Downloading … 12 s" and you can keep working.
@@ -10159,7 +10190,9 @@ patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){
    Accuracy: items come from the same lists as the Assign screen (Equipment
    Master / PD Sheet, BOM skip rules included) and tasks are matched with the
    same rule as the duplicate check. Tasks that match no item are listed too. */
-const TR={view:"design",pend:true,sec:"",des:"",q:"",open:new Set(),loading:false,loadedFor:"",err:""};
+const TR={view:"design",pend:true,st:"",sec:"",des:"",q:"",open:new Set(),loading:false,loadedFor:"",err:""};
+// V22.9: the dashboard shows ONLY pending work. Status groups for the cards / filter:
+const SGRP={na:["na"],todo:["todo"],work:["work","ret"],check:["check"],toissue:["toissue"]};
 const UST={na:["Not assigned","#475467","#f2f4f7"],todo:["Not started","#344054","#eaecf0"],work:["Working","#175cd3","#eff8ff"],ret:["Returned","#93370d","#fffaeb"],check:["In check","#c11574","#fdf2fa"],toissue:["To issue","#6941c6","#f4ebff"],done:["Issued","#067647","#ecfdf3"]};
 const UORDER=["na","todo","ret","work","check","toissue","done"];
 function unitState(u){
@@ -10183,7 +10216,7 @@ function trackerData(){
 }
 function trFilter(rows){
   const q=low(TR.q);
-  return rows.filter(r=>(!TR.pend||r.st!=="done")&&(!TR.sec||r.section===TR.sec)&&(!TR.des||String(r.design.id)===TR.des)&&(!q||[r.short,r.dname,r.section,r.type,r.tag,r.name,r.pds,r.owners.join(" ")].join(" ").toLowerCase().includes(q)));
+  return rows.filter(r=>r.st!=="done"&&(!TR.st||(SGRP[TR.st]||[]).includes(r.st))&&(!TR.sec||r.section===TR.sec)&&(!TR.des||String(r.design.id)===TR.des)&&(!q||[r.short,r.dname,r.section,r.type,r.tag,r.name,r.pds,r.owners.join(" ")].join(" ").toLowerCase().includes(q)));
 }
 function segBar(counts,total){
   const col={na:"#98a2b3",todo:"#d0d5dd",work:"#2f6fdb",ret:"#fab219",check:"#c2459a",toissue:"#7a5af8",done:"#0ca30c"};
@@ -10199,17 +10232,22 @@ function trackerHtml(){
   }
   const {rows,rep}=trackerData(),all=rows,list=trFilter(rows),c=countBy(all),tot=all.length,pend=tot-(c.done||0);
   const secs=[...new Set(all.map(r=>r.section).filter(Boolean))].sort((x,y)=>x.localeCompare(y,undefined,{numeric:true}));
-  const kpi=(n,l,cls,k)=>`<button type="button" class="v22-k ${cls||""}" ${k?`data-v22-trk-st="${k}"`:""}><b>${n}</b><small>${esc(l)}</small></button>`;
+  const kpi=(n,l,cls,k)=>`<button type="button" class="v22-k ${cls||""} ${(k==="all"&&!TR.st)||(k&&TR.st===k)?"on":""}" ${k?`data-v22-trk-st="${k}"`:""}><b>${n}</b><small>${esc(l)}</small></button>`;
   let body="";
   if(TR.view==="design"){
     body=rep.filter(g=>!TR.des||String(g.drawing.id)===TR.des).map(g=>{
       const gr=list.filter(r=>r.g===g),allg=all.filter(r=>r.g===g),cg=countBy(allg),done=cg.done||0;
-      if(!gr.length&&(TR.pend||TR.sec||TR.q))return "";
+      if(!gr.length)return "";
       const id=String(g.drawing.id),open=TR.open.has(id)||!!TR.q||!!TR.sec||!!TR.des;
       const tbl=`<div class="v21-bm-table"><table><thead><tr><th>Section</th><th>Type</th><th>Tag</th><th>Equipment</th>${g.mode==="PDS"?"<th>PDS type</th>":""}<th>Status</th><th>Owner</th><th>Rev</th><th>Target</th></tr></thead><tbody>${gr.map(r=>`<tr ${r.u.tasks[0]?`data-open-assignment="${esc(idOf(r.u.tasks[0]))}"`:""}><td>${esc(r.section||"—")}</td><td>${esc(r.type||"—")}</td><td><b>${esc(r.tag||"—")}</b></td><td>${esc(r.name||"—")}</td>${g.mode==="PDS"?`<td>${esc(r.pds||"—")}</td>`:""}<td>${chip(r.st)}${r.late?' <span class="pill red">Overdue</span>':""}</td><td>${esc(r.owners.join(", ")||"—")}</td><td>${esc(r.rev||"—")}</td><td>${esc(r.target?displayDate(r.target):"—")}</td></tr>`).join("")||`<tr><td colspan="9" class="tiny muted">Nothing pending.</td></tr>`}</tbody></table></div>`;
-      return `<section class="v21-bm-card"><div class="v21-bm-head v22-dh" data-v22-trk-open="${esc(id)}"><span class="v22-caret">${open?"▾":"▸"}</span><div class="v21-bm-name"><b>${esc(g.drawing.short?g.drawing.short+" — ":"")}${esc(g.drawing.name)}</b><span>${esc(modeLabel(g.mode))} • ${allg.length} item${allg.length===1?"":"s"} • <b>${allg.length-done}</b> pending • ${cg.na||0} not assigned${g.skipped?` • ${g.skipped} skipped (BOM rule)`:""}${g.unmatched.length?` • <em>${g.unmatched.length} task(s) match no item</em>`:""}</span></div>
-        <div class="v21-bm-mini">${segBar(cg,allg.length)}<div class="v21-sub">${done}/${allg.length} issued</div></div></div>${open?tbl+(g.unmatched.length?`<div class="tiny muted" style="padding:6px 12px">Tasks that match no current item (item removed from the master or scope changed): ${g.unmatched.map(t=>`<a class="v22-link" data-v22-open="${esc(idOf(t))}">${esc(sc(t[AF.tagNo])||sc(t[AF.plantSection])||sc(t[AF.criteria])||idOf(t))} (${esc(ownerOf(t))})</a>`).join(", ")}</div>`:""):""}</section>`;
-    }).join("")||`<div class="empty"><strong>${TR.pend?"Nothing pending":"No items"}</strong>${TR.pend?"All items of this project are issued for the chosen filter.":"No active designs for this project."}</div>`;
+      const cp=countBy(gr),pendN=gr.length;
+      const chips=["na","todo","work","ret","check","toissue"].filter(k=>cp[k]).map(k=>`<span class="v22-u" style="color:${UST[k][1]};background:${UST[k][2]}">${cp[k]} ${esc(UST[k][0].toLowerCase())}</span>`).join("");
+      return `<section class="v22-dcard ${open?"open":""}"><div class="v22-dcard-h v22-dh" data-v22-trk-open="${esc(id)}">
+        <div class="v22-dcard-t"><span class="v22-caret">${open?"▾":"▸"}</span><b title="${esc(g.drawing.name)}">${esc(g.drawing.short?g.drawing.short+" — ":"")}${esc(g.drawing.name)}</b><span class="v22-dcard-n">${pendN}</span></div>
+        <div class="v22-dcard-s">${esc(modeLabel(g.mode))} • ${pendN} pending of ${allg.length}${g.skipped?` • ${g.skipped} skipped (BOM rule)`:""}${g.unmatched.length?` • <em>${g.unmatched.length} unmatched</em>`:""}</div>
+        <div class="v22-dcard-c">${chips}</div>${segBar(cg,allg.length)}</div>${open?tbl+(g.unmatched.length?`<div class="tiny muted" style="padding:6px 12px">Tasks that match no current item (item removed from the master or scope changed): ${g.unmatched.map(t=>`<a class="v22-link" data-v22-open="${esc(idOf(t))}">${esc(sc(t[AF.tagNo])||sc(t[AF.plantSection])||sc(t[AF.criteria])||idOf(t))} (${esc(ownerOf(t))})</a>`).join(", ")}</div>`:""):""}</section>`;
+    }).join("");
+    body=body?`<div class="v22-dgrid">${body}</div>`:`<div class="empty"><strong>Nothing pending</strong>All items of this project are issued for the chosen filter.</div>`;
   }else if(TR.view==="section"){
     const m=new Map();for(const r of list){const k=r.section||"(No section)";if(!m.has(k))m.set(k,[]);m.get(k).push(r)}
     body=`<div class="v21-bm-card"><div class="v21-bm-table"><table><thead><tr><th>Plant section</th><th>Items</th><th>Status</th><th>Pending by design</th></tr></thead><tbody>${[...m.entries()].sort((x,y)=>x[0].localeCompare(y[0],undefined,{numeric:true})).map(([s,l])=>{const cs=countBy(l),byD=new Map();for(const r of l){if(r.st==="done")continue;const k=String(r.design.id);if(!byD.has(k))byD.set(k,{d:r.design,n:0});byD.get(k).n++}
@@ -10246,7 +10284,7 @@ function trackerHtml(){
     };
     body=lines.length?`<div class="v21-bm-card"><div class="v21-bm-table v22-mx"><table><thead><tr><th class="v22-stick">Tag</th><th>Equipment</th><th>Section</th>${cols.map(g=>`<th title="${esc(g.drawing.name)} (${esc(modeLabel(g.mode))})">${esc(g.drawing.short||g.drawing.name)}</th>`).join("")}</tr></thead><tbody>${lines.slice(0,600).map(({x,cells})=>`<tr><td class="v22-stick"><b>${esc(x.tag)}</b></td><td>${esc(x.name||"")}</td><td>${esc([x.plantSection,x.plantSectionType].filter(Boolean).join(" › "))}</td>${cells.map(c=>`<td>${cellHtml(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
       <div class="tiny muted" style="padding:6px 12px">${lines.length>600?"First 600 tags shown - use the filters. ":""}Faded = the design is assigned per section / whole project, so the tag follows that item. 2/4 = items issued out of items for this tag (e.g. PDS types). · = not needed for this design.</div></div>`
-      :`<div class="empty"><strong>${tags.length?"Nothing pending for these tags":"No tags"}</strong>${tags.length?"Untick “Pending only” to see all tags.":"This project has no tags in the Equipment Master (or it is still loading)."}</div>`;
+      :`<div class="empty"><strong>${tags.length?"Nothing pending for these tags":"No tags"}</strong>${tags.length?"Only pending items are shown.":"This project has no tags in the Equipment Master (or it is still loading)."}</div>`;
   }
   const dopts=rep.map(g=>`<option value="${esc(String(g.drawing.id))}" ${TR.des===String(g.drawing.id)?"selected":""}>${esc(g.drawing.short?g.drawing.short+" — ":"")}${esc(g.drawing.name)}</option>`).join("");
   return `<div class="v22-trk">
@@ -10254,11 +10292,10 @@ function trackerHtml(){
      <div class="actions"><button class="btn" data-v22-trk-xls>⬇ Excel</button><button class="btn" data-v22-trk-reload>↻ Refresh</button></div></div>
    ${TR.loading?`<div class="notice" style="margin-bottom:8px"><span class="v21-dot spin"></span> Reading Equipment and PD Sheet for this project… numbers update in a moment.</div>`:""}
    ${TR.err?`<div class="notice warn" style="margin-bottom:8px">Could not read all data: ${esc(TR.err)}</div>`:""}
-   <div class="v22-kpis">${kpi(rep.length,"Designs")}${kpi(tot,"Items needed")}${kpi(pend,"Pending","bad")}${kpi(c.na||0,"Not assigned","",`na`)}${kpi((c.todo||0)+(c.work||0)+(c.ret||0),"Working / not started","",`work`)}${kpi((c.check||0)+(c.toissue||0),"In check / to issue","",`check`)}${kpi(c.done||0,"Issued","good","done")}
-     <div class="v22-kbar">${segBar(c,tot)}<div class="v21-sub">${tot?Math.round((c.done||0)*100/tot):0}% issued</div></div></div>
+   <div class="v22-kpis v22-kpis9">${kpi(pend,"Pending (all)","bad","all")}${kpi(c.na||0,"Not assigned","",`na`)}${kpi(c.todo||0,"Not started","",`todo`)}${kpi((c.work||0)+(c.ret||0),"Started / working","",`work`)}${kpi(c.check||0,"In check","",`check`)}${kpi(c.toissue||0,"To issue","",`toissue`)}</div>
    <div class="v22-trk-tools">
      <div class="v21-ws" style="margin:0"><button type="button" class="${TR.view==="design"?"on":""}" data-v22-trk-view="design">By design</button><button type="button" class="${TR.view==="section"?"on":""}" data-v22-trk-view="section">By section</button><button type="button" class="${TR.view==="tag"?"on":""}" data-v22-trk-view="tag">By tag</button></div>
-     <label class="v22-tg"><input type="checkbox" data-v22-trk-pend ${TR.pend?"checked":""}> Pending only</label>
+     ${TR.st?`<button type="button" class="btn sm" data-v22-trk-st="all">✕ ${esc(({na:"Not assigned",todo:"Not started",work:"Started / working",check:"In check",toissue:"To issue"})[TR.st]||"")}</button>`:""}
      <select data-v22-trk-sec class="v21-sel"><option value="">All sections (${secs.length})</option>${secs.map(s=>`<option ${s===TR.sec?"selected":""}>${esc(s)}</option>`).join("")}</select>
      <select data-v22-trk-des class="v21-sel"><option value="">All designs (${rep.length})</option>${dopts}</select>
      <input class="input v21-q" id="v22TrkQ" placeholder="Search tag, equipment, section, person…" value="${esc(TR.q)}">
@@ -10284,7 +10321,7 @@ document.addEventListener("click",e=>{
   if((x=t.closest("[data-v22-trk-open]"))){e.preventDefault();const id=x.dataset.v22TrkOpen;if(TR.open.has(id))TR.open.delete(id);else TR.open.add(id);return trRedraw()}
   if(t.closest("[data-v22-trk-all]")){e.preventDefault();if(TR.open.size)TR.open.clear();else{try{for(const g of MEGA_SCOPE.report(S.projectWorkspace.code))TR.open.add(String(g.drawing.id))}catch(_){}}return trRedraw()}
   if((x=t.closest("[data-v22-trk-go]"))){e.preventDefault();TR.view="design";TR.des=x.dataset.v22TrkGo;TR.sec=x.dataset.sec||"";return trRedraw()}
-  if((x=t.closest("[data-v22-trk-st]"))){e.preventDefault();TR.view="design";TR.pend=x.dataset.v22TrkSt!=="done";if(x.dataset.v22TrkSt==="done"){TR.pend=false}TR.q="";return trRedraw()}
+  if((x=t.closest("[data-v22-trk-st]"))){e.preventDefault();const k=x.dataset.v22TrkSt;TR.st=(k==="all"||TR.st===k)?"":k;TR.pend=true;return trRedraw()}
   if(t.closest("[data-v22-trk-xls]")){e.preventDefault();e.stopImmediatePropagation();return trackerXls()}
   if(t.closest("[data-v22-trk-reload]")){e.preventDefault();e.stopImmediatePropagation();const c=String(S.projectWorkspace.code||"");TR.loadedFor="";return (typeof guarded==="function"?guarded:(f=>f()))(async()=>{busy("Refreshing project…");try{await ensureTrackingForProject(c,true);await ensureEquipmentForProject(c,true)}finally{idle()}trRedraw()})}
 },true);
@@ -10333,6 +10370,16 @@ try{const st=document.createElement("style");st.id="v22Styles";st.textContent=`
 .v22-trk-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}.v22-trk-tools .v21-sel{height:34px;min-width:170px}.v22-trk-tools .v21-q{height:34px;width:240px}
 .v22-tg{display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:700;border:1px solid #e4e7ec;border-radius:10px;padding:7px 10px;background:#fff}
 .v22-u{display:inline-block;font-size:10px;font-weight:800;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.v22-dgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.v22-dcard{border:1px solid #e4e7ec;border-radius:12px;background:#fff;overflow:hidden;min-width:0}.v22-dcard.open{grid-column:1/-1}
+.v22-dcard-h{padding:10px 12px;display:grid;gap:6px}.v22-dcard-h:hover{background:#fafbfc}
+.v22-dcard-t{display:flex;align-items:center;gap:6px;min-width:0}.v22-dcard-t b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.v22-dcard-n{background:#fef3f2;color:#b42318;font-weight:900;font-size:12px;border-radius:999px;padding:2px 9px}
+.v22-dcard-s{font-size:11px;color:#667085;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v22-dcard-s em{color:#b54708;font-style:normal}
+.v22-dcard-c{display:flex;gap:4px;flex-wrap:wrap}.v22-dcard .v21-bar{width:100%;max-width:none;margin:0;padding:0}.v22-dcard-c .v22-u{font-size:10px}
+.v22-kpis9{grid-template-columns:repeat(6,minmax(0,1fr))!important}.v22-k.on{outline:2px solid #c42770;outline-offset:-2px}
+@media(max-width:1100px){.v22-dgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.v22-kpis9{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
+@media(max-width:700px){.v22-dgrid{grid-template-columns:1fr}.v22-kpis9{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
 .v22-dh{cursor:pointer}.v22-caret{font-size:14px;color:#667085;width:14px}.v22-dh em{color:#b54708;font-style:normal}
 .v22-dchip{border:1px solid #e4e7ec;background:#fff;border-radius:999px;padding:3px 9px;margin:2px;font:inherit;font-size:11px;cursor:pointer}.v22-dchip b{color:#d03b3b}
 .v22-mx table{min-width:0}.v22-mx td,.v22-mx th{text-align:center;white-space:nowrap}.v22-mx td:nth-child(2),.v22-mx td:nth-child(3),.v22-mx td:first-child,.v22-mx th:first-child{text-align:left}
@@ -10341,7 +10388,128 @@ try{const st=document.createElement("style");st.id="v22Styles";st.textContent=`
 @media(max-width:1100px){.v22-trk .v22-kpis{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:900px){.v22-bar,.v22-people{grid-template-columns:1fr 1fr}}`;document.head.appendChild(st)}catch(e){log("styles",e)}
 
-window.MEGA_V22={build:BUILD,stepOf,allowed,toCheckRows,returnedToMe,familyFiles,canUpload,canView,exportRows,remind,isSelfRoot,ownerOf,isOwner,isChecker,isAssigner,waitingFor,popupCheck,dataCheck,accessCheck};
+/* ---------- 15. FILES TAB: checker + issuer at upload, comments (V22.9) ----------
+   1) Above "Upload": Checker * and Final checker / issuer * (can be the same
+      person). They are saved on the task before the files are uploaded.
+      Only the checker can check, only the issuer can issue.
+   2) "Comments on files": anybody on the task (checker, issuer, assigner,
+      owner) writes a comment, can attach up to 10 files (e.g. marked-up
+      PDF / Excel) and sends it to the owner (or another person of the task).
+      The person gets an email and a pop-up, the files appear in the Files
+      list with "by <name>", and the comment is kept in the task history.
+      Tick "Return for correction" to also send the task back (R+1). */
+const CM={sel:[],busy:false};
+function rolePickHtml(a){
+  const ck=sc(a[AF.checker]),is=sc(a[AF.approver])||roleFromLog(a,"issuer");
+  let o1="",o2="";try{o1=employeeOptions(person(ck).email||ck,"Select checker…");o2=employeeOptions(person(is).email||is,"Select final checker / issuer…")}catch(_){}
+  return `<div class="v22-roles"><div class="field"><label>Checker *</label><select id="v22UpChecker">${o1}</select></div>
+    <div class="field"><label>Final checker / issuer *</label><select id="v22UpIssuer">${o2}</select></div>
+    <div class="tiny muted">Choose both before uploading (they can be the same person). Only the checker can check and only the issuer can issue.</div></div>`;
+}
+function commentsHtml(a){
+  const list=comments(a).slice().reverse();
+  const own=ownerOf(a),me=actor();
+  const ppl=[];const addP=(v,role)=>{const p=person(v);if(!p.name&&!p.email)return;if(ppl.some(x=>low(x.email||x.name)===low(p.email||p.name)))return;ppl.push({...p,role})};
+  addP(a[AF.assignedTo]||a[AF.assignedEmployeeName],"owner");addP(checkerVal(a),"checker");addP(issuerVal(a),"issuer");addP(a[AF.assignedBy],"assigned by");
+  const def=ppl.find(p=>!(me&&(low(p.email)===low(me.email)||low(p.name)===low(me.name))))||ppl[0]||{};
+  const canRet=allowed(a).includes("return");
+  return `<div class="v22-cm">
+    <div class="section-row" style="margin:14px 0 6px"><div><h2>💬 Comments on files</h2><p>Found a problem in a file? Write it here, attach the marked-up file and send it to ${esc(own)}. They get an email and a pop-up.</p></div></div>
+    ${me?`<div class="v22-cm-box">
+      <textarea id="v22CmText" placeholder="What must be corrected? e.g. Sheet 2: nozzle N3 size wrong, see marked PDF"></textarea>
+      <div class="v22-cm-row">
+        <label class="btn sm" for="v22CmFiles">📎 Attach files${CM.sel.length?` (${CM.sel.length})`:""}</label><input type="file" id="v22CmFiles" multiple style="display:none">
+        ${CM.sel.length?`<span class="tiny muted">${CM.sel.map(f=>esc(f.name)).join(", ")} <a class="v22-link" data-v22-cm-clear>clear</a></span>`:""}
+        <span style="flex:1"></span>
+        <label class="tiny">Send to <select id="v22CmTo">${ppl.map(p=>`<option value="${esc(p.email||p.name)}" ${p===def?"selected":""}>${esc(p.name||p.email)} (${esc(p.role)})</option>`).join("")}</select></label>
+        ${canRet?`<label class="v22-tg tiny"><input type="checkbox" id="v22CmRet"> Return for correction (${esc(rev(a))} → ${esc(nextRev(rev(a)))})</label>`:""}
+        <button type="button" class="btn primary sm" data-v22-cm-send="${esc(idOf(a))}" ${CM.busy?"disabled":""}>${CM.busy?"Sending…":"Send comment"}</button>
+      </div></div>`:`<div class="notice">Choose your name ('Working as') to write a comment.</div>`}
+    <div class="v22-cm-list">${list.length?list.slice(0,40).map(c=>`<div class="v22-cm-item"><div><b>${esc(c.by||"")}</b> → ${esc(person(c.to).name||c.to||"")} <span class="tiny muted">${c.time?esc(new Date(c.time).toLocaleString()):""} • ${esc(c.rev||"")}${c.returned?" • returned":""}</span></div><div>${esc(String(c.detail||"").replace(/\s+—\s+by\s+.*$/,""))}</div>${(c.files||[]).length?`<div class="tiny muted">📎 ${c.files.map(esc).join(", ")}</div>`:""}</div>`).join(""):`<div class="tiny muted">No comments yet.</div>`}</div>
+  </div>`;
+}
+patch("renderDetailTab",()=>renderDetailTab,f=>{renderDetailTab=f},base=>function(){
+  let html=base.apply(this,arguments);
+  try{
+    if(S.detailTab==="taskfiles"&&S.current){
+      const a=S.current;
+      if(/class="v21-tf-drop"/.test(html))html=html.replace(/(<label class="v21-tf-drop"[\s\S]*?<\/label>)/,`${rolePickHtml(a)}$1`);
+      html=html.replace(/<\/div>\s*$/,"")+commentsHtml(a)+"</div>";
+    }
+  }catch(e){log("files tab",e)}
+  return html;
+});
+function filesRedraw(){try{renderView()}catch(_){}}
+// the V21 Files tab redraws itself (after choosing / removing files) without the code above - put the boxes back
+try{new MutationObserver(()=>{try{
+  const box=document.querySelector("#page .v21-tf");if(!box||!S.current||S.detailTab!=="taskfiles")return;
+  const drop=box.querySelector("label.v21-tf-drop");
+  if(drop&&!box.querySelector(".v22-roles")){const ck=el("v22UpChecker")?null:null;drop.insertAdjacentHTML("beforebegin",rolePickHtml(S.current))}
+  if(!box.querySelector(".v22-cm"))box.insertAdjacentHTML("beforeend",commentsHtml(S.current));
+}catch(_){}}).observe(document.body,{childList:true,subtree:true})}catch(_){}
+async function uploadWithFallback(id,file){
+  const fields=(FSET().FIELDS||[AF.supportingFile,AF.drawingFile,AF.nativeFile]);let last;
+  for(const f of fields){try{return await uploadFile(id,f,file)}catch(e){last=e;if(!/field|invalid|not found|exist/i.test(errorText(e)))throw e}}
+  throw last;
+}
+async function sendComment(id){
+  const a=assignmentById(id);if(!a)throw rule("Task not found. Click Refresh.");
+  const me=actor();if(!me)throw rule("Choose your name first: click 'Working as' at the top.");
+  const text=sc(el("v22CmText")&&el("v22CmText").value).trim();if(!text)throw rule("Write the comment first.");
+  const to=sc(el("v22CmTo")&&el("v22CmTo").value)||sc(a[AF.assignedTo]);
+  const ret=!!(el("v22CmRet")&&el("v22CmRet").checked);
+  if(ret&&!allowed(a).includes("return"))throw rule("Only the checker or the issuer can return this task now.");
+  const files=CM.sel.slice(0,Number(FSET().MAX_FILES_PER_UPLOAD)||10);
+  CM.busy=true;filesRedraw();
+  const sent=[],failed=[];
+  try{
+    for(const f of files){
+      say(`Uploading ${f.name}…`,"good");
+      try{await uploadWithFallback(id,f);sent.push(f.name)}catch(e){failed.push(f.name);window.MEGA_ERR&&MEGA_ERR.add("error",`Comment file not uploaded: ${f.name}`,errorText(e))}
+    }
+    if(sent.length&&!S.demo){try{const fresh=await getTrackingRecordById(id);if(fresh)Object.assign(a,fresh)}catch(e){log("refresh",e)}}
+    const p=person(to),old=rev(a),nr=nextRev(old);
+    const data=ret?{[AF.status]:"Returned",[AF.progress]:50,[AF.returnReason]:text,[AF.revision]:nr}:{};
+    const line=`<b>${esc(me.name)}</b> wrote a comment on the files of this task${ret?` and <b>returned ${esc(old)} for correction</b> (correct it as <b>${esc(nr)}</b>)`:""}:<br><br><div style="border-left:3px solid #c42770;padding:6px 10px;background:#fdf2f8">${esc(text)}</div>${sent.length?`<br>📎 Files attached (open the task → Files): <b>${sent.map(esc).join(", ")}</b>`:""}`;
+    const mails=[{to:p.email||to,subject:subj({...a,...data},`${ret?"Returned with comment":"Comment"} from ${me.name}`),html:mailHtml({...a,...data},ret?"Returned with comment":"Comment on your files",line,p)}];
+    CM.sel=[];
+    await save(a,data,ret?"Returned":"Comment",text,mails,{kind:ret?"flow":"comment",by:me.name,to:p.email||to,files:sent,returned:ret,...(ret?{}:{})});
+    if(ret){   // keep it in the comment list too
+      try{const d2=withActivity(a,{},"Comment",text,{kind:"comment",by:me.name,to:p.email||to,files:sent,returned:true,rev:old});await updateRecord(String(idOf(a)),d2);Object.assign(a,d2)}catch(e){log("comment log",e)}
+    }
+    say(`Comment sent to ${p.name||to}${sent.length?` with ${sent.length} file(s)`:""}${failed.length?` • not uploaded: ${failed.join(", ")}`:""}.`,failed.length?"warn":"good");
+  }finally{CM.busy=false;filesRedraw()}
+}
+// clicks: send comment / clear files; Upload button: checker + issuer first
+window.addEventListener("click",e=>{
+  const t=e.target;if(!t||!t.closest)return;let x;
+  if((x=t.closest("[data-v22-cm-send]"))){e.preventDefault();e.stopImmediatePropagation();const keep=sc(el("v22CmText")&&el("v22CmText").value);return (typeof guarded==="function"?guarded:(f=>f()))(()=>sendComment(x.dataset.v22CmSend)).then(()=>{})}
+  if(t.closest("[data-v22-cm-clear]")){e.preventDefault();CM.sel=[];return filesRedraw()}
+  if((x=t.closest("[data-v21-tf-upload]"))&&!x.dataset.v22ok){
+    const a=S.current;if(!a)return;
+    const ck=sc(el("v22UpChecker")&&el("v22UpChecker").value),is=sc(el("v22UpIssuer")&&el("v22UpIssuer").value);
+    if(!el("v22UpChecker")&&!document.querySelector("label.v21-tf-drop"))return;   // no upload box -> nothing to do
+    e.preventDefault();e.stopImmediatePropagation();
+    if(!ck||!is)return say("Choose the Checker and the Final checker / issuer before uploading (they can be the same person).","warn");
+    const pc=person(ck),pi=person(is),data={};
+    if(low(person(sc(a[AF.checker])).email||sc(a[AF.checker]))!==low(pc.email||ck))data[AF.checker]=pc.email||ck;
+    if(low(person(issuerVal(a)).email||issuerVal(a))!==low(pi.email||is)||!sc(a[AF.approver]))data[AF.approver]=pi.email||is;
+    const go=()=>{try{const b=document.querySelector("[data-v21-tf-upload]");if(b){b.dataset.v22ok="1";b.click();delete b.dataset.v22ok}}catch(err){log("upload go",err)}};
+    if(!Object.keys(data).length)return go();
+    const me=actor();
+    return save(a,data,"Checker / issuer set",`checker ${pc.name}, issuer ${pi.name}`,[],{checker:pc.email||ck,issuer:pi.email||is}).then(()=>setTimeout(go,50));
+  }
+},true);
+document.addEventListener("change",e=>{const t=e.target;if(t&&t.id==="v22CmFiles"){const text=sc(el("v22CmText")&&el("v22CmText").value);const max=Number(FSET().MAX_FILES_PER_UPLOAD)||10;CM.sel=CM.sel.concat([...(t.files||[])]).slice(0,max);filesRedraw();const n=el("v22CmText");if(n)n.value=text}},true);
+try{const st=document.createElement("style");st.textContent=`
+.v22-roles{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end;margin:4px 0 10px;padding:10px;border:1px solid #f3d1e2;background:#fff7fb;border-radius:12px}.v22-roles .tiny{grid-column:1/-1}
+.v22-cm-box{border:1px solid #e4e7ec;border-radius:12px;padding:10px;display:grid;gap:8px}.v22-cm-box textarea{min-height:70px;width:100%;box-sizing:border-box}
+.v22-cm-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.v22-cm-row select{height:30px}
+.v22-cm-list{display:grid;gap:6px;margin-top:10px}.v22-cm-item{border:1px solid #eaecf0;border-left:3px solid #c42770;border-radius:9px;padding:8px 10px;font-size:12px;display:grid;gap:3px;background:#fff}
+@media(max-width:700px){.v22-roles{grid-template-columns:1fr}}
+`;document.head.appendChild(st)}catch(_){}
+
+window.MEGA_V22={build:BUILD,stepOf,allowed,toCheckRows,returnedToMe,familyFiles,canUpload,canView,exportRows,remind,isSelfRoot,ownerOf,isOwner,isChecker,isAssigner,waitingFor,popupCheck,dataCheck,accessCheck,issuerVal,isIssuer,sendComment};
 // first pop-up after the start-up data is in
 setTimeout(()=>{try{popupCheck(false)}catch(_){}},12000);
 try{const bd=el("buildBadge");if(bd)bd.textContent=BUILD;document.title=`MEGA Engineering | Project Design Control ${BUILD}`}catch(_){}
