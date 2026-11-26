@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.6
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.7
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V22.6".
+   3. Paste this whole file and save. The badge at the top shows "V22.7".
 
  >>> ALL SETTINGS ARE IN ONE PLACE: the "MEGA SETTINGS" block, the first
      SCRIPT below (report names, projects list, waiting times, speed,
@@ -115,6 +115,10 @@
                       Run needed vs. what this login has, live test and
                       "Copy list for admin". A refused access is reported
                       at once in the error report.
+                      V22.7: fast files - download / open without blocking
+                      the screen, one Zoho call per file, kept in memory
+                      (2nd click instant), no double download on slow lines,
+                      priority lane for files, saved exactly as stored.
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -134,7 +138,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V22.6</title>
+<title>MEGA Engineering | Project Design Control V22.7</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -360,7 +364,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.6</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.7</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -481,6 +485,8 @@ var MEGA_SETTINGS={
   /* ---------- 8. Files (one Files tab on every task) ---------- */
   FILES:{
     MAX_FILES_PER_UPLOAD:10,     // how many files can be uploaded at one time
+    DOWNLOAD_TIMEOUT_SEC:300,    // V22.7: big CAD / PDF files get up to 5 minutes (no second download on a slow line)
+    KEEP_IN_MEMORY_MB:200,       // V22.7: opened / downloaded files are kept in memory - the 2nd click is instant
     FIELDS:["Supporting_File","Drawing_File","Native_File"]   // Design_Tracking file fields, tried in this order
   },
 
@@ -503,7 +509,7 @@ var MEGA_SETTINGS={
     var K="MEGA_ERRLOG",MAX=(MEGA_SETTINGS.ERRORS&&MEGA_SETTINGS.ERRORS.KEEP)||60;
     var R=window.MEGA_ERR={list:[],api:[],seen:0,listeners:[]};
     // V22.5: errors saved by an OLDER version are not shown again after an update (they were already fixed)
-    var BUILD_ID="V22.6";
+    var BUILD_ID="V22.7";
     try{var old=JSON.parse(localStorage.getItem(K)||"[]");if(Array.isArray(old))R.list=old.filter(function(x){return x&&x.build===BUILD_ID}).slice(-MAX);if(Array.isArray(old)&&old.length!==R.list.length){localStorage.setItem(K,JSON.stringify(R.list));localStorage.setItem(K+"_SEEN",String(R.list.length))}}catch(_){}
     try{R.seen=Number(localStorage.getItem(K+"_SEEN")||R.list.length)||0}catch(_){}
     function txt(x){
@@ -565,11 +571,12 @@ var MEGA_SETTINGS={
     G.recentLimit=function(ms){return Date.now()-G.lastLimit<(ms||120000)};
     G.busy=function(){return Date.now()<G.coolUntil||G.waiting>0};
     // saves (writes) do not wait for the per-minute budget - only for a Zoho pause - so your clicks are never held back
-    function wait(write){var now=Date.now();G.win=G.win.filter(function(t){return now-t<60000});
+    function wait(write,prio){var now=Date.now();G.win=G.win.filter(function(t){return now-t<60000});
       if(now<G.coolUntil)return G.coolUntil-now;
+      if(prio)return 0;   // V22.7: file download / upload never waits behind background reads
       if(!write&&G.win.length>=G.max)return 60000-(now-G.win[0])+100;
       if(G.active>=G.conc+(write?2:0))return 120;return 0}
-    async function acquire(write){G.waiting++;try{for(;;){var w=wait(write);if(!w)break;bar();await sleep(Math.min(w,1000))}}finally{G.waiting--}G.win.push(Date.now());G.active++;G.calls++}
+    async function acquire(write,prio){G.waiting++;try{for(;;){var w=wait(write,prio);if(!w)break;bar();await sleep(Math.min(w,1000))}}finally{G.waiting--}G.win.push(Date.now());G.active++;G.calls++}
     function release(){G.active=Math.max(0,G.active-1);bar()}
     function limitHit(e){
       // two kinds of Zoho limit (both code 2955):
@@ -625,7 +632,7 @@ var MEGA_SETTINGS={
             if(G.flight.has(key)){G.saved++;return G.flight.get(key).then(function(v){return JSON.parse(JSON.stringify(v))})}}}
         var run=(async function(){
           for(var attempt=0;attempt<4;attempt++){
-            await acquire(!isRead);
+            await acquire(!isRead,name==="readFile"||name==="uploadFile");
             try{
               var r=await fn.apply(self,args);
               if(r&&(Number(r.code)===2955)){limitHit(r);continue}
@@ -9431,7 +9438,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V22(){
 "use strict";
-const BUILD="V22.6";
+const BUILD="V22.7";
 const log=(...a)=>{try{console.warn("[V22]",...a)}catch(_){}};
 const say=(m,t="warn")=>{try{toast(m,t)}catch(_){}};
 const sc=v=>{try{return String(scalar(v)??"")}catch(_){return v==null?"":String(v)}};
@@ -9817,18 +9824,85 @@ function familyFiles(a){
   return out;
 }
 const canUpload=a=>!!a&&!!actor()&&(isOwner(a)||isChecker(a)||isAssigner(a)||isAdmin());
-const canView=n=>/\.(pdf|png|jpe?g|gif|webp|bmp|svg|txt|csv)$/i.test(String(n||""));
+const canView=n=>/\.(pdf|png|jpe?g|gif|webp|bmp|svg|txt|csv|log|json|xml|mp4|webm|mp3|wav)$/i.test(String(n||""));
+/* ---------- 7b. FAST FILES (V22.7) ----------
+   - Download / open does NOT block the screen: a small box (bottom-right)
+     shows "Downloading … 12 s" and you can keep working.
+   - One file = one Zoho call: a second click while it is coming is joined
+     to the same download; after it came, it is kept in memory
+     (FILES.KEEP_IN_MEMORY_MB) so opening / downloading it again is instant.
+   - No automatic re-download on a slow line (that doubled the load); big
+     files get FILES.DOWNLOAD_TIMEOUT_SEC.
+   - File calls have a priority lane in the API guard (never wait behind
+     background reads).
+   - The file is saved exactly as stored: same bytes, same name, same type
+     (PDF, XLSX, DWG, ZIP …). PDF / images / text / video open in the viewer. */
+const FC={map:new Map(),flight:new Map(),bytes:0,active:new Map()};
+const fcMax=()=>Math.max(20,Number(MEGA_SETTINGS&&MEGA_SETTINGS.FILES&&MEGA_SETTINGS.FILES.KEEP_IN_MEMORY_MB)||200)*1048576;
+const fcTimeout=()=>Math.max(60,Number(MEGA_SETTINGS&&MEGA_SETTINGS.FILES&&MEGA_SETTINGS.FILES.DOWNLOAD_TIMEOUT_SEC)||300)*1000;
+function fcPut(k,b){
+  try{if(b.size>fcMax()/2)return;if(FC.map.has(k)){FC.bytes-=FC.map.get(k).size;FC.map.delete(k)}
+    FC.map.set(k,b);FC.bytes+=b.size;
+    while(FC.bytes>fcMax()&&FC.map.size){const o=FC.map.keys().next().value;FC.bytes-=FC.map.get(o).size;FC.map.delete(o)}}catch(_){}
+}
+function dlBox(){
+  try{
+    let b=document.getElementById("megaDlBox");
+    if(!FC.active.size){if(b)b.remove();if(FC.tick){clearInterval(FC.tick);FC.tick=null}return}
+    if(!b){b=document.createElement("div");b.id="megaDlBox";document.body.appendChild(b)}
+    b.innerHTML=[...FC.active.values()].map(x=>`<div><span class="v21-dot spin"></span> ${x.open?"Opening":"Downloading"} <b>${esc(x.name)}</b> <span>${Math.round((Date.now()-x.at)/1000)} s</span></div>`).join("");
+    if(!FC.tick)FC.tick=setInterval(dlBox,1000);
+  }catch(_){}
+}
+async function fileBlob(id,field,path,name,open){
+  const fp=extractCreatorFilePath(path);if(!fp)throw new Error("This file has no Zoho file path - upload it again.");
+  const k=`${id}|${field}|${fp}`;
+  if(FC.map.has(k)){const b=FC.map.get(k);FC.map.delete(k);FC.map.set(k,b);return b}   // instant (kept in memory)
+  if(FC.flight.has(k))return FC.flight.get(k);                                           // already coming - join it
+  if(S.demo)throw new Error("File download is unavailable in demo mode.");
+  const job=(async()=>{
+    FC.active.set(k,{name,at:Date.now(),open:!!open});dlBox();
+    const t0=Date.now();
+    try{
+      const res=await withTimeout(()=>ZOHO.CREATOR.FILE.readFile(withApp({report_name:CONFIG.REPORTS.tracking,id:String(id),field_name:field,file_path:fp})),fcTimeout(),`Download ${name}`);
+      let b=await creatorFileResponseToBlob(res,name);
+      if(!b||!b.size)throw new Error("Zoho returned an empty file.");
+      const mime=mimeTypeForFile(name);if(mime&&b.type!==mime)b=new Blob([b],{type:mime});   // same bytes, correct type
+      fcPut(k,b);
+      try{setHealth&&setHealth(`file-read:${field}`,(Date.now()-t0)>=CONFIG.SLOW_REQUEST_MS?"slow":"ok",{label:`Download ${field}`,ms:Date.now()-t0,error:""})}catch(_){}
+      return b;
+    }finally{FC.active.delete(k);dlBox()}
+  })();
+  FC.flight.set(k,job);job.then(()=>FC.flight.delete(k),()=>FC.flight.delete(k));
+  return job;
+}
+function saveBlob(blob,name){
+  const url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download=safeFileName(name,"download");a.style.display="none";document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+// every "Download" button in the widget (Files tab, revisions, documents) uses the fast path
+patch("downloadRevisionFile",()=>downloadRevisionFile,f=>{downloadRevisionFile=f},base=>async function(id,field,path,name){
+  name=safeFileName(name,"download");
+  try{const b=await fileBlob(id,field,path,name,false);saveBlob(b,name);say(`${name} downloaded (${fmtSize(b.size)}).`,"good")}
+  catch(e){try{MEGA_ERR.add("error",`Download ${name}: ${errorText(e)}`,"file")}catch(_){}say(`${name} could not be downloaded: ${errorText(e)}`,"bad")}
+});
+const fmtSize=n=>n>=1048576?(n/1048576).toFixed(1)+" MB":Math.max(1,Math.round(n/1024))+" KB";
 async function preview(id,field,path,name){
-  busy(`Opening ${name}…`);let url="",blob=null;
-  try{const res=await readFile(id,field,path);blob=await creatorFileResponseToBlob(res,name);const typed=new Blob([blob],{type:mimeTypeForFile(name)});url=URL.createObjectURL(typed)}
-  finally{idle()}
+  let blob;
+  try{blob=await fileBlob(id,field,path,name,true)}
+  catch(e){try{MEGA_ERR.add("error",`Open ${name}: ${errorText(e)}`,"file")}catch(_){}return say(`${name} could not be opened: ${errorText(e)}`,"bad")}
+  const url=URL.createObjectURL(blob);setTimeout(()=>URL.revokeObjectURL(url),30*60000);
   let body="";
   if(/\.pdf$/i.test(name))body=`<iframe class="v22-view" src="${url}"></iframe>`;
-  else if(/\.(txt|csv)$/i.test(name)){let t="";try{t=await blob.text()}catch(_){}body=`<pre class="v22-view txt">${esc(t.slice(0,200000))}</pre>`}
+  else if(/\.(txt|csv|log|json|xml)$/i.test(name)){let t="";try{t=await blob.text()}catch(_){}body=`<pre class="v22-view txt">${esc(t.slice(0,200000))}</pre>`}
+  else if(/\.(mp4|webm)$/i.test(name))body=`<div class="v22-view img"><video src="${url}" controls style="max-width:100%;max-height:70vh"></video></div>`;
+  else if(/\.(mp3|wav)$/i.test(name))body=`<div class="v22-view img" style="min-height:120px"><audio src="${url}" controls></audio></div>`;
   else body=`<div class="v22-view img"><img src="${url}" alt="${esc(name)}"></div>`;
-  openModal(name,"Viewer",body,`<a class="btn" href="${url}" target="_blank" rel="noopener">Open in new tab</a><a class="btn primary" href="${url}" download="${esc(name)}">⬇ Download</a><button class="btn" data-modal="close">Close</button>`);
+  openModal(name,`Viewer • ${fmtSize(blob.size)}`,body,`<a class="btn" href="${url}" target="_blank" rel="noopener">Open in new tab</a><a class="btn primary" href="${url}" download="${esc(name)}">⬇ Download</a><button class="btn" data-modal="close">Close</button>`);
   try{document.querySelector("#modalBackdrop .modal")?.classList.add("v218-wide")}catch(_){}
 }
+try{const st=document.createElement("style");st.textContent=`#megaDlBox{position:fixed;right:14px;bottom:14px;z-index:210;background:#fff;border:1px solid #d6e4fb;border-radius:12px;padding:9px 12px;box-shadow:0 6px 20px rgba(16,24,40,.15);font:12px Arial,sans-serif;color:#1d3a6b;display:grid;gap:6px;max-width:360px}#megaDlBox div{display:flex;align-items:center;gap:7px}#megaDlBox b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}#megaDlBox span:last-child{margin-left:auto;color:#667085}`;document.head.appendChild(st)}catch(_){}
 
 /* ---------- 8. Remind ---------- */
 const remindK=id=>`MEGA_V22_REMIND::${id}`;
