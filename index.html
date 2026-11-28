@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.12
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.13
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V22.12".
+   3. Paste this whole file and save. The badge at the top shows "V22.13".
 
  >>> ALL SETTINGS ARE IN ONE PLACE: the "MEGA SETTINGS" block, the first
      SCRIPT below (report names, projects list, waiting times, speed,
@@ -144,6 +144,9 @@
                       fields (Record_Type, Record_Purpose, Current_Step,
                       Waiting_For, Last_Action, Project_Name, Checker_Name,
                       Issuer_Name) written on every save when they exist.
+                      V22.13: saved copies packed ~6x smaller (15 big projects
+                      instead of 2-3, instant open); long tracker tables show
+                      150 rows + "Show all"; ⚙ Settings → Speed test.
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -163,7 +166,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V22.12</title>
+<title>MEGA Engineering | Project Design Control V22.13</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -389,7 +392,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.12</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.13</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -463,8 +466,8 @@ var MEGA_SETTINGS={
   SPEED:{
     PROJECT_ONLY_READS:true,     // read Equipment / PD Sheet only for the open project (full read = backup)
     SAVED_COPY_HOURS:72,         // saved Equipment / PD Sheet copy is used for this long, then read again
-    SAVED_COPY_PROJECTS:6,       // how many projects are kept on this computer
-    SAVED_COPY_MAX_KB:1500,      // one project bigger than this is not saved (browser space is small)
+    SAVED_COPY_PROJECTS:15,      // how many projects are kept on this computer (V22.13: copies are packed ~6x smaller)
+    SAVED_COPY_MAX_KB:12000,     // one project bigger than this (before packing) is not saved
     MAX_PARALLEL_CALLS:2,        // calls sent to Zoho at the same time from one browser (Zoho also limits this per login)
     MAX_CALLS_PER_MINUTE:40,     // Zoho API calls per minute from ONE browser (the login has a per-minute limit;
                                  // with several people on the same login keep this low, e.g. 20-30)
@@ -541,7 +544,7 @@ var MEGA_SETTINGS={
     var K="MEGA_ERRLOG",MAX=(MEGA_SETTINGS.ERRORS&&MEGA_SETTINGS.ERRORS.KEEP)||60;
     var R=window.MEGA_ERR={list:[],api:[],seen:0,listeners:[]};
     // V22.5: errors saved by an OLDER version are not shown again after an update (they were already fixed)
-    var BUILD_ID="V22.12";
+    var BUILD_ID="V22.13";
     try{var old=JSON.parse(localStorage.getItem(K)||"[]");if(Array.isArray(old))R.list=old.filter(function(x){return x&&x.build===BUILD_ID}).slice(-MAX);if(Array.isArray(old)&&old.length!==R.list.length){localStorage.setItem(K,JSON.stringify(R.list));localStorage.setItem(K+"_SEEN",String(R.list.length))}}catch(_){}
     try{R.seen=Number(localStorage.getItem(K+"_SEEN")||R.list.length)||0}catch(_){}
     function txt(x){
@@ -576,6 +579,73 @@ var MEGA_SETTINGS={
     var ce=console.error,cw=console.warn;
     console.error=function(){try{R.add("error",[].map.call(arguments,txt).join(" "),"console.error")}catch(_){}return ce.apply(console,arguments)};
     console.warn=function(){try{var a=[].map.call(arguments,txt).join(" ");if(/^\[V2\d/.test(a)&&!/ loaded$/.test(a))R.add("api",a,"console.warn")}catch(_){}return cw.apply(console,arguments)};
+  }catch(_){}
+})();
+
+/* ======================================================================
+   V22.13 PACKED SAVED COPIES - 6x more data on this computer
+   The browser keeps only about 5 MB per site. Saved copies of projects
+   (tasks, Equipment, PD Sheet) are packed (LZW, about 6x smaller) when they
+   are bigger than 20 KB, so about 15 big projects fit instead of 2-3, and a
+   project opens instantly from the copy. Unpacking takes milliseconds.
+   Only keys of this widget (MEGA_V21::…) are packed; nothing else changes.
+   ====================================================================== */
+/* MEGA compact storage: byte-LZW (16-bit codes) packed into 15-bit UTF-16 chars */
+var MEGA_LZ=(function(){
+  var MARK="\u0002MZ1|";
+  function compress(str){
+    var b=new TextEncoder().encode(str),n=b.length;if(!n)return MARK+"0|";
+    var dict=new Map(),next=257,CLEAR=256,out=[],acc=0,bits=0,count=0;
+    function emit(code){acc=(acc*65536)+code;bits+=16;count++;while(bits>=15){bits-=15;var v=Math.floor(acc/Math.pow(2,bits));acc-=v*Math.pow(2,bits);out.push(String.fromCharCode(v+256))}}
+    var w=b[0];
+    for(var i=1;i<n;i++){var c=b[i],k=w*256+c,g=dict.get(k);
+      if(g!==undefined){w=g;continue}
+      emit(w);
+      if(next<65536){dict.set(k,next++)}else{emit(CLEAR);dict.clear();next=257}
+      w=c;
+    }
+    emit(w);
+    if(bits>0){out.push(String.fromCharCode(acc*Math.pow(2,15-bits)+256))}
+    // join in chunks (large arrays)
+    var s="";for(var j=0;j<out.length;j+=8192)s+=out.slice(j,j+8192).join("");
+    return MARK+count+"|"+s;
+  }
+  function decompress(s){
+    if(s.indexOf(MARK)!==0)return s;
+    var p=s.indexOf("|",MARK.length),count=Number(s.slice(MARK.length,p)),data=s.slice(p+1);
+    if(!count)return "";
+    var pre=new Int32Array(65536),suf=new Uint8Array(65536),len=new Int32Array(65536);
+    for(var i=0;i<256;i++){pre[i]=-1;suf[i]=i;len[i]=1}
+    var outBuf=new Uint8Array(Math.max(1024,count*4)),o=0,next=257,prev=-1,acc=0,bits=0,ci=0,read=0;
+    function ensure(m){if(o+m>outBuf.length){var nb=new Uint8Array(Math.max(outBuf.length*2,o+m));nb.set(outBuf.subarray(0,o));outBuf=nb}}
+    function write(code){var L=len[code];ensure(L);var pos=o+L-1,c=code;while(c>=0&&pos>=o){outBuf[pos--]=suf[c];c=pre[c]}o+=L}
+    function first(code){var c=code;while(pre[c]>=0)c=pre[c];return suf[c]}
+    while(read<count){
+      while(bits<16){acc=acc*32768+(data.charCodeAt(ci++)-256);bits+=15}
+      bits-=16;var code=Math.floor(acc/Math.pow(2,bits));acc-=code*Math.pow(2,bits);read++;
+      if(code===256){next=257;prev=-1;continue}
+      if(prev<0){write(code);prev=code;continue}
+      var fc;
+      if(code<next){fc=first(code)}else{fc=first(prev)}
+      if(next<65536){pre[next]=prev;suf[next]=fc;len[next]=len[prev]+1;next++}
+      write(code);prev=code;
+    }
+    return new TextDecoder().decode(outBuf.subarray(0,o));
+  }
+  return {compress:compress,decompress:decompress,MARK:MARK};
+})();
+(function(){
+  try{
+    var P=Storage.prototype,get=P.getItem,set=P.setItem,MIN=20000;
+    P.setItem=function(k,v){
+      try{if(this===window.localStorage&&typeof k==="string"&&k.indexOf("MEGA_V21::")===0&&typeof v==="string"&&v.length>MIN&&v.indexOf(MEGA_LZ.MARK)!==0)v=MEGA_LZ.compress(v)}catch(_){}
+      return set.call(this,k,v);
+    };
+    P.getItem=function(k){
+      var v=get.call(this,k);
+      try{if(v&&typeof k==="string"&&k.indexOf("MEGA_V21::")===0&&v.indexOf(MEGA_LZ.MARK)===0)return MEGA_LZ.decompress(v)}catch(e){try{window.MEGA_ERR&&MEGA_ERR.add("api","Saved copy could not be unpacked - read from Zoho instead",String(k))}catch(_){}return null}
+      return v;
+    };
   }catch(_){}
 })();
 
@@ -9334,6 +9404,7 @@ patch("setupModal",()=>setupModal,f=>{setupModal=f;try{const b=el("setupBtn");if
         <button type="button" class="v21-set-row" data-v21-errors><span class="ic ${n?"bad":""}">⚠</span><span><b>Error report</b><small>${all?`${all} saved${n?` • <em>${n} new</em>`:""}`:"No errors"} — see the list and copy the report for the developer</small></span><span class="go">›</span></button>
         <button type="button" class="v21-set-row" data-v21-health-open><span class="ic">●</span><span><b>System Health</b><small>Connection, report reads, saved copies, speed &amp; safety</small></span><span class="go">›</span></button>
         <button type="button" class="v21-set-row" data-v22-access><span class="ic">🔑</span><span><b>Access check</b><small>Which reports and forms this login can View / Add / Edit, and what the admin must give</small></span><span class="go">›</span></button>
+        <button type="button" class="v21-set-row" data-v22-speed><span class="ic">⏱</span><span><b>Speed test</b><small>How long the open project takes to read from Zoho, how many calls, how much data, saved copies on this computer</small></span><span class="go">›</span></button>
         <button type="button" class="v21-set-row" data-v22-fill><span class="ic">✎</span><span><b>Data fill</b><small>Which Design_Tracking fields are empty in Zoho - and fill them from the masters (only empty fields)</small></span><span class="go">›</span></button>
         <button type="button" class="v21-set-row" data-v22-datacheck><span class="ic">✓</span><span><b>Data check</b><small>People without email, designs without Status, tags without Department / Category, tasks with missing data</small></span><span class="go">›</span></button>
         <button type="button" class="v21-set-row" data-v21-setup-old><span class="ic">⚙</span><span><b>Setup / field mapping</b><small>Design_Tracking fields used by the widget</small></span><span class="go">›</span></button>
@@ -9471,7 +9542,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V22(){
 "use strict";
-const BUILD="V22.12";
+const BUILD="V22.13";
 const log=(...a)=>{try{console.warn("[V22]",...a)}catch(_){}};
 const say=(m,t="warn")=>{try{toast(m,t)}catch(_){}};
 const sc=v=>{try{return String(scalar(v)??"")}catch(_){return v==null?"":String(v)}};
@@ -10204,7 +10275,7 @@ patch("renderView",()=>renderView,f=>{renderView=f},base=>function(){
    Accuracy: items come from the same lists as the Assign screen (Equipment
    Master / PD Sheet, BOM skip rules included) and tasks are matched with the
    same rule as the duplicate check. Tasks that match no item are listed too. */
-const TR={view:"design",pend:true,st:"",sec:"",des:"",q:"",open:new Set(),loading:false,loadedFor:"",err:""};
+const TR={more:new Set(),view:"design",pend:true,st:"",sec:"",des:"",q:"",open:new Set(),loading:false,loadedFor:"",err:""};
 // V22.9: the dashboard shows ONLY pending work. Status groups for the cards / filter:
 const SGRP={na:["na"],todo:["todo"],work:["work","ret"],check:["check"],toissue:["toissue"]};
 const UST={na:["Not assigned","#475467","#f2f4f7"],todo:["Not started","#344054","#eaecf0"],work:["Working","#175cd3","#eff8ff"],ret:["Returned","#93370d","#fffaeb"],check:["In check","#c11574","#fdf2fa"],toissue:["To issue","#6941c6","#f4ebff"],done:["Issued","#067647","#ecfdf3"]};
@@ -10253,7 +10324,7 @@ function trackerHtml(){
       const gr=list.filter(r=>r.g===g),allg=all.filter(r=>r.g===g),cg=countBy(allg),done=cg.done||0;
       if(!gr.length)return "";
       const id=String(g.drawing.id),open=TR.open.has(id)||!!TR.q||!!TR.sec||!!TR.des;
-      const tbl=`<div class="v21-bm-table"><table><thead><tr><th>Section</th><th>Type</th><th>Tag</th><th>Equipment</th>${g.mode==="PDS"?"<th>PDS type</th>":""}<th>Status</th><th>Owner</th><th>Rev</th><th>Target</th></tr></thead><tbody>${gr.map(r=>`<tr ${r.u.tasks[0]?`data-open-assignment="${esc(idOf(r.u.tasks[0]))}"`:""}><td>${esc(r.section||"—")}</td><td>${esc(r.type||"—")}</td><td><b>${esc(r.tag||"—")}</b></td><td>${esc(r.name||"—")}</td>${g.mode==="PDS"?`<td>${esc(r.pds||"—")}</td>`:""}<td>${chip(r.st)}${r.late?' <span class="pill red">Overdue</span>':""}</td><td>${esc(r.owners.join(", ")||"—")}</td><td>${esc(r.rev||"—")}</td><td>${esc(r.target?displayDate(r.target):"—")}</td></tr>`).join("")||`<tr><td colspan="9" class="tiny muted">Nothing pending.</td></tr>`}</tbody></table></div>`;
+      const tbl=`<div class="v21-bm-table"><table><thead><tr><th>Section</th><th>Type</th><th>Tag</th><th>Equipment</th>${g.mode==="PDS"?"<th>PDS type</th>":""}<th>Status</th><th>Owner</th><th>Rev</th><th>Target</th></tr></thead><tbody>${(gr.length>150&&!TR.more.has(id)?gr.slice(0,150):gr).map(r=>`<tr ${r.u.tasks[0]?`data-open-assignment="${esc(idOf(r.u.tasks[0]))}"`:""}><td>${esc(r.section||"—")}</td><td>${esc(r.type||"—")}</td><td><b>${esc(r.tag||"—")}</b></td><td>${esc(r.name||"—")}</td>${g.mode==="PDS"?`<td>${esc(r.pds||"—")}</td>`:""}<td>${chip(r.st)}${r.late?' <span class="pill red">Overdue</span>':""}</td><td>${esc(r.owners.join(", ")||"—")}</td><td>${esc(r.rev||"—")}</td><td>${esc(r.target?displayDate(r.target):"—")}</td></tr>`).join("")||`<tr><td colspan="9" class="tiny muted">Nothing pending.</td></tr>`}</tbody></table>${gr.length>150&&!TR.more.has(id)?`<div style="padding:8px 12px"><button type="button" class="btn sm" data-v22-trk-more="${esc(id)}">Show all ${gr.length} rows</button> <span class="tiny muted">first 150 shown - keeps the screen fast</span></div>`:""}</div>`;
       const cp=countBy(gr),pendN=gr.length;
       const chips=["na","todo","work","ret","check","toissue"].filter(k=>cp[k]).map(k=>`<span class="v22-u" style="color:${UST[k][1]};background:${UST[k][2]}">${cp[k]} ${esc(UST[k][0].toLowerCase())}</span>`).join("");
       return `<section class="v22-dcard ${open?"open":""}"><div class="v22-dcard-h v22-dh" data-v22-trk-open="${esc(id)}">
@@ -10332,6 +10403,7 @@ const trRedraw=()=>{try{renderView()}catch(_){}};
 document.addEventListener("click",e=>{
   const t=e.target;if(!t||!t.closest)return;let x;
   if((x=t.closest("[data-v22-trk-view]"))){e.preventDefault();TR.view=x.dataset.v22TrkView;return trRedraw()}
+  if((x=t.closest("[data-v22-trk-more]"))){e.preventDefault();e.stopImmediatePropagation();TR.more.add(x.dataset.v22TrkMore);return trRedraw()}
   if((x=t.closest("[data-v22-trk-open]"))){e.preventDefault();const id=x.dataset.v22TrkOpen;if(TR.open.has(id))TR.open.delete(id);else TR.open.add(id);return trRedraw()}
   if(t.closest("[data-v22-trk-all]")){e.preventDefault();if(TR.open.size)TR.open.clear();else{try{for(const g of MEGA_SCOPE.report(S.projectWorkspace.code))TR.open.add(String(g.drawing.id))}catch(_){}}return trRedraw()}
   if((x=t.closest("[data-v22-trk-go]"))){e.preventDefault();TR.view="design";TR.des=x.dataset.v22TrkGo;TR.sec=x.dataset.sec||"";return trRedraw()}
@@ -10948,6 +11020,36 @@ patch("updateRecord",()=>updateRecord,f=>{updateRecord=f},base=>async function(i
 // keys that need the new row ID: written one by one in the background (no burst of calls)
 const KQ=[];let kBusy=false;
 async function kFlush(){if(kBusy)return;kBusy=true;try{while(KQ.length){const [id,k]=KQ.shift();await new Promise(r=>setTimeout(r,1500));try{await updateRecord(id,k);const a=(S.records||[]).find(x=>String(idOf(x))===String(id));if(a)Object.assign(a,k)}catch(e){log("keys",e)}}}finally{kBusy=false}}
+/* V22.13 SPEED TEST (⚙ Settings): reads the open project again from Zoho and measures it */
+const SPT={busy:false,res:null};
+function storageInfo(){let n=0,mine=0,packed=0,keys=0;try{const g=Storage.prototype.getItem;for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);const raw=localStorage[k]||"";n+=raw.length+k.length;if(k.indexOf("MEGA_V21::")===0){mine+=raw.length;keys++;if(raw.indexOf(MEGA_LZ.MARK)===0)packed++}}}catch(_){}return {kb:Math.round(n*2/1024),mineKb:Math.round(mine*2/1024),keys,packed}}
+async function speedTest(){
+  const code=String(S.projectWorkspace&&S.projectWorkspace.code||"");if(!code)return say("Open a project first, then run the speed test.","warn");
+  if(SPT.busy)return;SPT.busy=true;SPT.res=null;speedDraw();
+  const c0=(window.MEGA_API&&MEGA_API.calls)||0,t0=Date.now(),out=[];
+  const step=async(label,fn)=>{const a=Date.now(),cc=(window.MEGA_API&&MEGA_API.calls)||0;let rows=0,kb=0,err="";try{const r=await fn();rows=Array.isArray(r)?r.length:0;kb=Math.round(JSON.stringify(r||[]).length/1024)}catch(e){err=errorText(e)}out.push({label,ms:Date.now()-a,calls:((window.MEGA_API&&MEGA_API.calls)||0)-cc,rows,kb,err})};
+  await step("Design tasks (Design_Tracking)",()=>ensureTrackingForProject(code,true));
+  await step("Equipment Master (tags)",()=>ensureEquipmentForProject(code,true));
+  SPT.res={code,total:Date.now()-t0,calls:((window.MEGA_API&&MEGA_API.calls)||0)-c0,out};SPT.busy=false;speedDraw();
+}
+function speedDraw(){
+  const st=storageInfo(),r=SPT.res,G=window.MEGA_API||{};
+  const body=`${SPT.busy?`<div class="notice"><span class="v21-dot spin"></span> Reading project ${esc(String(S.projectWorkspace&&S.projectWorkspace.code||""))} from Zoho…</div>`:""}
+    ${r?`<div class="v21-bm-table"><table class="v22-fill"><thead><tr><th>Read</th><th>Time</th><th>Zoho calls</th><th>Rows</th><th>Data</th></tr></thead><tbody>${r.out.map(x=>`<tr class="${x.err?"miss":x.ms>8000?"warn":""}"><td><b>${esc(x.label)}</b>${x.err?`<div class="tiny" style="color:#b42318">${esc(x.err)}</div>`:""}</td><td>${(x.ms/1000).toFixed(1)} s</td><td>${x.calls}</td><td>${x.rows}</td><td>${x.kb} KB</td></tr>`).join("")}<tr><td><b>Total, project ${esc(r.code)}</b></td><td><b>${(r.total/1000).toFixed(1)} s</b></td><td><b>${r.calls}</b></td><td></td><td></td></tr></tbody></table></div>
+      <div class="tiny muted" style="margin:6px 0">Under 5 s = good, 5-15 s = OK for a big project, over 15 s = Zoho is slow or busy (the widget still shows the saved copy at once).</div>`:`<div class="tiny muted">Open a project, then click "Run test". About 2-6 Zoho calls are used.</div>`}
+    <div class="v21-bm-table" style="margin-top:10px"><table class="v22-fill"><tbody>
+      <tr><td>Saved copies on this computer</td><td>${st.keys} items, ${st.mineKb} KB (${st.packed} packed ~6x smaller)</td></tr>
+      <tr><td>Browser storage used (all)</td><td>${st.kb} KB of about 5,000 KB</td></tr>
+      <tr><td>Zoho calls since opening</td><td>${G.calls||0} (${G.saved||0} answered from memory, not sent)</td></tr>
+      <tr><td>Zoho busy pauses</td><td>${(G.episodes||0)} per-minute • ${(G.short||0)} short</td></tr></tbody></table></div>`;
+  const foot=`<button class="btn" data-modal="close">Close</button><button class="btn primary" data-v22-speed-run ${SPT.busy?"disabled":""}>${SPT.busy?"Testing…":"Run test"}</button>`;
+  const open=el("modalBackdrop"),title=el("modalTitle");
+  if(open&&!open.classList.contains("hidden")&&title&&title.textContent==="Speed test"){const b=open.querySelector(".v22-spd");if(b){b.innerHTML=body;const f=el("modalFoot");if(f)f.innerHTML=foot;return}}
+  openModal("Speed test","How fast Zoho answers for the open project",`<div class="v22-spd">${body}</div>`,foot);
+}
+window.addEventListener("click",e=>{const t=e.target;if(!t||!t.closest)return;
+  if(t.closest("[data-v22-speed]")){e.preventDefault();e.stopImmediatePropagation();return speedDraw()}
+  if(t.closest("[data-v22-speed-run]")){e.preventDefault();e.stopImmediatePropagation();return speedTest()}},true);
 // 2) Settings → Data fill
 const DFL={code:"",busy:false,stop:false,done:0,total:0,failed:0,refused:new Set(),msg:""};
 function scanRows(){
