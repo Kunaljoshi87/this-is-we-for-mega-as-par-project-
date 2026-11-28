@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.10
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.11
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V22.10".
+   3. Paste this whole file and save. The badge at the top shows "V22.11".
 
  >>> ALL SETTINGS ARE IN ONE PLACE: the "MEGA SETTINGS" block, the first
      SCRIPT below (report names, projects list, waiting times, speed,
@@ -135,6 +135,10 @@
                       button + task tab), WhatsApp-style messages with names,
                       files and every status change; pop-up at the top for
                       new messages / changes. Comments removed from Files tab.
+                      V22.11: every new Design_Tracking row is completed from
+                      the masters before saving; ⚙ Settings → Data fill shows
+                      empty fields per project and fills old rows (only empty
+                      fields, ~40 rows/min); automatic link-name matching.
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -154,7 +158,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V22.10</title>
+<title>MEGA Engineering | Project Design Control V22.11</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -380,7 +384,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.10</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.11</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -532,7 +536,7 @@ var MEGA_SETTINGS={
     var K="MEGA_ERRLOG",MAX=(MEGA_SETTINGS.ERRORS&&MEGA_SETTINGS.ERRORS.KEEP)||60;
     var R=window.MEGA_ERR={list:[],api:[],seen:0,listeners:[]};
     // V22.5: errors saved by an OLDER version are not shown again after an update (they were already fixed)
-    var BUILD_ID="V22.10";
+    var BUILD_ID="V22.11";
     try{var old=JSON.parse(localStorage.getItem(K)||"[]");if(Array.isArray(old))R.list=old.filter(function(x){return x&&x.build===BUILD_ID}).slice(-MAX);if(Array.isArray(old)&&old.length!==R.list.length){localStorage.setItem(K,JSON.stringify(R.list));localStorage.setItem(K+"_SEEN",String(R.list.length))}}catch(_){}
     try{R.seen=Number(localStorage.getItem(K+"_SEEN")||R.list.length)||0}catch(_){}
     function txt(x){
@@ -9325,6 +9329,7 @@ patch("setupModal",()=>setupModal,f=>{setupModal=f;try{const b=el("setupBtn");if
         <button type="button" class="v21-set-row" data-v21-errors><span class="ic ${n?"bad":""}">⚠</span><span><b>Error report</b><small>${all?`${all} saved${n?` • <em>${n} new</em>`:""}`:"No errors"} — see the list and copy the report for the developer</small></span><span class="go">›</span></button>
         <button type="button" class="v21-set-row" data-v21-health-open><span class="ic">●</span><span><b>System Health</b><small>Connection, report reads, saved copies, speed &amp; safety</small></span><span class="go">›</span></button>
         <button type="button" class="v21-set-row" data-v22-access><span class="ic">🔑</span><span><b>Access check</b><small>Which reports and forms this login can View / Add / Edit, and what the admin must give</small></span><span class="go">›</span></button>
+        <button type="button" class="v21-set-row" data-v22-fill><span class="ic">✎</span><span><b>Data fill</b><small>Which Design_Tracking fields are empty in Zoho - and fill them from the masters (only empty fields)</small></span><span class="go">›</span></button>
         <button type="button" class="v21-set-row" data-v22-datacheck><span class="ic">✓</span><span><b>Data check</b><small>People without email, designs without Status, tags without Department / Category, tasks with missing data</small></span><span class="go">›</span></button>
         <button type="button" class="v21-set-row" data-v21-setup-old><span class="ic">⚙</span><span><b>Setup / field mapping</b><small>Design_Tracking fields used by the widget</small></span><span class="go">›</span></button>
         <div class="tiny muted" style="margin-top:8px">Values like report names, roles and skipped tags are changed in the MEGA SETTINGS block at the top of the widget code.</div>
@@ -9461,7 +9466,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V22(){
 "use strict";
-const BUILD="V22.10";
+const BUILD="V22.11";
 const log=(...a)=>{try{console.warn("[V22]",...a)}catch(_){}};
 const say=(m,t="warn")=>{try{toast(m,t)}catch(_){}};
 const sc=v=>{try{return String(scalar(v)??"")}catch(_){return v==null?"":String(v)}};
@@ -10738,7 +10743,213 @@ try{const st=document.createElement("style");st.textContent=`
 @media(max-width:760px){.v22c-dr{grid-template-columns:1fr}.v22c-side{display:${"none"}}}
 `;document.head.appendChild(st)}catch(_){}
 
-window.MEGA_V22={build:BUILD,stepOf,allowed,toCheckRows,returnedToMe,familyFiles,canUpload,canView,exportRows,remind,isSelfRoot,ownerOf,isOwner,isChecker,isAssigner,waitingFor,popupCheck,dataCheck,accessCheck,issuerVal,isIssuer,openChat,chatMsgs,notifyCheck};
+/* ---------- 17. DATA FILL (V22.11) ----------
+   Problem: Design_Tracking rows in Zoho had empty columns (Design Title,
+   Department, Equipment, IDs …).
+   1) Every NEW row the widget saves is completed first: every empty field
+      that can be worked out is filled from the masters (Project, Design
+      Master, Equipment Master, Employees) and from the task above it.
+   2) ⚙ Settings → Data fill: for a project (or all opened projects) it
+      shows, per field, how many rows are empty, and "Fill missing data"
+      writes ONLY the empty fields of old rows (never overwrites a value),
+      slowly (about 40 rows a minute) so the Zoho limit is not hit.
+   3) Field names: if Zoho uses a different link name for a field (e.g.
+      Design_Title1), the widget finds it in the report and uses it.
+   Fields only a person can decide (Checker, Issuer/Approver, Drawing
+   Number, Return Reason …) are listed but not invented. */
+const FL=[
+  // [label, AF key or link name, when needed: all | tag | section | pds | child | rev | person]
+  ["Project Code","projectCode","all"],["Project Record ID","projectRecordId","all"],
+  ["Design (Drawing / Document) Name","drawingDocument","all"],["Short Name","shortName","all"],["Drawing Master ID","drawingMasterId","all"],
+  ["Design Type","designType","all"],["Design Title","designTitle","all"],["Design Department","designDepartment","all"],
+  ["Type (Project / Section / Section type / Tag wise)","scopeLevel","all"],["Assignment Criteria","criteria","all"],["Responsibility","responsibility","all"],
+  ["Plant Section Name","plantSection","section"],["Plant Section Type","plantSectionType","stype"],
+  ["Tag Number","tagNo","tag"],["Equipment Name","equipmentName","tag"],["Equipment Type","equipmentType","tag"],["Equipment Category","equipmentCategory","tag"],
+  ["Equipment Department","department","tag"],["Group Code","groupCode","tag"],["Equipment Record ID","equipmentRecordId","tag"],["Source Equipment Record ID","sourceEquipmentRecordId","tag"],
+  ["PDS Name","@PDS_Name","pds"],["Department Code","@Department_Code","tag"],
+  ["Assigned To","assignedTo","all"],["Assigned Employee Name","assignedEmployeeName","all"],["Assigned By","assignedBy","all"],
+  ["Assignment Level","assignmentLevel","all"],["Primary Assignment ID","primaryAssignment","all"],["Assigned From ID","assignedFrom","child"],
+  ["Planned Start Date","startDate","all"],["Target Date","targetDate","all"],["Status","status","all"],["Progress","progress","all"],
+  ["Revision","revision","all"],["Revision Key","revisionKey","all"],["Logical Task Key","logicalTaskKey","all"],
+  ["Checker","checker","person"],["Final checker / Issuer (Approver)","approver","person"],["Drawing Number","drawingNumber","person"],["Parent Design ID","parentDesignId","rev"]
+];
+const nrm=k=>String(k||"").toLowerCase().replace(/[^a-z0-9]/g,"").replace(/\d+$/,"");
+const FILLMAP_K="MEGA_V22_FIELDMAP";
+let zKeys=new Set();
+function knownKeys(){const s=new Set();try{for(const r of (S.records||[]).slice(0,400))for(const k of Object.keys(r||{}))s.add(k)}catch(_){}if(s.size)zKeys=s;return zKeys}
+const linkOf=k=>k.startsWith("@")?(()=>{const want=k.slice(1),ks=knownKeys();if(ks.has(want))return want;const c=[...ks].filter(x=>nrm(x)===nrm(want));return c.length===1?c[0]:want})():AF[k];
+// 3) use Zoho's real link name when ours is not in the report but one similar name is
+function remapFields(){
+  try{
+    const ks=knownKeys();if(ks.size<5)return [];
+    const done=[];
+    for(const [,k] of FL){if(k.startsWith("@"))continue;const cur=AF[k];if(!cur||ks.has(cur))continue;const c=[...ks].filter(x=>nrm(x)===nrm(cur));if(c.length===1){AF[k]=c[0];done.push(`${cur} → ${c[0]}`)}}
+    if(done.length){try{localStorage.setItem(FILLMAP_K,JSON.stringify(Object.fromEntries(FL.filter(([,k])=>!k.startsWith("@")).map(([,k])=>[k,AF[k]]))))}catch(_){}log("field names remapped",done)}
+    return done;
+  }catch(e){log("remap",e);return[]}
+}
+try{const m=JSON.parse(localStorage.getItem(FILLMAP_K)||"null");if(m)for(const k of Object.keys(m))if(AF[k]&&m[k])AF[k]=m[k]}catch(_){}
+const blank=v=>{const x=sc(v).trim();return !x||x==="null"||x==="undefined"};
+const projectFor=code=>{try{return (S.projects||[]).find(p=>String(p.code)===String(code))||null}catch(_){return null}};
+const drawingOf=a=>{try{const id=sc(a[AF.drawingMasterId]),n=low(a[AF.drawingDocument]),sh=low(a[AF.shortName]),dt=low(a[AF.designType]);return (S.drawings||[]).find(d=>(id&&String(d.id)===id)||(n&&low(d.name)===n))||(S.drawings||[]).find(d=>(sh&&low(d.short)===sh)||(dt&&low(d.name)===dt))||null}catch(_){return null}};
+const deptOfDrawing=d=>{if(!d||!d.raw)return"";for(const k of Object.keys(d.raw))if(/depart|discipline/i.test(k)){const v=sc(pick(d.raw,[k]));if(v)return v}return ""};
+const empOf=v=>{const x=low(v);if(!x)return null;return (S.employees||[]).find(e=>low(e.email)===x||low(e.name)===x)||null};
+const eqFor=(code,tag)=>{try{const l=S.cache.equipmentByProject.get(String(code))||[];return l.find(e=>low(e.tag)===low(tag))||null}catch(_){return null}};
+const recById=id=>{try{return assignmentById(id)||(S.records||[]).find(x=>String(idOf(x))===String(id))||null}catch(_){return null}};
+function chain(a){const out=[];let cur=a,g=0;while(cur&&g<12){out.push(cur);const p=sc(cur[AF.assignedFrom]);cur=p?recById(p):null;g++}return out}
+function modeOf(a){
+  const c=low(a[AF.criteria]);
+  if(/design owner/.test(c))return "Design Owner";
+  if(/pds/.test(c)||sc(a[AF.pdsRecordId]))return "PDS";
+  if(!blank(a[AF.tagNo])||/tag/.test(c))return "Tag Wise";
+  if(!blank(a[AF.plantSectionType])||/section type/.test(c))return "Section Type Wise";
+  if(!blank(a[AF.plantSection])||/section/.test(c))return "Section Wise";
+  if(/subtask/.test(c))return "Subtask";
+  return "Project Wise";
+}
+// what this row SHOULD have - only computed values, never guesses for people fields
+function computeFill(a){
+  const f={},put=(k,v)=>{const l=k.startsWith("@")?linkOf(k):AF[k];if(!l)return;if(k.startsWith("@")&&!knownKeys().has(l))return;/* custom field not in the report: not written */if(blank(a[l])&&!blank(v))f[l]=typeof v==="number"?v:String(v)};
+  const ch=chain(a),root=ch[ch.length-1]||a,parent=ch[1]||null;
+  const code=sc(a[AF.projectCode])||ch.map(x=>sc(x[AF.projectCode])).find(Boolean)||"";
+  put("projectCode",code);
+  const pr=projectFor(code);if(pr)put("projectRecordId",pr.id);
+  const d=drawingOf(a)||ch.map(drawingOf).find(Boolean);
+  if(d){put("drawingDocument",d.name);put("shortName",d.short);put("drawingMasterId",d.id);put("designDepartment",deptOfDrawing(d))}
+  const mode=modeOf(a);
+  // tag data from the Equipment Master
+  const tag=sc(a[AF.tagNo]);
+  if(tag){const e=eqFor(code,tag);if(e){put("equipmentName",e.name);put("equipmentType",e.equipmentType);put("equipmentCategory",e.equipmentCategory);put("department",e.department);put("groupCode",e.groupCode);put("plantSection",e.plantSection);put("plantSectionType",e.plantSectionType);put("equipmentRecordId",e.id);put("sourceEquipmentRecordId",e.id);put("@Department_Code",e.department)}}
+  const dn=(d&&d.name)||sc(a[AF.drawingDocument]);
+  if(mode==="PDS")put("@PDS_Name",sc(a[AF.designType]));
+  put("designType",mode==="Subtask"?"Subtask":dn);
+  const where=tag?[tag,sc(a[AF.equipmentName])||sc(f[AF.equipmentName])].filter(Boolean).join(" — "):[sc(a[AF.plantSection]),sc(a[AF.plantSectionType])].filter(Boolean).join(" › ");
+  put("designTitle",mode==="Design Owner"?dn:`${dn}${where?" — "+where:mode==="Project Wise"?" — Whole project":""}`);
+  const crit={"Design Owner":"Design Owner","PDS":"Tag Number","Tag Wise":"Tag Number","Section Type Wise":"Plant Section Type","Section Wise":"Plant Section","Subtask":"Subtask","Project Wise":"Project"}[mode];
+  put("criteria",crit);
+  if(mode!=="Design Owner"&&mode!=="Subtask")put("scopeLevel",v19ScopeLevel(mode==="PDS"?"Tag Wise":mode));
+  try{put("responsibility",scopeSummary({...a,[AF.responsibility]:""}))}catch(_){}
+  // people
+  const own=empOf(a[AF.assignedTo])||empOf(a[AF.assignedEmployeeName]);
+  if(own){put("assignedTo",own.email);put("assignedEmployeeName",own.name);put("designDepartment",own.department)}/* no department in the Design Master: the owner's department */
+  if(parent){try{put("assignedBy",ownerOf(parent))}catch(_){}}
+  // hierarchy
+  put("assignmentLevel",ch.length-1);
+  put("primaryAssignment",sc(root[AF.primaryAssignment])||idOf(root));   // the main design task at the top
+  // dates / status / revision
+  const added=(()=>{try{return toInputDate(pick(a,SYSTEM_ALIASES.addedTime,""))}catch(_){return""}})();
+  if(added)put("startDate",toCreatorDate(added));
+  if(blank(a[AF.targetDate])&&parent&&!blank(parent[AF.targetDate]))put("targetDate",sc(parent[AF.targetDate]));
+  put("status","Not Started");put("progress",0);
+  const r=sc(a[AF.revision])||"R0";put("revision",r);
+  const id=idOf(a);if(id){put("revisionKey",`EXEC::${id}::${r}`);put("logicalTaskKey",`EXEC::${id}::${r}`)}
+  return f;
+}
+function neededFor(a,when){
+  const m=modeOf(a);
+  if(when==="all")return true;
+  if(when==="child")return !!sc(a[AF.assignedFrom]);
+  if(when==="tag")return m==="Tag Wise"||m==="PDS";
+  if(when==="pds")return m==="PDS";
+  if(when==="section")return ["Tag Wise","PDS","Section Wise","Section Type Wise"].includes(m);
+  if(when==="stype")return m==="Section Type Wise"||((m==="Tag Wise"||m==="PDS")&&!!eqFor(sc(a[AF.projectCode]),sc(a[AF.tagNo]))?.plantSectionType);
+  return false;   // person / rev: shown, not required
+}
+// 1) new rows: complete them before saving (only fields Zoho has, never overwriting)
+patch("addRecord",()=>addRecord,f=>{addRecord=f},base=>async function(data){
+  try{
+    const ks=knownKeys(),f=computeFill({...data});
+    for(const [k,v] of Object.entries(f)){
+      if(k==="Status"||k===AF.revisionKey||k===AF.logicalTaskKey)continue;     // no ID yet / status set by the flow
+      if(ks.size&&!ks.has(k)&&!Object.values(AF).includes(k))continue;         // unknown custom field: skip
+      if(blank(data[k]))data[k]=v;
+    }
+    if(blank(data[AF.startDate]))try{data[AF.startDate]=toCreatorDate(todayIso())}catch(_){}
+  }catch(e){log("fill new row",e)}
+  const id=await base.apply(this,[data]);
+  // keys need the new ID: write them right after (one small update)
+  try{if(id){const r=sc(data[AF.revision])||"R0",k={};if(blank(data[AF.revisionKey]))k[AF.revisionKey]=`EXEC::${id}::${r}`;if(blank(data[AF.logicalTaskKey]))k[AF.logicalTaskKey]=`EXEC::${id}::${r}`;if(blank(data[AF.primaryAssignment])&&!sc(data[AF.assignedFrom]))k[AF.primaryAssignment]=id;if(Object.keys(k).length){KQ.push([id,k]);kFlush()}}}catch(_){}
+  return id;
+});
+// keys that need the new row ID: written one by one in the background (no burst of calls)
+const KQ=[];let kBusy=false;
+async function kFlush(){if(kBusy)return;kBusy=true;try{while(KQ.length){const [id,k]=KQ.shift();await new Promise(r=>setTimeout(r,1500));try{await updateRecord(id,k);const a=(S.records||[]).find(x=>String(idOf(x))===String(id));if(a)Object.assign(a,k)}catch(e){log("keys",e)}}}finally{kBusy=false}}
+// 2) Settings → Data fill
+const DFL={code:"",busy:false,stop:false,done:0,total:0,failed:0,refused:new Set(),msg:""};
+function scanRows(){
+  const code=DFL.code;
+  return (S.records||[]).filter(r=>!code||String(sc(r[AF.projectCode]))===code);
+}
+function fillReport(){
+  const rows=scanRows(),ks=knownKeys();
+  return FL.map(([label,k,when])=>{
+    const l=k.startsWith("@")?linkOf(k):AF[k];
+    const need=rows.filter(a=>neededFor(a,when)),empty=need.filter(a=>blank(a[l]));
+    const canFill=empty.filter(a=>computeFill(a)[l]!==undefined).length;
+    return {label,link:l,when,inZoho:!ks.size||ks.has(l),need:need.length,empty:empty.length,canFill,rows:rows.length};
+  });
+}
+function dataFill(){
+  try{
+    remapFields();
+    const rep=fillReport(),rows=scanRows(),todo=rows.filter(a=>Object.keys(computeFill(a)).some(l=>!DFL.refused.has(l))).length;
+    const codes=[...new Set((S.records||[]).map(r=>sc(r[AF.projectCode])).filter(Boolean))].sort();
+    const tr=rep.map(x=>`<tr class="${!x.inZoho?"miss":x.empty?"warn":""}"><td><b>${esc(x.label)}</b><div class="tiny muted">${esc(x.link||"")}</div></td>
+      <td>${x.inZoho?"✓":`<span class="pill red">not in report</span>`}</td>
+      <td>${x.when==="person"||x.when==="rev"?`<span class="tiny muted">chosen by a person</span>`:x.need?`${x.need-x.empty}/${x.need} filled`:"—"}</td>
+      <td>${x.empty&&x.when!=="person"&&x.when!=="rev"?`<b style="color:#b42318">${x.empty} empty</b>`:x.when==="person"||x.when==="rev"?`${x.empty} empty`:"OK"}</td>
+      <td>${x.canFill?`<b style="color:#067647">${x.canFill} can be filled</b>`:""}${DFL.refused.has(x.link)?` <span class="pill red">Zoho refused</span>`:""}</td></tr>`).join("");
+    const body=`<div class="v22-fill-top">
+        <label>Project <select data-v22-fill-code><option value="">All loaded (${(S.records||[]).length} rows)</option>${codes.map(c=>`<option ${c===DFL.code?"selected":""}>${esc(c)}</option>`).join("")}</select></label>
+        <button class="btn sm" data-v22-fill-load>↻ Load project from Zoho</button>
+        <span class="tiny muted">Open a project first (or "Load") so all its rows are checked.</span></div>
+      ${DFL.busy||DFL.done?`<div class="notice ${DFL.busy?"":"good"}" style="margin:8px 0">${DFL.busy?`<span class="v21-dot spin"></span> Filling… ${DFL.done}/${DFL.total} rows${DFL.failed?` • ${DFL.failed} failed`:""}`:`Done: ${DFL.done} rows updated${DFL.failed?` • ${DFL.failed} failed (see Error report)`:""}.`}</div>`:""}
+      ${DFL.msg?`<div class="notice warn" style="margin:8px 0">${esc(DFL.msg)}</div>`:""}
+      <div class="v21-bm-table"><table class="v22-fill"><thead><tr><th>Field</th><th>In Zoho</th><th>Filled</th><th>Empty</th><th>Widget can fill</th></tr></thead><tbody>${tr}</tbody></table></div>
+      <div class="tiny muted" style="margin-top:8px">Only EMPTY fields are written - existing values are never changed. Values come from the Project list, Design Master, Equipment Master, Employees and the task above. Tag fields are needed only on tag / PDS tasks, section fields only on section tasks. "Not in report": the field is not shown in ${esc(CONFIG.REPORTS.tracking)} or has another link name - add it to the report (Zoho → report → Columns) so the widget can read and check it.</div>`;
+    const foot=`<button class="btn" data-modal="close">Close</button>${DFL.busy?`<button class="btn danger" data-v22-fill-stop>Stop</button>`:`<button class="btn primary" data-v22-fill-go ${todo?"":"disabled"}>Fill missing data (${todo} row${todo===1?"":"s"})</button>`}`;
+    const open=el("modalBackdrop"),title=el("modalTitle");
+    if(open&&!open.classList.contains("hidden")&&title&&title.textContent==="Data fill"){const b=open.querySelector(".v22-fill-body");if(b){b.innerHTML=body;const f=open.querySelector(".modal-foot,.modal-footer,[data-modal-foot]");if(f)f.innerHTML=foot;return}}
+    openModal("Data fill","Empty fields in Design_Tracking - and fill them from the masters",`<div class="v22-fill-body">${body}</div>`,foot);
+    try{document.querySelector("#modalBackdrop .modal")?.classList.add("v218-wide")}catch(_){}
+  }catch(e){log("data fill",e)}
+}
+async function runFill(){
+  if(DFL.busy)return;
+  const rows=scanRows().filter(a=>Object.keys(computeFill(a)).length);
+  DFL.busy=true;DFL.stop=false;DFL.done=0;DFL.failed=0;DFL.total=rows.length;DFL.msg="";dataFill();
+  // equipment for the projects that have tag tasks
+  try{for(const c of [...new Set(rows.filter(a=>!blank(a[AF.tagNo])).map(a=>sc(a[AF.projectCode])))]){await ensureEquipmentForProject(c)}}catch(e){log("eq",e)}
+  for(const a of rows){
+    if(DFL.stop)break;
+    let f=computeFill(a);for(const l of DFL.refused)delete f[l];
+    if(!Object.keys(f).length){DFL.done++;continue}
+    for(let tries=0;tries<4;tries++){
+      try{await updateRecord(String(idOf(a)),f);Object.assign(a,f);break}
+      catch(e){
+        const t=errorText(e),bad=Object.keys(f).find(l=>new RegExp(`\\b${l}\\b`,"i").test(t));
+        if(bad&&tries<3){DFL.refused.add(bad);delete f[bad];if(!Object.keys(f).length)break;continue}   // that field is refused: write the others
+        DFL.failed++;window.MEGA_ERR&&MEGA_ERR.add("error",`Data fill: row ${idOf(a)} not updated`,t);break;
+      }
+    }
+    DFL.done++;if(DFL.done%3===0)dataFill();
+    await new Promise(r=>setTimeout(r,1500));       // about 40 rows a minute
+  }
+  DFL.busy=false;if(DFL.refused.size)DFL.msg=`Zoho refused these fields (wrong type or link name): ${[...DFL.refused].join(", ")}. Send this to the developer.`;
+  dataFill();try{renderView()}catch(_){}
+}
+window.addEventListener("click",e=>{
+  const t=e.target;if(!t||!t.closest)return;
+  if(t.closest("[data-v22-fill]")){e.preventDefault();e.stopImmediatePropagation();DFL.code=DFL.code||String(S.projectWorkspace&&S.projectWorkspace.code||"");return dataFill()}
+  if(t.closest("[data-v22-fill-go]")){e.preventDefault();e.stopImmediatePropagation();return runFill()}
+  if(t.closest("[data-v22-fill-stop]")){e.preventDefault();e.stopImmediatePropagation();DFL.stop=true;return}
+  if(t.closest("[data-v22-fill-load]")){e.preventDefault();e.stopImmediatePropagation();const c=DFL.code;if(!c)return say("Choose a project first.","warn");
+    return (async()=>{try{say(`Loading project ${c}…`,"good");await ensureTrackingForProject(c,true);await ensureEquipmentForProject(c)}catch(err){say(errorText(err),"warn")}dataFill()})()}
+},true);
+document.addEventListener("change",e=>{const t=e.target;if(t&&t.matches&&t.matches("[data-v22-fill-code]")){DFL.code=t.value;DFL.done=0;dataFill()}},true);
+try{const st=document.createElement("style");st.textContent=`.v22-fill-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.v22-fill td{padding:6px 8px;font-size:12px}.v22-fill tr.warn td{background:#fffaeb}.v22-fill tr.miss td{background:#fff1f0}`;document.head.appendChild(st)}catch(_){}
+
+window.MEGA_V22={build:BUILD,stepOf,allowed,toCheckRows,returnedToMe,familyFiles,canUpload,canView,exportRows,remind,isSelfRoot,ownerOf,isOwner,isChecker,isAssigner,waitingFor,popupCheck,dataCheck,accessCheck,issuerVal,isIssuer,openChat,chatMsgs,notifyCheck,computeFill,fillReport,dataFill};
 // first pop-up after the start-up data is in
 setTimeout(()=>{try{popupCheck(false)}catch(_){}},12000);
 try{const bd=el("buildBadge");if(bd)bd.textContent=BUILD;document.title=`MEGA Engineering | Project Design Control ${BUILD}`}catch(_){}
