@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.11
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.12
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V22.11".
+   3. Paste this whole file and save. The badge at the top shows "V22.12".
 
  >>> ALL SETTINGS ARE IN ONE PLACE: the "MEGA SETTINGS" block, the first
      SCRIPT below (report names, projects list, waiting times, speed,
@@ -139,6 +139,11 @@
                       the masters before saving; ⚙ Settings → Data fill shows
                       empty fields per project and fills old rows (only empty
                       fields, ~40 rows/min); automatic link-name matching.
+                      V22.12: Data fill - map any field to the real Zoho field
+                      (dropdown), list of unused Zoho fields; readable summary
+                      fields (Record_Type, Record_Purpose, Current_Step,
+                      Waiting_For, Last_Action, Project_Name, Checker_Name,
+                      Issuer_Name) written on every save when they exist.
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -158,7 +163,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V22.11</title>
+<title>MEGA Engineering | Project Design Control V22.12</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -384,7 +389,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.11</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.12</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -536,7 +541,7 @@ var MEGA_SETTINGS={
     var K="MEGA_ERRLOG",MAX=(MEGA_SETTINGS.ERRORS&&MEGA_SETTINGS.ERRORS.KEEP)||60;
     var R=window.MEGA_ERR={list:[],api:[],seen:0,listeners:[]};
     // V22.5: errors saved by an OLDER version are not shown again after an update (they were already fixed)
-    var BUILD_ID="V22.11";
+    var BUILD_ID="V22.12";
     try{var old=JSON.parse(localStorage.getItem(K)||"[]");if(Array.isArray(old))R.list=old.filter(function(x){return x&&x.build===BUILD_ID}).slice(-MAX);if(Array.isArray(old)&&old.length!==R.list.length){localStorage.setItem(K,JSON.stringify(R.list));localStorage.setItem(K+"_SEEN",String(R.list.length))}}catch(_){}
     try{R.seen=Number(localStorage.getItem(K+"_SEEN")||R.list.length)||0}catch(_){}
     function txt(x){
@@ -9466,7 +9471,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V22(){
 "use strict";
-const BUILD="V22.11";
+const BUILD="V22.12";
 const log=(...a)=>{try{console.warn("[V22]",...a)}catch(_){}};
 const say=(m,t="warn")=>{try{toast(m,t)}catch(_){}};
 const sc=v=>{try{return String(scalar(v)??"")}catch(_){return v==null?"":String(v)}};
@@ -10808,8 +10813,11 @@ function modeOf(a){
   return "Project Wise";
 }
 // what this row SHOULD have - only computed values, never guesses for people fields
+const HIER=new Set(["assignmentLevel","primaryAssignment","assignedFrom","revisionKey","logicalTaskKey","criteria","scopeLevel","responsibility","assignedBy","status","progress","designTitle","designType"]);
 function computeFill(a){
-  const f={},put=(k,v)=>{const l=k.startsWith("@")?linkOf(k):AF[k];if(!l)return;if(k.startsWith("@")&&!knownKeys().has(l))return;/* custom field not in the report: not written */if(blank(a[l])&&!blank(v))f[l]=typeof v==="number"?v:String(v)};
+  // old-style revision rows (R0/R1 copies) must stay revision rows: no hierarchy / key / status fields on them
+  let isRev=false;try{isRev=isRevisionRecord(a)}catch(_){}
+  const f={},put=(k,v)=>{if(isRev&&HIER.has(k))return;const l=k.startsWith("@")?linkOf(k):AF[k];if(!l)return;if(k.startsWith("@")&&!knownKeys().has(l))return;/* custom field not in the report: not written */if(blank(a[l])&&!blank(v))f[l]=typeof v==="number"?v:String(v)};
   const ch=chain(a),root=ch[ch.length-1]||a,parent=ch[1]||null;
   const code=sc(a[AF.projectCode])||ch.map(x=>sc(x[AF.projectCode])).find(Boolean)||"";
   put("projectCode",code);
@@ -10842,10 +10850,11 @@ function computeFill(a){
   if(blank(a[AF.targetDate])&&parent&&!blank(parent[AF.targetDate]))put("targetDate",sc(parent[AF.targetDate]));
   put("status","Not Started");put("progress",0);
   const r=sc(a[AF.revision])||"R0";put("revision",r);
-  const id=idOf(a);if(id){put("revisionKey",`EXEC::${id}::${r}`);put("logicalTaskKey",`EXEC::${id}::${r}`)}
+  const id=idOf(a);if(id){put("revisionKey",`TASK::${id}::${r}`);put("logicalTaskKey",`TASK::${id}`)}
   return f;
 }
-function neededFor(a,when){
+function neededFor(a,when,k){
+  try{if(k&&HIER.has(k)&&isRevisionRecord(a))return false}catch(_){}
   const m=modeOf(a);
   if(when==="all")return true;
   if(when==="child")return !!sc(a[AF.assignedFrom]);
@@ -10865,11 +10874,76 @@ patch("addRecord",()=>addRecord,f=>{addRecord=f},base=>async function(data){
       if(blank(data[k]))data[k]=v;
     }
     if(blank(data[AF.startDate]))try{data[AF.startDate]=toCreatorDate(todayIso())}catch(_){}
+    try{Object.assign(data,Object.fromEntries(Object.entries(summaryFor(data)).filter(([k])=>blank(data[k]))))}catch(_){}
   }catch(e){log("fill new row",e)}
   const id=await base.apply(this,[data]);
   // keys need the new ID: write them right after (one small update)
-  try{if(id){const r=sc(data[AF.revision])||"R0",k={};if(blank(data[AF.revisionKey]))k[AF.revisionKey]=`EXEC::${id}::${r}`;if(blank(data[AF.logicalTaskKey]))k[AF.logicalTaskKey]=`EXEC::${id}::${r}`;if(blank(data[AF.primaryAssignment])&&!sc(data[AF.assignedFrom]))k[AF.primaryAssignment]=id;if(Object.keys(k).length){KQ.push([id,k]);kFlush()}}}catch(_){}
+  try{if(id){const r=sc(data[AF.revision])||"R0",k={};if(blank(data[AF.revisionKey]))k[AF.revisionKey]=`TASK::${id}::${r}`;if(blank(data[AF.logicalTaskKey]))k[AF.logicalTaskKey]=`TASK::${id}`;if(blank(data[AF.primaryAssignment])&&!sc(data[AF.assignedFrom]))k[AF.primaryAssignment]=id;if(Object.keys(k).length){KQ.push([id,k]);kFlush()}}}catch(_){}
   return id;
+});
+/* V22.12 READABLE SUMMARY FIELDS - why this record exists and what is happening on it.
+   Add these fields to the Design_Tracking form and show them in the report (exact link names);
+   the widget fills them on every save. A field that does not exist yet is simply skipped. */
+const SUMF=[
+  ["Record Type","Record_Type","Single line","Main design / Assigned task / Subtask / PDS task"],
+  ["Record Purpose","Record_Purpose","Multi line","Why this record exists: who gave what work to whom, for which project / section / tag"],
+  ["Current Step","Current_Step","Single line","0/4 Not started … 4/4 Issued"],
+  ["Waiting For","Waiting_For","Single line","Who must act next"],
+  ["Last Action","Last_Action","Single line","Last change, by whom and when"],
+  ["Project Name","Project_Name","Single line","Project name from the project list"],
+  ["Checker Name","Checker_Name","Single line","Checker as a name (Checker field keeps the email)"],
+  ["Issuer Name","Issuer_Name","Single line","Final checker / issuer as a name (Approver keeps the email)"]
+];
+const MAPK="MEGA_V22_MANUALMAP";
+const manual=()=>{try{return JSON.parse(localStorage.getItem(MAPK)||"{}")||{}}catch(_){return{}}};
+function setManual(key,link){const m=manual();if(link)m[key]=link;else delete m[key];try{localStorage.setItem(MAPK,JSON.stringify(m))}catch(_){}if(AF[key]!==undefined&&link)AF[key]=link}
+try{const m=manual();for(const k of Object.keys(m))if(AF[k]!==undefined&&m[k])AF[k]=m[k]}catch(_){}
+function sumLink(want){const m=manual();if(m["@"+want])return m["@"+want];const ks=knownKeys();if(ks.has(want))return want;const c=[...ks].filter(x=>nrm(x)===nrm(want));return c.length===1?c[0]:""}
+const SYS=/^(ID|Added_Time|Modified_Time|Added_User|Modified_User|Added_User_IP_Address|Modified_User_IP_Address|Added_User_Agent|Modified_User_Agent|zc_.*)$/i;
+function unusedKeys(){
+  const used=new Set(Object.values(AF));for(const [,w] of SUMF){const l=sumLink(w);if(l)used.add(l)}for(const [,k] of FL)if(k.startsWith("@")){used.add(linkOf(k))}
+  return [...knownKeys()].filter(k=>!used.has(k)&&!SYS.test(k)).sort();
+}
+function rowKind(a){const m=modeOf(a);if(m==="Design Owner"||(!sc(a[AF.assignedFrom])&&!blank(a[AF.criteria])&&/owner/i.test(sc(a[AF.criteria]))))return "Main design";if(m==="Subtask")return "Subtask";if(m==="PDS")return "PDS task";try{if(isRevisionRecord(a))return "Revision"}catch(_){}return sc(a[AF.assignedFrom])?"Assigned task":"Main design"}
+function summaryFor(a){
+  const out={};
+  try{
+    const kind=rowKind(a),code=sc(a[AF.projectCode]),pr=projectFor(code),pn=pr&&pr.name&&pr.name!==code?pr.name:"";
+    const d=drawingOf(a),dn=[sc(a[AF.shortName])||(d&&d.short),sc(a[AF.drawingDocument])||(d&&d.name)].filter(Boolean).join(" — ");
+    const where=!blank(a[AF.tagNo])?`tag ${sc(a[AF.tagNo])}${sc(a[AF.equipmentName])?" ("+sc(a[AF.equipmentName])+")":""}${sc(a[AF.plantSection])?", section "+sc(a[AF.plantSection]):""}`:!blank(a[AF.plantSectionType])?`section ${sc(a[AF.plantSection])} › ${sc(a[AF.plantSectionType])}`:!blank(a[AF.plantSection])?`plant section ${sc(a[AF.plantSection])}`:"the whole project";
+    const by=(()=>{try{return person(a[AF.assignedBy]).name||sc(a[AF.assignedBy])}catch(_){return sc(a[AF.assignedBy])}})(),own=(()=>{try{return ownerOf(a)}catch(_){return sc(a[AF.assignedEmployeeName])}})();
+    const pds=kind==="PDS task"?` (${sc(a[AF.designType])})`:"";
+    const proj=`project ${code}${pn?" — "+pn:""}`;
+    const start=sc(a[AF.startDate]),tgt=sc(a[AF.targetDate]);
+    out.Record_Type=kind;
+    if(kind==="Revision"){
+      const m=sc(a[AF.logicalTaskKey]).match(/^EXEC::([^:]+)::/),t=m?recById(m[1]):null,r0=sc(a[AF.revision])||"R0";
+      out.Record_Purpose=`Revision ${r0} record (drawing files / description) of ${dn} for ${proj}${t?` — task of ${(()=>{try{return ownerOf(t)}catch(_){return""}})()} (${t?sc(t[AF.plantSection])||sc(t[AF.tagNo])||"whole project":""})`:""}.`;
+      out.Current_Step=`${r0} • ${sc(a[AF.status])||"—"}`;out.Waiting_For="";
+      const L0=(()=>{try{return parseActivityLog(a)}catch(_){return[]}})(),x0=L0[L0.length-1];
+      out.Last_Action=x0?`${x0.action||"Update"} by ${byOf(x0)||"—"}`:"Created";out.Project_Name=pn;out.Checker_Name=blank(a[AF.checker])?"":(person(a[AF.checker]).name||"");out.Issuer_Name=blank(a[AF.approver])?"":(person(a[AF.approver]).name||"");
+      const res0={};for(const [,w] of SUMF){const l=sumLink(w);if(l&&out[w]!==undefined)res0[l]=String(out[w]).slice(0,w==="Record_Purpose"?2000:250)}return res0;
+    }
+    out.Record_Purpose=kind==="Main design"?`Main design record of ${dn} for ${proj}. Lead: ${own||"—"}. The work for this design is assigned from here to the team (each piece of work is its own record).`
+      :kind==="Subtask"?`Subtask "${sc(a[AF.designTitle])||dn}" given by ${by||"—"} to ${own||"—"} under ${dn}, ${proj}.${tgt?" Target "+tgt+".":""}`
+      :`${by||"—"} assigned ${dn}${pds} for ${where} of ${proj} to ${own||"—"}${start?" on "+start:""}${tgt?", target "+tgt:""}. ${own||"The owner"} prepares it, the checker checks it, the issuer issues it.`;
+    const st=stepOf(a);out.Current_Step=kind==="Main design"?"Main design (see the tasks under it)":`${st}/4 ${st===0?"Not started":isReturned(a)?"Returned for correction":STEPS[Math.max(1,st)-1]} • ${rev(a)}`;
+    out.Waiting_For=kind==="Main design"?"":waitingFor(a);
+    const L=(()=>{try{return parseActivityLog(a)}catch(_){return[]}})(),x=L[L.length-1];
+    out.Last_Action=x?`${x.action||"Update"}${x.rev?" "+x.rev:""} by ${byOf(x)||"—"} on ${x.time?new Date(x.time).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}):"—"}`:"Created";
+    out.Project_Name=pn;
+    out.Checker_Name=blank(a[AF.checker])?"":(person(a[AF.checker]).name||sc(a[AF.checker]));
+    const iv=sc(a[AF.approver])||roleFromLog(a,"issuer");out.Issuer_Name=iv?(person(iv).name||iv):"";
+  }catch(e){log("summary",e)}
+  // only fields that exist in Zoho, under their real link name
+  const res={};for(const [,w] of SUMF){const l=sumLink(w);if(l&&out[w]!==undefined)res[l]=String(out[w]).slice(0,w==="Record_Purpose"?2000:250)}
+  return res;
+}
+const sumDiff=a=>{const s2=summaryFor(a),d={};for(const [k,v] of Object.entries(s2))if(sc(a[k])!==v)d[k]=v;return d};
+// every save of a task also refreshes its readable summary (same Zoho call, no extra call)
+patch("updateRecord",()=>updateRecord,f=>{updateRecord=f},base=>async function(id,data){
+  try{const a=recById(id);if(a&&data&&typeof data==="object"){const d=sumDiff({...a,...data});for(const k of Object.keys(d))if(data[k]===undefined)data[k]=d[k]}}catch(e){log("summary on save",e)}
+  return base.apply(this,[id,data]);
 });
 // keys that need the new row ID: written one by one in the background (no burst of calls)
 const KQ=[];let kBusy=false;
@@ -10884,18 +10958,19 @@ function fillReport(){
   const rows=scanRows(),ks=knownKeys();
   return FL.map(([label,k,when])=>{
     const l=k.startsWith("@")?linkOf(k):AF[k];
-    const need=rows.filter(a=>neededFor(a,when)),empty=need.filter(a=>blank(a[l]));
+    const need=rows.filter(a=>neededFor(a,when,k)),empty=need.filter(a=>blank(a[l]));
     const canFill=empty.filter(a=>computeFill(a)[l]!==undefined).length;
-    return {label,link:l,when,inZoho:!ks.size||ks.has(l),need:need.length,empty:empty.length,canFill,rows:rows.length};
+    return {label,key:k,link:l,when,inZoho:!ks.size||ks.has(l),need:need.length,empty:empty.length,canFill,rows:rows.length};
   });
 }
 function dataFill(){
   try{
     remapFields();
-    const rep=fillReport(),rows=scanRows(),todo=rows.filter(a=>Object.keys(computeFill(a)).some(l=>!DFL.refused.has(l))).length;
+    const rep=fillReport(),rows=scanRows(),todo=rows.filter(a=>Object.keys({...computeFill(a),...sumDiff(a)}).some(l=>!DFL.refused.has(l))).length;
+    const un=unusedKeys(),opt=(cur,key)=>`<select class="v22-map" data-v22-map="${esc(key)}"><option value="">Map to Zoho field…</option>${un.concat(cur&&!un.includes(cur)?[cur]:[]).map(k=>`<option ${k===cur?"selected":""}>${esc(k)}</option>`).join("")}</select>`;
     const codes=[...new Set((S.records||[]).map(r=>sc(r[AF.projectCode])).filter(Boolean))].sort();
     const tr=rep.map(x=>`<tr class="${!x.inZoho?"miss":x.empty?"warn":""}"><td><b>${esc(x.label)}</b><div class="tiny muted">${esc(x.link||"")}</div></td>
-      <td>${x.inZoho?"✓":`<span class="pill red">not in report</span>`}</td>
+      <td>${x.inZoho?"✓":`<span class="pill red" title="Zoho did not send this link name. If the field exists with another link name, choose it below. Otherwise the widget still tries to write it and tells you if Zoho refuses.">not found</span><div style="margin-top:4px">${opt("",x.key)}</div>`}${x.inZoho&&manual()[x.key]?`<div class="tiny muted">mapped by you <a class="v22-link" data-v22-unmap="${esc(x.key)}">undo</a></div>`:""}</td>
       <td>${x.when==="person"||x.when==="rev"?`<span class="tiny muted">chosen by a person</span>`:x.need?`${x.need-x.empty}/${x.need} filled`:"—"}</td>
       <td>${x.empty&&x.when!=="person"&&x.when!=="rev"?`<b style="color:#b42318">${x.empty} empty</b>`:x.when==="person"||x.when==="rev"?`${x.empty} empty`:"OK"}</td>
       <td>${x.canFill?`<b style="color:#067647">${x.canFill} can be filled</b>`:""}${DFL.refused.has(x.link)?` <span class="pill red">Zoho refused</span>`:""}</td></tr>`).join("");
@@ -10906,6 +10981,9 @@ function dataFill(){
       ${DFL.busy||DFL.done?`<div class="notice ${DFL.busy?"":"good"}" style="margin:8px 0">${DFL.busy?`<span class="v21-dot spin"></span> Filling… ${DFL.done}/${DFL.total} rows${DFL.failed?` • ${DFL.failed} failed`:""}`:`Done: ${DFL.done} rows updated${DFL.failed?` • ${DFL.failed} failed (see Error report)`:""}.`}</div>`:""}
       ${DFL.msg?`<div class="notice warn" style="margin:8px 0">${esc(DFL.msg)}</div>`:""}
       <div class="v21-bm-table"><table class="v22-fill"><thead><tr><th>Field</th><th>In Zoho</th><th>Filled</th><th>Empty</th><th>Widget can fill</th></tr></thead><tbody>${tr}</tbody></table></div>
+      <h3 style="margin:16px 0 6px;font-size:14px">Readable summary fields (why this record exists, what is happening)</h3>
+      <div class="v21-bm-table"><table class="v22-fill"><thead><tr><th>Field to add in Design_Tracking</th><th>Link name</th><th>Type</th><th>In Zoho</th><th>Example (first row)</th></tr></thead><tbody>${SUMF.map(([lab,w,ty,hint])=>{const l=sumLink(w),ex=rows[0]?(()=>{const s0=summaryFor({...rows[0]});return s0[l]||""})():"";return `<tr class="${l?"":"warn"}"><td><b>${esc(lab)}</b><div class="tiny muted">${esc(hint)}</div></td><td><code>${esc(w)}</code></td><td>${esc(ty)}</td><td>${l?`✓ ${l!==w?esc(l):""}`:`<span class="pill">add it</span><div style="margin-top:4px">${opt("","@"+w)}</div>`}</td><td class="tiny">${esc(String(ex).slice(0,160))}</td></tr>`}).join("")}</tbody></table></div>
+      ${un.length?`<div class="tiny" style="margin-top:8px"><b>Zoho fields the widget does not use:</b> ${un.map(esc).join(", ")}</div>`:""}
       <div class="tiny muted" style="margin-top:8px">Only EMPTY fields are written - existing values are never changed. Values come from the Project list, Design Master, Equipment Master, Employees and the task above. Tag fields are needed only on tag / PDS tasks, section fields only on section tasks. "Not in report": the field is not shown in ${esc(CONFIG.REPORTS.tracking)} or has another link name - add it to the report (Zoho → report → Columns) so the widget can read and check it.</div>`;
     const foot=`<button class="btn" data-modal="close">Close</button>${DFL.busy?`<button class="btn danger" data-v22-fill-stop>Stop</button>`:`<button class="btn primary" data-v22-fill-go ${todo?"":"disabled"}>Fill missing data (${todo} row${todo===1?"":"s"})</button>`}`;
     const open=el("modalBackdrop"),title=el("modalTitle");
@@ -10916,13 +10994,13 @@ function dataFill(){
 }
 async function runFill(){
   if(DFL.busy)return;
-  const rows=scanRows().filter(a=>Object.keys(computeFill(a)).length);
+  const rows=scanRows().filter(a=>Object.keys(computeFill(a)).length||Object.keys(sumDiff(a)).length);
   DFL.busy=true;DFL.stop=false;DFL.done=0;DFL.failed=0;DFL.total=rows.length;DFL.msg="";dataFill();
   // equipment for the projects that have tag tasks
   try{for(const c of [...new Set(rows.filter(a=>!blank(a[AF.tagNo])).map(a=>sc(a[AF.projectCode])))]){await ensureEquipmentForProject(c)}}catch(e){log("eq",e)}
   for(const a of rows){
     if(DFL.stop)break;
-    let f=computeFill(a);for(const l of DFL.refused)delete f[l];
+    let f={...sumDiff(a),...computeFill(a)};for(const l of DFL.refused)delete f[l];
     if(!Object.keys(f).length){DFL.done++;continue}
     for(let tries=0;tries<4;tries++){
       try{await updateRecord(String(idOf(a)),f);Object.assign(a,f);break}
@@ -10946,10 +11024,12 @@ window.addEventListener("click",e=>{
   if(t.closest("[data-v22-fill-load]")){e.preventDefault();e.stopImmediatePropagation();const c=DFL.code;if(!c)return say("Choose a project first.","warn");
     return (async()=>{try{say(`Loading project ${c}…`,"good");await ensureTrackingForProject(c,true);await ensureEquipmentForProject(c)}catch(err){say(errorText(err),"warn")}dataFill()})()}
 },true);
-document.addEventListener("change",e=>{const t=e.target;if(t&&t.matches&&t.matches("[data-v22-fill-code]")){DFL.code=t.value;DFL.done=0;dataFill()}},true);
+document.addEventListener("change",e=>{const t=e.target;if(t&&t.matches&&t.matches("[data-v22-fill-code]")){DFL.code=t.value;DFL.done=0;dataFill()}
+  if(t&&t.matches&&t.matches("[data-v22-map]")){const k=t.dataset.v22Map;if(t.value){setManual(k,t.value);say(`${k.replace(/^@/,"")} → ${t.value}: mapped.`,"good")}dataFill()}},true);
+window.addEventListener("click",e=>{const x=e.target&&e.target.closest&&e.target.closest("[data-v22-unmap]");if(!x)return;e.preventDefault();e.stopImmediatePropagation();const k=x.dataset.v22Unmap;const m=manual();delete m[k];try{localStorage.setItem(MAPK,JSON.stringify(m))}catch(_){}say("Mapping removed - reload the widget to use the default link name.","good");dataFill()},true);
 try{const st=document.createElement("style");st.textContent=`.v22-fill-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.v22-fill td{padding:6px 8px;font-size:12px}.v22-fill tr.warn td{background:#fffaeb}.v22-fill tr.miss td{background:#fff1f0}`;document.head.appendChild(st)}catch(_){}
 
-window.MEGA_V22={build:BUILD,stepOf,allowed,toCheckRows,returnedToMe,familyFiles,canUpload,canView,exportRows,remind,isSelfRoot,ownerOf,isOwner,isChecker,isAssigner,waitingFor,popupCheck,dataCheck,accessCheck,issuerVal,isIssuer,openChat,chatMsgs,notifyCheck,computeFill,fillReport,dataFill};
+window.MEGA_V22={build:BUILD,stepOf,allowed,toCheckRows,returnedToMe,familyFiles,canUpload,canView,exportRows,remind,isSelfRoot,ownerOf,isOwner,isChecker,isAssigner,waitingFor,popupCheck,dataCheck,accessCheck,issuerVal,isIssuer,openChat,chatMsgs,notifyCheck,computeFill,fillReport,dataFill,summaryFor};
 // first pop-up after the start-up data is in
 setTimeout(()=>{try{popupCheck(false)}catch(_){}},12000);
 try{const bd=el("buildBadge");if(bd)bd.textContent=BUILD;document.title=`MEGA Engineering | Project Design Control ${BUILD}`}catch(_){}
