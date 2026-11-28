@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <!--
 ========================================================================
- MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.13
+ MEGA ENGINEERING | PROJECT DESIGN CONTROL  -  Zoho Creator widget  -  V22.14
 ========================================================================
  HOW TO INSTALL
    1. Open the widget code in Zoho Creator.
    2. Delete ALL old code.
-   3. Paste this whole file and save. The badge at the top shows "V22.13".
+   3. Paste this whole file and save. The badge at the top shows "V22.14".
 
  >>> ALL SETTINGS ARE IN ONE PLACE: the "MEGA SETTINGS" block, the first
      SCRIPT below (report names, projects list, waiting times, speed,
@@ -147,6 +147,12 @@
                       V22.13: saved copies packed ~6x smaller (15 big projects
                       instead of 2-3, instant open); long tracker tables show
                       150 rows + "Show all"; ⚙ Settings → Speed test.
+                      V22.14: safe save - a field value Zoho refuses (e.g.
+                      "Equipment - Stationary") no longer blocks the task, it is
+                      saved without that value; issuer (Approver) tasks in My
+                      Work; My Work refresh every 2 min for check / issue
+                      pop-ups; new revision emails checker + issuer; optional
+                      forms not reported as errors.
 
  SAFETY DESIGN
    - Each layer replaces functions only if they exist, and wraps every
@@ -166,7 +172,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>MEGA Engineering | Project Design Control V22.13</title>
+<title>MEGA Engineering | Project Design Control V22.14</title>
 <script src="https://static.zohocdn.com/creator/widgets/version/2.0/widgetsdk-min.js"></script>
 <style>
 :root{
@@ -392,7 +398,7 @@ body{font:14px/1.48 Inter,"Segoe UI",Arial,sans-serif}button,input,select,textar
 <header class="topbar">
   <div class="topbar-inner">
     <div class="logo">ME</div>
-    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.13</span></h1></div>
+    <div class="brand"><small>MEGA ENGINEERING</small><h1>Project Design Control <span id="buildBadge" style="font-size:10px;font-weight:900;padding:4px 7px;border-radius:999px;background:#ffffff22;border:1px solid #ffffff38;vertical-align:middle">V22.14</span></h1></div>
     <div class="top-search"><input id="globalSearch" placeholder="Universal search: tag, project, drawing, equipment, person, PDS…"><span class="search-mark">⌕</span></div>
     <div class="notification-wrap"><button id="notificationBell" class="notification-bell" type="button" title="System alerts">🔔<span id="notificationCount" class="notification-count hidden">0</span></button></div>
     <div id="connectionPill" class="connection-pill"><span class="dot"></span><span id="connectionText">Connecting</span></div><div id="sessionPill" class="session">Connecting to Zoho Creator…</div>
@@ -544,7 +550,7 @@ var MEGA_SETTINGS={
     var K="MEGA_ERRLOG",MAX=(MEGA_SETTINGS.ERRORS&&MEGA_SETTINGS.ERRORS.KEEP)||60;
     var R=window.MEGA_ERR={list:[],api:[],seen:0,listeners:[]};
     // V22.5: errors saved by an OLDER version are not shown again after an update (they were already fixed)
-    var BUILD_ID="V22.13";
+    var BUILD_ID="V22.14";
     try{var old=JSON.parse(localStorage.getItem(K)||"[]");if(Array.isArray(old))R.list=old.filter(function(x){return x&&x.build===BUILD_ID}).slice(-MAX);if(Array.isArray(old)&&old.length!==R.list.length){localStorage.setItem(K,JSON.stringify(R.list));localStorage.setItem(K+"_SEEN",String(R.list.length))}}catch(_){}
     try{R.seen=Number(localStorage.getItem(K+"_SEEN")||R.list.length)||0}catch(_){}
     function txt(x){
@@ -722,6 +728,7 @@ var MEGA_LZ=(function(){
         var all=G.access(),k=tgt+"|"+op,prev=all[k];
         all[k]={s:state,at:Date.now(),m:state==="ok"?"":txt(res).slice(0,160)};
         localStorage.setItem(G.accKey(),JSON.stringify(all));
+        if(state!=="ok"&&/^(Design_System_Log|Design_Dependency|All_Design_Dependencies)$/.test(tgt))return;   // optional - the widget works without them
         if(state!=="ok"&&(!prev||prev.s!==state)){try{window.MEGA_ERR&&MEGA_ERR.add("error",(state==="denied"?"No access":"Not found / not shared")+": "+tgt+" ("+op+"). Ask the admin to give this access - see ⚙ Settings → Access check",txt(res).slice(0,200))}catch(_){}}
       }catch(_){}
     };
@@ -4878,7 +4885,7 @@ async function ensureTrackingForProject(code,force=false){
 async function v208EnsureMyTracking(force=false){
   if(S.cache.myTrackingLoaded&&!force)return S.assignments.filter(a=>currentUserMatches(a[AF.assignedTo])||currentUserMatches(a[AF.checker])||currentUserMatches(a[AF.reviewer])||currentUserMatches(a[AF.approver]));
   if(S.cache.myTrackingPromise&&!force)return await S.cache.myTrackingPromise;
-  const task=(async()=>{if(S.demo){S.cache.myTrackingLoaded=true;return S.assignments}const act=(S.v217&&S.v217.actor)||null,report=await v208DiscoverTrackingReportLink(),email=String((act&&act.email)||S.user||"").trim(),name=(act&&act.name)||personDisplay(S.user)||email,queries=[];/* V22.3: the person in "Working as" (not the shared login); only the fields the 4-step flow uses */if(email)for(const f of [AF.assignedTo,AF.checker])queries.push(`(${f} == "${creatorCriteriaEscape(email)}")`);if(name&&name!==email)queries.push(`(${AF.assignedEmployeeName} == "${creatorCriteriaEscape(name)}")`);const map=new Map();for(const q of queries){try{for(const r of await fetchRecords(report,q,CONFIG.MAX_REPORT_PAGES))map.set(idOf(r),r)}catch(e){console.warn("My Work scoped query failed",q,e)}}const adapted=[...map.values()].map(adaptRecord);const existing=new Map(S.records.map(r=>[idOf(r),r]));for(const r of adapted)existing.set(idOf(r),r);S.records=[...existing.values()];S.assignments=S.records.filter(isAssignmentRecord);S.revisions=S.records.filter(isRevisionRecord);S.cache.myTrackingLoaded=true;setHealth("tracking-my-work","ok",{label:"Design Tracking — My Work",rows:adapted.length,error:""});return adapted})();
+  const task=(async()=>{if(S.demo){S.cache.myTrackingLoaded=true;return S.assignments}const act=(S.v217&&S.v217.actor)||null,report=await v208DiscoverTrackingReportLink(),email=String((act&&act.email)||S.user||"").trim(),name=(act&&act.name)||personDisplay(S.user)||email,queries=[];/* V22.3: the person in "Working as" (not the shared login); only the fields the 4-step flow uses */if(email)for(const f of [AF.assignedTo,AF.checker,AF.approver])queries.push(`(${f} == "${creatorCriteriaEscape(email)}")`);if(name&&name!==email)queries.push(`(${AF.assignedEmployeeName} == "${creatorCriteriaEscape(name)}")`);const map=new Map();for(const q of queries){try{for(const r of await fetchRecords(report,q,CONFIG.MAX_REPORT_PAGES))map.set(idOf(r),r)}catch(e){console.warn("My Work scoped query failed",q,e)}}const adapted=[...map.values()].map(adaptRecord);const existing=new Map(S.records.map(r=>[idOf(r),r]));for(const r of adapted)existing.set(idOf(r),r);S.records=[...existing.values()];S.assignments=S.records.filter(isAssignmentRecord);S.revisions=S.records.filter(isRevisionRecord);S.cache.myTrackingLoaded=true;setHealth("tracking-my-work","ok",{label:"Design Tracking — My Work",rows:adapted.length,error:""});return adapted})();
   S.cache.myTrackingPromise=task;try{return await task}finally{S.cache.myTrackingPromise=null}
 }
 
@@ -9542,7 +9549,7 @@ console.info(`[${BUILD}] loaded`);
    ====================================================================== */
 try{(function V22(){
 "use strict";
-const BUILD="V22.13";
+const BUILD="V22.14";
 const log=(...a)=>{try{console.warn("[V22]",...a)}catch(_){}};
 const say=(m,t="warn")=>{try{toast(m,t)}catch(_){}};
 const sc=v=>{try{return String(scalar(v)??"")}catch(_){return v==null?"":String(v)}};
@@ -9769,6 +9776,9 @@ async function doNewRev(a){
   const mails=[];
   if(!isOwner(a))mails.push({to:a[AF.assignedTo]||a[AF.assignedEmployeeName],subject:subj(nb,`New revision ${nr} by ${me.name}`),html:mailHtml(nb,`New revision ${nr}`,line+"<br><br>Please work on it and submit it for check.",person(a[AF.assignedTo]||a[AF.assignedEmployeeName]))});
   if(!isAssigner(a))mails.push({to:a[AF.assignedBy],subject:subj(nb,`New revision ${nr} by ${me.name}`),html:mailHtml(nb,`New revision ${nr}`,line,person(a[AF.assignedBy]))});
+  // V22.14: the checker and the final checker / issuer also know a new revision is coming
+  const sentTo=new Set(mails.map(m=>low(person(m.to).email||m.to)));
+  for(const [v,role] of [[checkerVal(a),"checker"],[issuerVal(a),"final checker / issuer"]]){const pp=person(v),k=low(pp.email||v);if(!k||sentTo.has(k)||isMe(v))continue;sentTo.add(k);mails.push({to:v,subject:subj(nb,`New revision ${nr} - you are ${role}`),html:mailHtml(nb,`New revision ${nr}`,line+`<br><br>You are the <b>${role}</b>. You will get it for ${role==="checker"?"check":"issue"} when ${esc(ownerOf(a))} submits it.`,pp)})}
   await save(a,data,`New revision ${nr}`,`${old} → ${nr}: ${note}`,mails);
 }
 async function doIssue(a){
@@ -10574,7 +10584,7 @@ window.addEventListener("click",e=>{
     const ck=sc(el("v22UpChecker")&&el("v22UpChecker").value),is=sc(el("v22UpIssuer")&&el("v22UpIssuer").value);
     if(!el("v22UpChecker")&&!document.querySelector("label.v21-tf-drop"))return;   // no upload box -> nothing to do
     e.preventDefault();e.stopImmediatePropagation();
-    if(!ck||!is)return say("Choose the Checker and the Final checker / issuer before uploading (they can be the same person).","warn");
+    if(!ck||!is){try{const box=document.querySelector(".v22-roles");if(box){box.classList.add("need");box.scrollIntoView({behavior:"smooth",block:"center"});setTimeout(()=>box.classList.remove("need"),4000)}}catch(_){}return say("Choose the Checker and the Final checker / issuer first (they can be the same person) - then click Upload again.","warn")}
     const pc=person(ck),pi=person(is),data={};
     if(low(person(sc(a[AF.checker])).email||sc(a[AF.checker]))!==low(pc.email||ck))data[AF.checker]=pc.email||ck;
     if(low(person(issuerVal(a)).email||issuerVal(a))!==low(pi.email||is)||!sc(a[AF.approver]))data[AF.approver]=pi.email||is;
@@ -10586,7 +10596,7 @@ window.addEventListener("click",e=>{
 },true);
 document.addEventListener("change",e=>{const t=e.target;if(t&&t.id==="v22CmFiles"){const text=sc(el("v22CmText")&&el("v22CmText").value);const max=Number(FSET().MAX_FILES_PER_UPLOAD)||10;CM.sel=CM.sel.concat([...(t.files||[])]).slice(0,max);filesRedraw();const n=el("v22CmText");if(n)n.value=text}},true);
 try{const st=document.createElement("style");st.textContent=`
-.v22-roles{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end;margin:4px 0 10px;padding:10px;border:1px solid #f3d1e2;background:#fff7fb;border-radius:12px}.v22-roles .tiny{grid-column:1/-1}
+.v22-roles.need{outline:3px solid #d92d20;background:#fff1f0}.v22-roles{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end;margin:4px 0 10px;padding:10px;border:1px solid #f3d1e2;background:#fff7fb;border-radius:12px}.v22-roles .tiny{grid-column:1/-1}
 .v22-cm-box{border:1px solid #e4e7ec;border-radius:12px;padding:10px;display:grid;gap:8px}.v22-cm-box textarea{min-height:70px;width:100%;box-sizing:border-box}
 .v22-cm-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.v22-cm-row select{height:30px}
 .v22-cm-list{display:grid;gap:6px;margin-top:10px}.v22-cm-item{border:1px solid #eaecf0;border-left:3px solid #c42770;border-radius:9px;padding:8px 10px;font-size:12px;display:grid;gap:3px;background:#fff}
@@ -10889,7 +10899,8 @@ const HIER=new Set(["assignmentLevel","primaryAssignment","assignedFrom","revisi
 function computeFill(a){
   // old-style revision rows (R0/R1 copies) must stay revision rows: no hierarchy / key / status fields on them
   let isRev=false;try{isRev=isRevisionRecord(a)}catch(_){}
-  const f={},put=(k,v)=>{if(isRev&&HIER.has(k))return;const l=k.startsWith("@")?linkOf(k):AF[k];if(!l)return;if(k.startsWith("@")&&!knownKeys().has(l))return;/* custom field not in the report: not written */if(blank(a[l])&&!blank(v))f[l]=typeof v==="number"?v:String(v)};
+  const REF=(()=>{try{return new Set(JSON.parse(localStorage.getItem("MEGA_V22_REFUSED")||"[]"))}catch(_){return new Set()}})();
+  const f={},put=(k,v)=>{if(isRev&&HIER.has(k))return;const l=k.startsWith("@")?linkOf(k):AF[k];if(!l||REF.has(l))return;if(k.startsWith("@")&&!knownKeys().has(l))return;/* custom field not in the report: not written */if(blank(a[l])&&!blank(v))f[l]=typeof v==="number"?v:String(v)};
   const ch=chain(a),root=ch[ch.length-1]||a,parent=ch[1]||null;
   const code=sc(a[AF.projectCode])||ch.map(x=>sc(x[AF.projectCode])).find(Boolean)||"";
   put("projectCode",code);
@@ -10943,10 +10954,11 @@ patch("addRecord",()=>addRecord,f=>{addRecord=f},base=>async function(data){
     for(const [k,v] of Object.entries(f)){
       if(k==="Status"||k===AF.revisionKey||k===AF.logicalTaskKey)continue;     // no ID yet / status set by the flow
       if(ks.size&&!ks.has(k)&&!Object.values(AF).includes(k))continue;         // unknown custom field: skip
+      if(window.MEGA_SKIPKEYS&&window.MEGA_SKIPKEYS.has(k))continue;
       if(blank(data[k]))data[k]=v;
     }
     if(blank(data[AF.startDate]))try{data[AF.startDate]=toCreatorDate(todayIso())}catch(_){}
-    try{Object.assign(data,Object.fromEntries(Object.entries(summaryFor(data)).filter(([k])=>blank(data[k]))))}catch(_){}
+    try{Object.assign(data,Object.fromEntries(Object.entries(sumDiff(data)).filter(([k])=>blank(data[k]))))}catch(_){}
   }catch(e){log("fill new row",e)}
   const id=await base.apply(this,[data]);
   // keys need the new ID: write them right after (one small update)
@@ -11011,7 +11023,7 @@ function summaryFor(a){
   const res={};for(const [,w] of SUMF){const l=sumLink(w);if(l&&out[w]!==undefined)res[l]=String(out[w]).slice(0,w==="Record_Purpose"?2000:250)}
   return res;
 }
-const sumDiff=a=>{const s2=summaryFor(a),d={};for(const [k,v] of Object.entries(s2))if(sc(a[k])!==v)d[k]=v;return d};
+const sumDiff=a=>{const s2=summaryFor(a),d={};let R=new Set();try{R=new Set(JSON.parse(localStorage.getItem("MEGA_V22_REFUSED")||"[]"))}catch(_){}for(const [k,v] of Object.entries(s2))if(!R.has(k)&&!(window.MEGA_SKIPKEYS&&window.MEGA_SKIPKEYS.has(k))&&sc(a[k])!==v)d[k]=v;return d};
 // every save of a task also refreshes its readable summary (same Zoho call, no extra call)
 patch("updateRecord",()=>updateRecord,f=>{updateRecord=f},base=>async function(id,data){
   try{const a=recById(id);if(a&&data&&typeof data==="object"){const d=sumDiff({...a,...data});for(const k of Object.keys(d))if(data[k]===undefined)data[k]=d[k]}}catch(e){log("summary on save",e)}
@@ -11130,6 +11142,61 @@ document.addEventListener("change",e=>{const t=e.target;if(t&&t.matches&&t.match
   if(t&&t.matches&&t.matches("[data-v22-map]")){const k=t.dataset.v22Map;if(t.value){setManual(k,t.value);say(`${k.replace(/^@/,"")} → ${t.value}: mapped.`,"good")}dataFill()}},true);
 window.addEventListener("click",e=>{const x=e.target&&e.target.closest&&e.target.closest("[data-v22-unmap]");if(!x)return;e.preventDefault();e.stopImmediatePropagation();const k=x.dataset.v22Unmap;const m=manual();delete m[k];try{localStorage.setItem(MAPK,JSON.stringify(m))}catch(_){}say("Mapping removed - reload the widget to use the default link name.","good");dataFill()},true);
 try{const st=document.createElement("style");st.textContent=`.v22-fill-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}.v22-fill td{padding:6px 8px;font-size:12px}.v22-fill tr.warn td{background:#fffaeb}.v22-fill tr.miss td{background:#fff1f0}`;document.head.appendChild(st)}catch(_){}
+
+/* ---------- 18. SAFE SAVE (V22.14) ----------
+   Zoho refuses a whole save when ONE field gets a value it does not accept
+   (e.g. "Invalid column value "Equipment - Stationary"" - a dropdown / lookup
+   field that does not have this option). Then no task was created at all.
+   Now the save is tried again without that field:
+   - extra fields the widget adds itself (Department_Code, summary fields …)
+     are dropped first and remembered, so they are never sent again;
+   - if a normal field is refused, only that value is left out and the task
+     is still created (noted in the Error report as info).
+   The task is ALWAYS saved; one bad value never blocks the work. */
+const REFK="MEGA_V22_REFUSED";
+const refused=()=>{try{return new Set(JSON.parse(localStorage.getItem(REFK)||"[]"))}catch(_){return new Set()}};
+function addRefused(k){try{const s=refused();s.add(k);localStorage.setItem(REFK,JSON.stringify([...s]))}catch(_){}}
+const coreLinks=()=>new Set(Object.values(AF));
+function badKeys(err,payload){
+  const t=errorText(err),m=t.match(/Invalid column value\s*\\?"([^"\\]*)\\?"/i),out=[];
+  if(m){const v=m[1];for(const k of Object.keys(payload))if(String(sc(payload[k]))===v)out.push(k)}
+  for(const k of Object.keys(payload))if(!out.includes(k)&&new RegExp(`["\\s]${k}["\\s:]`).test(t)&&/invalid|not (a )?valid|refused|does not exist|no field/i.test(t))out.push(k);
+  return out;
+}
+async function safeWrite(fn,payload,label){
+  let data={...payload};const dropped=[];window.MEGA_SKIPKEYS=null;const n0=(window.MEGA_ERR&&MEGA_ERR.list.length)||0;
+  for(let i=0;i<6;i++){
+    try{const r=await fn(data);window.MEGA_SKIPKEYS=null;
+      if(dropped.length)try{const E=window.MEGA_ERR;if(E){const keep=E.list.filter((x,i)=>i<n0||!/Invalid column value/i.test(x.msg+" "+x.detail));E.list.length=0;E.list.push(...keep);localStorage.setItem("MEGA_ERRLOG",JSON.stringify(E.list))}}catch(_){}   // fixed by itself: not an error
+      if(dropped.length)window.MEGA_ERR&&MEGA_ERR.add("api",`${label}: saved without ${dropped.join(", ")} (Zoho did not accept the value)`,dropped.map(k=>`${k}=${sc(payload[k])}`).join(" | "));return r}
+    catch(e){
+      const keys=badKeys(e,data);if(!keys.length)throw e;
+      const core=coreLinks(),extra=keys.filter(k=>!core.has(k)),drop=extra.length?extra:keys.filter(k=>k!==AF.projectCode&&k!==AF.assignedTo);
+      if(!drop.length)throw e;
+      for(const k of drop){delete data[k];dropped.push(k);if(!core.has(k))addRefused(k)}
+      window.MEGA_SKIPKEYS=new Set(dropped);   // the fill must not put them back on the next try
+    }
+  }
+  window.MEGA_SKIPKEYS=null;throw new Error(`${label}: Zoho refused the save.`);
+}
+patch("addRecord",()=>addRecord,f=>{addRecord=f},base=>async function(data){
+  const r=refused();const d={...data};for(const k of r)delete d[k];
+  return safeWrite(x=>base.call(this,x),d,"New task");
+});
+patch("updateRecord",()=>updateRecord,f=>{updateRecord=f},base=>async function(id,data){
+  const r=refused();const d={...data};for(const k of r)delete d[k];
+  return safeWrite(x=>base.call(this,id,x),d,`Task ${id}`);
+});
+// My Work for the checker / issuer: refreshed every 2 minutes while the widget is open and visible,
+// so "To check / To issue" and the pop-ups come quickly (3-4 small reads)
+setInterval(async()=>{
+  try{
+    if(S.demo||!(S.v21&&S.v21.live)||document.hidden||!actor()||!navigator.onLine)return;
+    if(typeof v208EnsureMyTracking==="function")await v208EnsureMyTracking(true);
+    popupCheck(true);try{notifyCheck()}catch(_){}
+    if(S.view==="mine")try{renderView()}catch(_){}
+  }catch(e){log("my work refresh",e)}
+},2*60000);
 
 window.MEGA_V22={build:BUILD,stepOf,allowed,toCheckRows,returnedToMe,familyFiles,canUpload,canView,exportRows,remind,isSelfRoot,ownerOf,isOwner,isChecker,isAssigner,waitingFor,popupCheck,dataCheck,accessCheck,issuerVal,isIssuer,openChat,chatMsgs,notifyCheck,computeFill,fillReport,dataFill,summaryFor};
 // first pop-up after the start-up data is in
